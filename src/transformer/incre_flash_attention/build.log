@@ -1,0 +1,393 @@
+[  1%] Generating op_host_aclnn_stub.cpp
+[  3%] Generating op_host_aclnn_exc_stub.cpp
+[ 11%] Generating version.info
+[ 11%] Building CXX object CMakeFiles/op_host_aclnnInner.dir/src/transformer/incre_flash_attention/ophost/incre_flash_attention_def.cpp.o
+[ 11%] Building CXX object CMakeFiles/op_host_aclnnInner.dir/src/transformer/compute_cent/ophost/compute_cent_def.cpp.o
+[ 15%] Generating binary/ascend910b/src/compute_cent/ComputeCent.py
+[ 15%] Generating binary/ascend910b/src/ascendc/common
+[ 16%] Generating binary/ascend910b/bin/compute_cent
+[ 16%] Generating scripts/install.sh, scripts/upgrade.sh
+[ 18%] Generating binary/ascend910b/bin/incre_flash_attention
+[ 24%] Generating binary/ascend910b/src/incre_flash_attention/IncreFlashAttention.py
+[ 24%] Building CXX object CMakeFiles/optiling.dir/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp.o
+[ 26%] Building CXX object CMakeFiles/optiling.dir/src/utils/src/fallback_comm.cpp.o
+[ 26%] Building CXX object CMakeFiles/optiling.dir/src/transformer/compute_cent/ophost/compute_cent_tiling_register.cc.o
+[ 28%] Building CXX object CMakeFiles/optiling.dir/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling.cc.o
+[ 32%] Building CXX object CMakeFiles/optiling.dir/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling_check.cc.o
+[ 33%] Building CXX object CMakeFiles/optiling.dir/src/transformer/incre_flash_attention/ophost/fallback_incre_flash_attention.cpp.o
+[ 33%] Building CXX object CMakeFiles/optiling.dir/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling_register.cc.o
+[ 35%] Building CXX object CMakeFiles/op_host_aclnn.dir/op_host_aclnn_stub.cpp.o
+[ 37%] Building CXX object CMakeFiles/op_host_aclnnExc.dir/op_host_aclnn_exc_stub.cpp.o
+[ 37%] Built target compute_cent_ascend910b_py_copy
+[ 37%] Built target compute_cent_ascend910b_mkdir
+[ 37%] Built target incre_flash_attention_ascend910b_mkdir
+[ 37%] Built target incre_flash_attention_ascend910b_py_copy
+[ 37%] Built target gen_version_info
+[ 37%] Built target ops_utils_inc_kernel_ascend910b
+[ 37%] Built target modify_vendor
+[ 41%] Generating binary/ascend910b/src/compute_cent/compute_cent_ascend910b_src_copy.done
+[ 41%] Generating binary/ascend910b/src/incre_flash_attention/incre_flash_attention_ascend910b_src_copy.done
+[ 43%] Linking CXX shared library libop_host_aclnn.so
+[ 45%] Linking CXX shared library libop_host_aclnnExc.so
+[ 45%] Built target incre_flash_attention_ascend910b_src_copy
+[ 45%] Built target compute_cent_ascend910b_src_copy
+[ 45%] Built target op_host_aclnn
+[ 45%] Built target op_host_aclnnExc
+[ 45%] Built target opbuild_gen_default
+[ 45%] Built target opbuild_gen_exc
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/fallback_incre_flash_attention.cpp:13:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/utils/inc/fallback.h: In function ‘fallback::aclTensor* fallback::ConvertType(const gert::Tensor*)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/utils/inc/fallback.h:193:8: warning: unused variable ‘tensor_place’ [-Wunused-variable]
+  193 |   auto tensor_place = ge_tensor->GetPlacement();
+      |        ^~~~~~~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/fallback_incre_flash_attention.cpp: In lambda function:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/utils/inc/fallback.h:480:14: warning: declaration of ‘api_ret’ shadows a previous local [-Wshadow]
+  480 |         auto api_ret = opApiFunc(workspace_addr, workspace_size, executor, acl_stream);                              \
+      |              ^~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/fallback_incre_flash_attention.cpp:101:9: note: in expansion of macro ‘EXEC_OPAPI_CMD’
+  101 |         EXEC_OPAPI_CMD(aclnnIncreFlashAttentionV4, query, ge_tenserListKey, ge_tenserListValue, pseShiftGe, attenMaskGe,
+      |         ^~~~~~~~~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/fallback_incre_flash_attention.cpp:100:10: note: shadowed declaration is here
+  100 |     auto api_ret =
+      |          ^~~~~~~
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_def.cpp:5:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_def.cpp: In lambda function:
+/usr/local/Ascend/ascend-toolkit/latest/include/register/op_def_registry.h:52:64: warning: unused parameter ‘name’ [-Wunused-parameter]
+   52 |       ops::OpDefFactory::OpDefRegister(#opType, [](const char *name) { return opType(#opType); })
+      |                                                    ~~~~~~~~~~~~^~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_def.cpp:53:1: note: in expansion of macro ‘OP_ADD’
+   53 | OP_ADD(ComputeCent);
+      | ^~~~~~
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_def.cpp:15:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_def.cpp: In lambda function:
+/usr/local/Ascend/ascend-toolkit/latest/include/register/op_def_registry.h:52:64: warning: unused parameter ‘name’ [-Wunused-parameter]
+   52 |       ops::OpDefFactory::OpDefRegister(#opType, [](const char *name) { return opType(#opType); })
+      |                                                    ~~~~~~~~~~~~^~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_def.cpp:417:1: note: in expansion of macro ‘OP_ADD’
+  417 | OP_ADD(IncreFlashAttention);
+      | ^~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: In function ‘ge::graphStatus optiling::TilingComputeCent(gert::TilingContext*)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:25:21: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘size_t’ {aka ‘long unsigned int’} [-Wformat=]
+   25 |   printf("ubSize_: %d\n", ubSize_);
+      |                    ~^     ~~~~~~~
+      |                     |     |
+      |                     int   size_t {aka long unsigned int}
+      |                    %ld
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                       ~^                                               ~~~~~~~~~~
+      |                        |                                               |
+      |                        int                                             uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:39: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                      ~^                                            ~~~~~~~~~
+      |                                       |                                            |
+      |                                       int                                          uint32_t {aka unsigned int}
+      |                                      %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:53: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                                    ~^                                         ~~~~~~~~
+      |                                                     |                                         |
+      |                                                     int                                       uint32_t {aka unsigned int}
+      |                                                    %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:66: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                                                 ~^                                      ~~~~~~~
+      |                                                                  |                                      |
+      |                                                                  int                                    uint32_t {aka unsigned int}
+      |                                                                 %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                       ~^                                              ~~~~~~~~~~
+      |                        |                                              |
+      |                        int                                            uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:41: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                                        ~^                                         ~~~~~~~~~~~
+      |                                         |                                         |
+      |                                         int                                       uint32_t {aka unsigned int}
+      |                                        %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:65: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                                                                ~^                              ~~~~~~~~~~~~~~~~~~
+      |                                                                 |                              |
+      |                                                                 int                            uint32_t {aka unsigned int}
+      |                                                                %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                       ~^                                                                                                                                          ~~~~~~~~~~
+      |                        |                                                                                                                                          |
+      |                        int                                                                                                                                        uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:38: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                     ~^                                                                                                                                        ~~~~~~~~
+      |                                      |                                                                                                                                        |
+      |                                      int                                                                                                                                      uint32_t {aka unsigned int}
+      |                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:54: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                     ~^                                                                                                                                  ~~~~~~~~~~
+      |                                                      |                                                                                                                                  |
+      |                                                      int                                                                                                                                uint32_t {aka unsigned int}
+      |                                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:70: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                     ~^                                                                                                                              ~~~~~~~~~~
+      |                                                                      |                                                                                                                              |
+      |                                                                      int                                                                                                                            uint32_t {aka unsigned int}
+      |                                                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:85: warning: format ‘%d’ expects argument of type ‘int’, but argument 6 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                    ~^                                                                                                                           ~~~~~~~~~
+      |                                                                                     |                                                                                                                           |
+      |                                                                                     int                                                                                                                         uint32_t {aka unsigned int}
+      |                                                                                    %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:109: warning: format ‘%d’ expects argument of type ‘int’, but argument 7 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                            ~^                                                                                                              ~~~~~~~~~~~~~~~~~~
+      |                                                                                                             |                                                                                                              |
+      |                                                                                                             int                                                                                                            uint32_t {aka unsigned int}
+      |                                                                                                            %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:122: warning: format ‘%d’ expects argument of type ‘int’, but argument 8 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                         ~^                                                                                                                     ~~~~~~~
+      |                                                                                                                          |                                                                                                                     |
+      |                                                                                                                          int                                                                                                                   uint32_t {aka unsigned int}
+      |                                                                                                                         %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:139: warning: format ‘%d’ expects argument of type ‘int’, but argument 9 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                                          ~^                                                                                                             ~~~~~~~~~~~
+      |                                                                                                                                           |                                                                                                             |
+      |                                                                                                                                           int                                                                                                           uint32_t {aka unsigned int}
+      |                                                                                                                                          %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:157: warning: format ‘%d’ expects argument of type ‘int’, but argument 10 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                                                            ~^                                                                                                        ~~~~~~~~~~~~
+      |                                                                                                                                                             |                                                                                                        |
+      |                                                                                                                                                             int                                                                                                      uint32_t {aka unsigned int}
+      |                                                                                                                                                            %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:20:12: warning: variable ‘aicNum_’ set but not used [-Wunused-but-set-variable]
+   20 |   uint32_t aicNum_ = 0;
+      |            ^~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: In function ‘ge::graphStatus ge::InferShape(gert::InferShapeContext*)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:94:60: warning: unused parameter ‘context’ [-Wunused-parameter]
+   94 | static ge::graphStatus InferShape(gert::InferShapeContext* context)
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling_register.cc:16:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: In function ‘ge::graphStatus optiling::TilingComputeCent(gert::TilingContext*)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:25:21: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘size_t’ {aka ‘long unsigned int’} [-Wformat=]
+   25 |   printf("ubSize_: %d\n", ubSize_);
+      |                    ~^     ~~~~~~~
+      |                     |     |
+      |                     int   size_t {aka long unsigned int}
+      |                    %ld
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                       ~^                                               ~~~~~~~~~~
+      |                        |                                               |
+      |                        int                                             uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:39: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                      ~^                                            ~~~~~~~~~
+      |                                       |                                            |
+      |                                       int                                          uint32_t {aka unsigned int}
+      |                                      %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:53: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                                    ~^                                         ~~~~~~~~
+      |                                                     |                                         |
+      |                                                     int                                       uint32_t {aka unsigned int}
+      |                                                    %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:53:66: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   53 |   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+      |                                                                 ~^                                      ~~~~~~~
+      |                                                                  |                                      |
+      |                                                                  int                                    uint32_t {aka unsigned int}
+      |                                                                 %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                       ~^                                              ~~~~~~~~~~
+      |                        |                                              |
+      |                        int                                            uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:41: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                                        ~^                                         ~~~~~~~~~~~
+      |                                         |                                         |
+      |                                         int                                       uint32_t {aka unsigned int}
+      |                                        %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:54:65: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   54 |   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
+      |                                                                ~^                              ~~~~~~~~~~~~~~~~~~
+      |                                                                 |                              |
+      |                                                                 int                            uint32_t {aka unsigned int}
+      |                                                                %d
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling_register.cc:16:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:24: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                       ~^                                                                                                                                          ~~~~~~~~~~
+      |                        |                                                                                                                                          |
+      |                        int                                                                                                                                        uint32_t {aka unsigned int}
+      |                       %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:38: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                     ~^                                                                                                                                        ~~~~~~~~
+      |                                      |                                                                                                                                        |
+      |                                      int                                                                                                                                      uint32_t {aka unsigned int}
+      |                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:54: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                     ~^                                                                                                                                  ~~~~~~~~~~
+      |                                                      |                                                                                                                                  |
+      |                                                      int                                                                                                                                uint32_t {aka unsigned int}
+      |                                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:70: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                     ~^                                                                                                                              ~~~~~~~~~~
+      |                                                                      |                                                                                                                              |
+      |                                                                      int                                                                                                                            uint32_t {aka unsigned int}
+      |                                                                     %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:85: warning: format ‘%d’ expects argument of type ‘int’, but argument 6 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                    ~^                                                                                                                           ~~~~~~~~~
+      |                                                                                     |                                                                                                                           |
+      |                                                                                     int                                                                                                                         uint32_t {aka unsigned int}
+      |                                                                                    %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:109: warning: format ‘%d’ expects argument of type ‘int’, but argument 7 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                            ~^                                                                                                              ~~~~~~~~~~~~~~~~~~
+      |                                                                                                             |                                                                                                              |
+      |                                                                                                             int                                                                                                            uint32_t {aka unsigned int}
+      |                                                                                                            %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:122: warning: format ‘%d’ expects argument of type ‘int’, but argument 8 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                         ~^                                                                                                                     ~~~~~~~
+      |                                                                                                                          |                                                                                                                     |
+      |                                                                                                                          int                                                                                                                   uint32_t {aka unsigned int}
+      |                                                                                                                         %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:139: warning: format ‘%d’ expects argument of type ‘int’, but argument 9 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                                          ~^                                                                                                             ~~~~~~~~~~~
+      |                                                                                                                                           |                                                                                                             |
+      |                                                                                                                                           int                                                                                                           uint32_t {aka unsigned int}
+      |                                                                                                                                          %d
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:55:157: warning: format ‘%d’ expects argument of type ‘int’, but argument 10 has type ‘uint32_t’ {aka ‘unsigned int’} [-Wformat=]
+   55 |   printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+      |                                                                                                                                                            ~^                                                                                                        ~~~~~~~~~~~~
+      |                                                                                                                                                             |                                                                                                        |
+      |                                                                                                                                                             int                                                                                                      uint32_t {aka unsigned int}
+      |                                                                                                                                                            %d
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling_register.cc:16:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:20:12: warning: variable ‘aicNum_’ set but not used [-Wunused-but-set-variable]
+   20 |   uint32_t aicNum_ = 0;
+      |            ^~~~~~~
+In file included from /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling_register.cc:16:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: In function ‘ge::graphStatus ge::InferShape(gert::InferShapeContext*)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:94:60: warning: unused parameter ‘context’ [-Wunused-parameter]
+   94 | static ge::graphStatus InferShape(gert::InferShapeContext* context)
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling.cc: In member function ‘bool optiling::IFATiling::GetBmm1Tiling(const matmul_tiling::DataType&, const matmul_tiling::DataType&, uint32_t)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling.cc:1634:62: warning: unused parameter ‘qType’ [-Wunused-parameter]
+ 1634 | bool IFATiling::GetBmm1Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling.cc: In member function ‘bool optiling::IFATiling::GetBmm2Tiling(const matmul_tiling::DataType&, const matmul_tiling::DataType&, uint32_t)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/incre_flash_attention_tiling.cc:1688:62: warning: unused parameter ‘qType’ [-Wunused-parameter]
+ 1688 | bool IFATiling::GetBmm2Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: At global scope:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:94:24: warning: ‘ge::graphStatus ge::InferShape(gert::InferShapeContext*)’ defined but not used [-Wunused-function]
+   94 | static ge::graphStatus InferShape(gert::InferShapeContext* context)
+      |                        ^~~~~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:12:24: warning: ‘ge::graphStatus optiling::TilingComputeCent(gert::TilingContext*)’ defined but not used [-Wunused-function]
+   12 | static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
+      |                        ^~~~~~~~~~~~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp: At global scope:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/compute_cent/ophost/compute_cent_tiling.cpp:94:24: warning: ‘ge::graphStatus ge::InferShape(gert::InferShapeContext*)’ defined but not used [-Wunused-function]
+   94 | static ge::graphStatus InferShape(gert::InferShapeContext* context)
+      |                        ^~~~~~~~~~
+[ 47%] Linking CXX shared library libop_host_aclnnInner.so
+[ 47%] Built target op_host_aclnnInner
+[ 49%] Built target opbuild_gen_inner
+[ 56%] Generating autogen/aic-ascend910b-ops-info.json
+[ 56%] Building CXX object CMakeFiles/opsproto.dir/autogen/inner/compute_cent_proto.cpp.o
+[ 56%] Building CXX object CMakeFiles/ops_aclnn.dir/autogen/inner/aclnnInner_compute_cent.cpp.o
+[ 58%] Building CXX object CMakeFiles/opsproto.dir/autogen/inner/incre_flash_attention_proto.cpp.o
+[ 58%] Building CXX object CMakeFiles/ops_aclnn.dir/autogen/inner/aclnnInner_incre_flash_attention.cpp.o
+
+
+==============check valid for ops info start==============
+==============check valid for ops info end================
+
+
+Compile op info cfg successfully.
+INFO: /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/build/autogen/aic-ascend910b-ops-info.ini does not exists in this project, skip generating compile commands.
+[ 58%] Built target generate_ops_info_ascend910b
+[ 58%] Built target generate_adapt_py
+[ 58%] Built target generate_ops_info
+INFO: /root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/build/autogen/exc/aic-ascend910b-ops-info.ini does not exists in this project, skip generating compile commands.
+[ 58%] Built target generate_compile_cmd_ascend910b
+[ 58%] Built target generate_compile_cmd
+[ 58%] Built target prepare_build
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/build/autogen/inner/aclnnInner_compute_cent.cpp:196:1: warning: macro "ACLNN_ERR_PARAM_INVALID" is not used [-Wunused-macros]
+  196 | }
+      | ^
+[ 60%] Linking CXX static library libops_aclnn.a
+[ 62%] Built target ops_aclnn
+[ 66%] Building CXX object CMakeFiles/opapi.dir/src/transformer/compute_cent/ophost/aclnn_compute_cent.cpp.o
+[ 71%] Building CXX object CMakeFiles/opapi.dir/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v4.cpp.o
+[ 71%] Building CXX object CMakeFiles/opapi.dir/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v3.cpp.o
+[ 71%] Building CXX object CMakeFiles/opapi.dir/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v2.cpp.o
+[ 73%] Building CXX object CMakeFiles/opapi.dir/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v5.cpp.o
+[ 73%] Building CXX object CMakeFiles/opapi.dir/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention.cpp.o
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention.cpp: In function ‘aclnnStatus aclnnIncreFlashAttentionGetWorkspaceSize(const aclTensor*, const aclTensorList*, const aclTensorList*, const aclTensor*, const aclTensor*, const aclIntArray*, int64_t, double, char*, int64_t, const aclTensor*, uint64_t*, aclOpExecutor**)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention.cpp:32:99: warning: unused parameter ‘pseShift’ [-Wunused-parameter]
+   32 |                                                      const aclTensorList *value, const aclTensor *pseShift,
+      |                                                                                  ~~~~~~~~~~~~~~~~~^~~~~~~~
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v2.cpp: In function ‘aclnnStatus aclnnIncreFlashAttentionV2GetWorkspaceSize(const aclTensor*, const aclTensorList*, const aclTensorList*, const aclTensor*, const aclTensor*, const aclIntArray*, const aclTensor*, const aclTensor*, const aclTensor*, const aclTensor*, const aclTensor*, int64_t, double, char*, int64_t, const aclTensor*, uint64_t*, aclOpExecutor**)’:
+/root/workspace/operators/main/AscendIvfAttention/cann-ops-adv-v2/src/transformer/incre_flash_attention/ophost/aclnn_incre_flash_attention_v2.cpp:32:100: warning: unused parameter ‘pseShift’ [-Wunused-parameter]
+   32 |     const aclTensor *query, const aclTensorList *key, const aclTensorList *value, const aclTensor *pseShift,
+      |                                                                                   ~~~~~~~~~~~~~~~~~^~~~~~~~
+[ 75%] Linking CXX shared library libcust_opapi.so
+[ 75%] Built target opapi
+[ 77%] Linking CXX shared library libcust_opsproto_rt2.0.so
+[ 77%] Built target opsproto
+[ 79%] Linking CXX shared library libcust_opmaster_rt2.0.so
+[ 79%] Built target optiling
+[ 90%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_5.done
+[ 90%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_2.done
+[ 90%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_4.done
+[ 90%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_6.done
+[ 92%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_7.done
+[ 92%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_1.done
+[ 96%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_3.done
+[ 96%] Generating binary/ascend910b/gen/incre_flash_attention_ascend910b_0.done
+[ 98%] Generating binary/ascend910b/gen/compute_cent_ascend910b_0.done
+[ 98%] Generating compat/liboptiling.so
+[ascend910b] Generating ComputeCent_5eed9e9087bec6c5837657b9bd8ba678 ...
+[ascend910b] Generating IncreFlashAttention_17f5813b757927a09b194884412e0598 ...
+[ascend910b] Generating IncreFlashAttention_610a4c32d1f5dade5701e1286fe16d4b ...
+[ascend910b] Generating IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2 ...
+[ascend910b] Generating IncreFlashAttention_699fe73c1f927184a4cb6d419c0f9da3 ...
+[ascend910b] Generating IncreFlashAttention_d32458a801cd73fff30cd8ff51bbaf79 ...
+[ascend910b] Generating IncreFlashAttention_0450c0cb39ab664039154e9f2fdcdda2 ...
+[ascend910b] Generating IncreFlashAttention_78180bf94d9e40252895fc3c1ca477b3 ...
+[ascend910b] Generating IncreFlashAttention_5e3b3dfc17bcd2d87fbf8055f23897c6 ...
+[ 98%] Built target optiling_compat
+Opc tool start working now, please wait for a moment.
+[ascend910b] Generating ComputeCent_5eed9e9087bec6c5837657b9bd8ba678 Done
+make
+[ 98%] Built target compute_cent_ascend910b_0
+[ 98%] Built target compute_cent_ascend910b
+[ 98%] Built target compute_cent
+Opc tool start working now, please wait for a moment.
+[ascend910b] Generating IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2 Done
+make
+[ 98%] Built target incre_flash_attention_ascend910b_0
+Opc tool start working now, please wait for a moment.
+[ascend910b] Generating IncreFlashAttention_17f5813b757927a09b194884412e0598 Done
+make
+[ 98%] Built target incre_flash_attention_ascend910b_1

@@ -1,0 +1,98 @@
+{
+    "status": "completed",
+    "version": "1.0",
+    "server_count": "2",
+    "server_list":
+    [
+        {
+            "server_id": "xxx.xxx.xxx.xxx",
+            "device":[
+                {
+                    "device_id": "0",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "0"
+                },
+                {
+                    "device_id": "1",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "1"
+                },
+                {
+                    "device_id": "2",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "2"
+                },
+                {
+                    "device_id": "3",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "3"
+                },
+                {
+                    "device_id": "4",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "4"
+                },
+                {
+                    "device_id": "5",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "5"
+                },
+                {
+                    "device_id": "6",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "6"
+                },
+                {
+                    "device_id": "7",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "7"
+                }
+            ]
+        },
+        {
+            "server_id": "xxx.xxx.xxx.xxx",
+            "device":[
+                {
+                    "device_id": "0",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "8"
+                },
+                {
+                    "device_id": "1",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "9"
+                },
+                {
+                    "device_id": "2",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "10"
+                },
+                {
+                    "device_id": "3",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "11"
+                },
+                {
+                    "device_id": "4",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "12"
+                },
+                {
+                    "device_id": "5",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "13"
+                },
+                {
+                    "device_id": "6",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "14"
+                },
+                {
+                    "device_id": "7",
+                    "device_ip": "xxx.xxx.xxx.xxx",
+                    "rank_id": "15"
+                }
+            ]
+        }
+    ]
+}

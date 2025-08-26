@@ -1,0 +1,55 @@
+approvers:
+- yangxu19921206
+
+reviewers:
+- li-xulong
+- Allan_Yu
+- mabing726
+- miao-fangzheng
+- chengsheng304064
+- miao-fangzheng
+- wang-fei6
+- shawn-hu
+- li-shengxian
+- xig514
+- hilihli
+- chen-vvjob
+- renkyk
+- yang-binrong
+- song-jionghui
+- huangwei791
+- shunqi
+- wangjun-qt
+- jiang-lirui
+- realmadrid1016
+- monologue815
+- zhangtj0209
+- GodantShen
+- Liexss
+- fzzach
+- crystalhu
+- yu-xinjie62
+- bonnie-boxi-liu
+
+files:
+  "blacklist.txt":
+    approvers:
+      - yangxu19921206
+      - li-shengxian
+      - crystalhu
+      - yu-xinjie62
+      - monologue815
+  "CMakeLists.txt":
+    approvers:
+      - yangxu19921206
+      - li-shengxian
+      - crystalhu
+      - yu-xinjie62
+      - monologue815
+  "LICENSE":
+    approvers:
+      - yangxu19921206
+      - li-shengxian
+      - crystalhu
+      - yu-xinjie62
+      - monologue815

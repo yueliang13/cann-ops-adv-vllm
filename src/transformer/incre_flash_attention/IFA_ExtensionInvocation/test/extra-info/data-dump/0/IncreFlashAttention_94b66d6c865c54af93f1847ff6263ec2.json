@@ -1,0 +1,433 @@
+{
+ "binFileName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2",
+ "binFileSuffix": ".o",
+ "blockDim": -1,
+ "coreType": "MIX",
+ "intercoreSync": 1,
+ "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2",
+ "magic": "RT_DEV_BINARY_MAGIC_ELF",
+ "memoryStamping": [],
+ "opParaSize": 1744,
+ "parameters": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "sha256": "dffbb9184c89dd8fb92468804385a093e1385e99920236f5a088ee3af4429db8",
+ "workspace": {
+  "num": 1,
+  "size": [
+   -1
+  ],
+  "type": [
+   0
+  ]
+ },
+ "kernelList": [
+  {
+   "tilingKey": 11000000000000000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_11000000000000000"
+  },
+  {
+   "tilingKey": 11000000000100000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_11000000000100000"
+  },
+  {
+   "tilingKey": 11000000000000001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_11000000000000001"
+  },
+  {
+   "tilingKey": 11000000000100001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_11000000000100001"
+  },
+  {
+   "tilingKey": 10000000000000000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000000000"
+  },
+  {
+   "tilingKey": 12000000000000000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_12000000000000000"
+  },
+  {
+   "tilingKey": 10000000000200000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000200000"
+  },
+  {
+   "tilingKey": 12000000000200000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_12000000000200000"
+  },
+  {
+   "tilingKey": 10000000000100000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000100000"
+  },
+  {
+   "tilingKey": 10000000000300000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000300000"
+  },
+  {
+   "tilingKey": 10000000000000001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000000001"
+  },
+  {
+   "tilingKey": 12000000000000001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_12000000000000001"
+  },
+  {
+   "tilingKey": 10000000000200001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000200001"
+  },
+  {
+   "tilingKey": 12000000000200001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_12000000000200001"
+  },
+  {
+   "tilingKey": 10000000000100001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000100001"
+  },
+  {
+   "tilingKey": 10000000000300001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_10000000000300001"
+  },
+  {
+   "tilingKey": 20000000000000000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_20000000000000000"
+  },
+  {
+   "tilingKey": 20000000000100000,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_20000000000100000"
+  },
+  {
+   "tilingKey": 20000000000000001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_20000000000000001"
+  },
+  {
+   "tilingKey": 20000000000100001,
+   "kernelType": "MIX_AIC",
+   "crossCoreSync": 1,
+   "taskRation": "1:2",
+   "kernelName": "IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2_20000000000100001"
+  }
+ ],
+ "taskRation": "tilingKey",
+ "optionalInputMode": "gen_placeholder",
+ "optionalOutputMode": "gen_placeholder",
+ "compileInfo": {},
+ "dynamicParamMode": "folded_with_desc",
+ "supportInfo": {
+  "implMode": "high_performance",
+  "int64Mode": false,
+  "simplifiedKeyMode": 0,
+  "simplifiedKey": [
+   "IncreFlashAttention/d=0,p=1/1,2/1,2/1,2/1,2",
+   "IncreFlashAttention/d=0,p=0/1,2/1,2/1,2/1,2",
+   "IncreFlashAttention/d=1,p=1/1,2/1,2/1,2/1,2",
+   "IncreFlashAttention/d=1,p=0/1,2/1,2/1,2/1,2"
+  ],
+  "dynamicParamMode": "folded_with_desc",
+  "optionalInputMode": "gen_placeholder",
+  "optionalOutputMode": "gen_placeholder",
+  "staticKey": "437d021b4c3ecda06c84b0c8ee5e5af985ee24ba231951ba46933d0306799f9c,248a0d80ffae2b5cc0daf4c7fdefa86bd3381c6686d1cf28468d7ee780cd6d0f",
+  "inputs": [
+   {
+    "name": "query",
+    "index": 0,
+    "dtype": "float16",
+    "format": "ND",
+    "paramType": "required",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   [
+    {
+     "name": "key",
+     "index": 1,
+     "dtype": "float16",
+     "format": "ND",
+     "paramType": "dynamic",
+     "shape": [
+      -2
+     ],
+     "format_match_mode": "FormatAgnostic"
+    }
+   ],
+   [
+    {
+     "name": "value",
+     "index": 2,
+     "dtype": "float16",
+     "format": "ND",
+     "paramType": "dynamic",
+     "shape": [
+      -2
+     ],
+     "format_match_mode": "FormatAgnostic"
+    }
+   ],
+   {
+    "name": "pse_shift",
+    "index": 3,
+    "dtype": "float16",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "atten_mask",
+    "index": 4,
+    "dtype": "bool",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "actual_seq_lengths",
+    "index": 5,
+    "dtype": "int64",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "dequant_scale1",
+    "index": 6,
+    "dtype": "uint64",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "quant_scale1",
+    "index": 7,
+    "dtype": "float32",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "dequant_scale2",
+    "index": 8,
+    "dtype": "uint64",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "quant_scale2",
+    "index": 9,
+    "dtype": "float32",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "quant_offset2",
+    "index": 10,
+    "dtype": "float32",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "antiquant_scale",
+    "index": 11,
+    "dtype": "float16",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "antiquant_offset",
+    "index": 12,
+    "dtype": "float16",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "block_table",
+    "index": 13,
+    "dtype": "int32",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "kv_padding_size",
+    "index": 14,
+    "dtype": "int64",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   },
+   {
+    "name": "block_position",
+    "index": 15,
+    "dtype": "int32",
+    "format": "ND",
+    "paramType": "optional",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "attention_out",
+    "index": 0,
+    "dtype": "float16",
+    "format": "ND",
+    "paramType": "required",
+    "shape": [
+     -2
+    ],
+    "format_match_mode": "FormatAgnostic"
+   }
+  ],
+  "attrs": [
+   {
+    "name": "num_heads",
+    "dtype": "int",
+    "value": 0
+   },
+   {
+    "name": "scale_value",
+    "dtype": "float",
+    "value": 0.0
+   },
+   {
+    "name": "input_layout",
+    "dtype": "str",
+    "value": ""
+   },
+   {
+    "name": "num_key_value_heads",
+    "dtype": "int",
+    "value": 0
+   },
+   {
+    "name": "block_size",
+    "dtype": "int",
+    "value": 0
+   },
+   {
+    "name": "inner_precise",
+    "dtype": "int",
+    "value": 0
+   }
+  ],
+  "opMode": "dynamic",
+  "deterministic": "ignore"
+ },
+ "filePath": "ascend910b/bin/incre_flash_attention/IncreFlashAttention_94b66d6c865c54af93f1847ff6263ec2.json"
+}
