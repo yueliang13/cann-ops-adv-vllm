@@ -5,20 +5,14 @@ namespace optiling {
 BEGIN_TILING_DATA_DEF(SelectPositionTilingData)
     TILING_DATA_FIELD_DEF(int64_t, bSize);  // Batch size
     TILING_DATA_FIELD_DEF(int64_t, n1Size); // Number of qheads
-    TILING_DATA_FIELD_DEF(int64_t, n2Size); // Number of kvheads
-    TILING_DATA_FIELD_DEF(int64_t, gSize);  // Number of groups
-    TILING_DATA_FIELD_DEF(int64_t, s1Size);  // Size of the  sequence dimension of query
-    TILING_DATA_FIELD_DEF(int64_t, dSize);  // Dimension size of query and KV
-    TILING_DATA_FIELD_DEF(int64_t, cSize);  // Size of the cluster dimension
-    TILING_DATA_FIELD_DEF(int64_t, blockSize);  
-    TILING_DATA_FIELD_DEF(int64_t, usedCoreNum);  
-    //TopK:
+    TILING_DATA_FIELD_DEF(int64_t, seqLen);  // Size of the sequence dimension of key_ids
+    TILING_DATA_FIELD_DEF(int64_t, splitSeqLen);  // Size of the split sequence dimension of key_ids
+    TILING_DATA_FIELD_DEF(int64_t, splitSeqNum);  // Number of the split sequence dimension of key_ids
+    TILING_DATA_FIELD_DEF(int64_t, splitSeqRemainLen);  // Number of the split sequence dimension of key_ids
+    TILING_DATA_FIELD_DEF(int64_t, maxTokenNum);  // Size of the sequence dimension of token_position
     TILING_DATA_FIELD_DEF(int32_t, k);
-    TILING_DATA_FIELD_DEF(uint32_t, tmpsize);
-    TILING_DATA_FIELD_DEF(int32_t, outter);
-    TILING_DATA_FIELD_DEF(int32_t, inner);
-    TILING_DATA_FIELD_DEF(int32_t, n);
-    TILING_DATA_FIELD_DEF_STRUCT(TopkTiling, topkTilingData);
+    TILING_DATA_FIELD_DEF(int32_t, blockSize);
+    TILING_DATA_FIELD_DEF(int32_t, usedCoreNum);
 END_TILING_DATA_DEF;
 
 REGISTER_TILING_DATA_CLASS(SelectPosition, SelectPositionTilingData)

@@ -9,32 +9,22 @@ class SelectPosition : public OpDef {
     public:
         explicit SelectPosition(const char* name) : OpDef(name)
         {
-            this->Input("query")
+            this->Input("key_ids")
                 .ParamType(REQUIRED)
-                .DataType({ge::DT_FLOAT16})
+                .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
                 .UnknownShapeFormat({ge::FORMAT_ND});
-            this->Input("l1_cent")
+            this->Input("indices")
                 .ParamType(REQUIRED)
-                .DataType({ge::DT_FLOAT16})
+                .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
-            this->Output("d_l1_cent")
+                .UnknownShapeFormat({ge::FORMAT_ND}); 
+            this->Output("token_position")
                 .ParamType(REQUIRED)
-                .DataType({ge::DT_FLOAT})
-                .Format({ge::FORMAT_ND})  
-                .UnknownShapeFormat({ge::FORMAT_ND});
-            this->Input("mask_empty")
-                .ParamType(REQUIRED)
-                .DataType({ge::DT_FLOAT})
+                .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
-            this->Output("select_nprobe")
-                .ParamType(REQUIRED)
-                .DataType({ge::DT_FLOAT})
-                .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
-            this->Output("indices")
+                .UnknownShapeFormat({ge::FORMAT_ND});    
+            this->Output("token_position_length")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})

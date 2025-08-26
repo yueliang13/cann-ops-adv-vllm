@@ -17,17 +17,17 @@ extern "C" {
 #endif
 
 extern aclnnStatus aclnnInnerSelectPositionGetWorkspaceSize(
-    const aclTensor *query, const aclTensor *l1_cent, const aclTensor *d_l1_cent, const aclTensor *mask_empty,
-    const aclTensor *select_nprobe, const aclTensor *indices, const aclTensor *workspace, const aclTensor *tiling,
+    const aclTensor *key_ids, const aclTensor *indices, const aclTensor *token_position, const aclTensor *token_position_length,
+    const aclTensor *workspace, const aclTensor *tiling,
     uint64_t *workspaceSize, aclOpExecutor **executor);
 
 extern aclnnStatus aclnnInnerSelectPosition(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
                                                  const aclrtStream stream);
 
-aclnnStatus aclnnSelectPositionGetWorkspaceSize(const aclTensor *query, const aclTensor *l1_cent, const aclTensor *d_l1_cent, const aclTensor *mask_empty, const aclTensor *select_nprobe, const aclTensor *indices, const aclTensor *workspace, const aclTensor *tiling, uint64_t *workspaceSize, aclOpExecutor **executor)
+aclnnStatus aclnnSelectPositionGetWorkspaceSize(const aclTensor *key_ids, const aclTensor *indices, const aclTensor *token_position, const aclTensor *token_position_length, const aclTensor *workspace, const aclTensor *tiling, uint64_t *workspaceSize, aclOpExecutor **executor)
 {
     aclnnStatus ret = aclnnInnerSelectPositionGetWorkspaceSize(
-        query, l1_cent, d_l1_cent, mask_empty, select_nprobe, indices, workspace, tiling,
+        key_ids, indices, token_position, token_position_length, workspace, tiling,
         workspaceSize, executor);
 
     return ret;

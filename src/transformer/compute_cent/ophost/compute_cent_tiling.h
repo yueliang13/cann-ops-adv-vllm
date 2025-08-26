@@ -10,7 +10,6 @@ BEGIN_TILING_DATA_DEF(ComputeCentTilingData)
     TILING_DATA_FIELD_DEF(int64_t, s1Size);  // Size of the  sequence dimension of query
     TILING_DATA_FIELD_DEF(int64_t, dSize);  // Dimension size of query and KV
     TILING_DATA_FIELD_DEF(int64_t, cSize);  // Size of the cluster dimension
-    TILING_DATA_FIELD_DEF(int64_t, seqLen);  // Size of the sequence dimension of key_ids
     TILING_DATA_FIELD_DEF(int64_t, blockSize);  
     TILING_DATA_FIELD_DEF(int64_t, usedCoreNum);  
     //TopK:

@@ -17,7 +17,7 @@ constexpr uint32_t BUFFER_NUM = 1;
 template <typename aType, typename cType> class ComputeCentKernel {
 public:
     __aicore__ inline ComputeCentKernel(){};
-    __aicore__ inline void Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR key_ids, GM_ADDR d_l1_cent, GM_ADDR mask_empty, GM_ADDR select_nprobe, GM_ADDR indices, GM_ADDR workspace, const ComputeCentTilingData *__restrict tiling, AscendC::TPipe *pipe);
+    __aicore__ inline void Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR indices, GM_ADDR workspace, const ComputeCentTilingData *__restrict tiling, AscendC::TPipe *pipe);
     template <bool isInitIndex = false, bool isHasfinish = false, bool isReuseSrc = false, enum TopKMode topkMode = AscendC::TopKMode::TOPK_NORMAL> __aicore__ inline void Process();
 
     template <typename T> __aicore__ inline void CopyIn(LocalTensor<T> &dstLocal, GlobalTensor<T> srcGm, uint64_t offset,uint32_t blkCnt, uint32_t CntAlign, uint32_t actualCnt);
@@ -28,11 +28,7 @@ public:
         
     AscendC::GlobalTensor<aType> queryGm;
     AscendC::GlobalTensor<aType> l1CentGm;
-    AscendC::GlobalTensor<cType> dl1CentGm;
-    AscendC::GlobalTensor<cType> maskEmptyGm;
-    AscendC::GlobalTensor<cType> selectNprobeGm;
     AscendC::GlobalTensor<int32_t> indicesGm;
-    AscendC::GlobalTensor<int32_t> tokenPositionGm;
 private:
     int32_t bIdx = 0; // batch index for the current core.
     int32_t n2Idx = 0; // kvhead index for the current core.
@@ -46,32 +42,26 @@ private:
     uint32_t kvHeadNum = 0; // Number of kvheads.
     uint32_t clusterNum = 0; // Number of clusters.
     uint32_t nNumOfQInOneGroup = 0; // Number of queries in one group.
-    uint32_t seqLen = 0; // Size of the sequence dimension of key_ids.
     uint32_t k = 0;
     uint32_t tmpsize = 0;
 
     // queue
     TQue<QuePosition::VECIN, 1> inQuery;   // 1K, inque
     TQue<QuePosition::VECIN, 1> inL1cent;   // 32K, inque
-    TQue<QuePosition::VECIN, 1> inMaskEmpty;  
+    // TQue<QuePosition::VECIN, 1> inMaskEmpty;  
 
     TBuf<> tmpBuff1;    // 32K
-    TBuf<> tmpBuffSelect;   // 1K
-    TBuf<> tmpBuffSelect2;   // 1K
     TBuf<> queryBuff;   // 1K
     TBuf<> bmm1ResBuff;     // 32K
 
     // topk
     // AscendC::TQue<AscendC::QuePosition::VECCALC, 1> inQueueDl1Cent;
-    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outQueueValue;
     AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outQueueIndices;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> topKDstValue;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> topKSrcIndexLocal;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> topKWrokLocal;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> topKFinishLocal;
 
-    // select key_ids
-    AscendC::TBuf<AscendC::QuePosition::VECCALC> selectKeyIdsIndexLocal;
-    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outQueueTokenPosition;
 
     TopkTiling topkTilingData;
     TopKInfo topKInfo;
@@ -102,7 +92,7 @@ private:
   * @retval None
   */
 template <typename aType, typename cType>
-__aicore__ inline void ComputeCentKernel<aType, cType>::Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR key_ids, GM_ADDR d_l1_cent, GM_ADDR mask_empty, GM_ADDR select_nprobe, GM_ADDR indices, GM_ADDR token_position, GM_ADDR    workspace, const ComputeCentTilingData *__restrict tiling, AscendC::TPipe *pipe)
+__aicore__ inline void ComputeCentKernel<aType, cType>::Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR indices, GM_ADDR workspace, const ComputeCentTilingData *__restrict tiling, AscendC::TPipe *pipe)
 {
     // ComputeConstexpr
     blockSize = tiling->blockSize; // Calculate the loop times of bn1Idx.
@@ -114,7 +104,6 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Init(GM_ADDR query, GM_A
     dimNum = tiling->dSize;
     clusterNum = tiling->cSize;
     nNumOfQInOneGroup = tiling->gSize;
-    seqLen = tiling->seqLen;
     k = tiling->k;
     tmpsize = tiling->tmpsize;
     topkTilingData = tiling->topkTilingData;
@@ -122,22 +111,12 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Init(GM_ADDR query, GM_A
     //InitInput
     queryGm.SetGlobalBuffer(reinterpret_cast<__gm__ aType *>(query), batchSize * qHeadNum * dimNum);
     l1CentGm.SetGlobalBuffer(reinterpret_cast<__gm__ aType *>(l1_cent), kvHeadNum * clusterNum * dimNum);
-    keyIdsGm.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(key_ids), batchSize * kvHeadNum * seqLen);
-    dl1CentGm.SetGlobalBuffer(reinterpret_cast<__gm__ cType *>(d_l1_cent), batchSize * qHeadNum * clusterNum);
-    maskEmptyGm.SetGlobalBuffer(reinterpret_cast<__gm__ cType *>(mask_empty), batchSize * qHeadNum * clusterNum);
-    selectNprobeGm.SetGlobalBuffer(reinterpret_cast<__gm__ cType *>(select_nprobe), batchSize * qHeadNum * k);
     indicesGm.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(indices), batchSize * qHeadNum * k);
-    tokenPositionGm.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(token_position), batchSize * qHeadNum * 8196);
     // InitBuffer
     pipe->InitBuffer(inQuery, 1, dimNum * sizeof(aType));
     pipe->InitBuffer(inL1cent, 1, clusterNum*dimNum * sizeof(aType));
-    pipe->InitBuffer(inKeyIds, 1, seqLen * sizeof(int32_t));
-    pipe->InitBuffer(inMaskEmpty, 1, clusterNum * sizeof(cType));
+    // pipe->InitBuffer(inMaskEmpty, 1, clusterNum * sizeof(cType));
 
-    // tmpBuffSelect
-    pipe->InitBuffer(tmpBuffSelect, 1, seqLen * sizeof(int32_t));
-    pipe->InitBuffer(tmpBuffSelect2, 1, seqLen * sizeof(int32_t));
-    pipe->InitBuffer(selectKeyIdsIndexLocal, seqLen * sizeof(int32_t));
 
     // 128-160K
     // tmpBuff
@@ -147,12 +126,11 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Init(GM_ADDR query, GM_A
 
     // Init
     // pipe->InitBuffer(inQueueDl1Cent, BUFFER_NUM, clusterNum * sizeof(cType));
-    pipe->InitBuffer(outQueueValue, BUFFER_NUM, k * sizeof(cType));
+    pipe->InitBuffer(topKDstValue, k * sizeof(cType));
     pipe->InitBuffer(outQueueIndices, BUFFER_NUM, k * sizeof(int32_t));
     pipe->InitBuffer(topKSrcIndexLocal, clusterNum * sizeof(int32_t));
     pipe->InitBuffer(topKWrokLocal, tmpsize * sizeof(uint8_t));
     pipe->InitBuffer(topKFinishLocal, tmpsize * sizeof(bool));
-    pipe->InitBuffer(outQueueTokenPosition, BUFFER_NUM, 8196 * sizeof(int32_t));
 }
 
 /**
@@ -201,9 +179,6 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
             pipe_barrier(PIPE_ALL);
             // DumpTensor(mmResUb, 4, 128);
 
-            int outOffset = bIdx * qHeadNum * clusterNum + n1Idx  * clusterNum;
-            DataCopy(dl1CentGm[outOffset], mmResUb, clusterNum);
-
             // // mask
             // LocalTensor<cType> maskLocal = inMaskEmpty.template AllocTensor<cType>();
             // CopyIn<cType>(maskLocal, maskEmptyGm, outOffset, 1, clusterNum, clusterNum);
@@ -219,10 +194,9 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
             // repeatParams.src1RepStride = 8;
             // Mul(mmResUb, mmResUb, maskLocal, 64, repeat_times, repeatParams);
             // pipe_barrier(PIPE_ALL);
-            // DataCopy(dl1CentGm[outOffset], mmResUb, clusterNum);
 
             // topk
-            AscendC::LocalTensor<cType> dstValueLocal = outQueueValue.AllocTensor<cType>();
+            AscendC::LocalTensor<cType> dstValueLocal = topKDstValue.Get<cType>();
             AscendC::LocalTensor<int32_t> dstIndexLocal = outQueueIndices.AllocTensor<int32_t>();
             AscendC::LocalTensor<int32_t> srcLocalIndex = topKSrcIndexLocal.Get<int32_t>();
             // uint32_t repeatTimes = clusterNum / 64;
@@ -248,44 +222,8 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
               topKInfo, 
               true
             );
-            // DumpTensor(dstValueLocal, 4, 64);
-            // DumpTensor(dstIndexLocal, 5, 64);
             
-            outQueueValue.EnQue(dstValueLocal);
             outQueueIndices.EnQue(dstIndexLocal);
-            
-            // copy in key_ids
-            LocalTensor<int32_t> inputKeyIds = inKeyIds.template AllocTensor<int32_t>();
-            uint64_t keyIdsOffset = bIdx * kvHeadNum * seqLen + n2Idx * seqLen;
-            DataCopy(inputKeyIds, keyIdsGm[keyIdsOffset], seqLen);
-            inKeyIds.template EnQue(inputKeyIds);
-            inKeyIds.DeQue<int32_t>();
-            // 拿到mask掩码和keyids的索引
-            LocalTensor<int32_t> dstResultMaskLocal = tmpBuffSelect.Get<int32_t>();
-            LocalTensor<int32_t> dstMaskLocal2 = tmpBuffSelect2.Get<int32_t>();
-            AscendC::CompareScalar(dstResultMaskLocal, inputKeyIds, dstIndexLocal[0], CMPMODE::EQ, seqLen);
-            for (uint32_t i = 1; i < k; i++) {
-                AscendC::CompareScalar(dstMaskLocal2, inputKeyIds, dstIndexLocal[i], CMPMODE::EQ, seqLen);
-                AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocal2, seqLen);
-            }
-            LocalTensor<int32_t> keyIdsIndex = selectKeyIdsIndexLocal.Get<int32_t>();
-            AscendC::CreateVecIndex(keyIdsIndex, (int32_t)0, seqLen);
-            // 收集keyids的索引
-            AscendC::LocalTensor<int32_t> tokenPositionLocal = outQueueTokenPosition.AllocTensor<int32_t>();
-            AscendC::Duplicate(tokenPositionLocal, 0x7fffffff, 8196);
-            // uint32_t mask = seqLen;   //该参数表示处理的src0Local(keyIdsIndex)的元素的数量
-            // uint64_t rsvdCnt = 0;  //该参数表示收集之后的dstLocal的元素数量
-            // reduceMode = true; counter模式
-            // src0BlockStride = 1; 单次迭代内数据间隔1个datablock，即数据连续读取和写入
-            // repeatTimes = 1; 该参数表示只迭代一次
-            // src0RepeatStride = 8;源操作数迭代间数据间隔8个datablock
-            // src1RepeatStride = 8;源操作数迭代间数据间隔8个datablock
-            // AscendC::GatherMask (dstLocal, src0Local, src1Local, true, mask, { 1, 1, 8, 8 }, rsvdCnt);
-            AscendC::GatherMask(tokenPositionLocal, keyIdsIndex, dstResultMaskLocal, true, seqLen, {1, 1, 8, 8}, rsvdCnt);
-            outQueueTokenPosition.EnQue(tokenPositionLocal);
-            outQueueTokenPosition.DeQue<int32_t>();
-            int tokenPositionOffset = bIdx * qHeadNum * 8196 + n1Idx  * 8196;
-            DataCopy(tokenPositionGm[tokenPositionOffset], tokenPositionLocal, 8196);
 
             // AscendC::CompareScalar(dstLocal, inputKeyIds, dstIndexLocal[0], CMPMODE::EQ, calCount);
             //     for (uint32_t i = 1; i < k; i++) {
@@ -306,10 +244,6 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
 template <typename aType, typename cType>
 __aicore__ inline void ComputeCentKernel<aType, cType>::CopyOut() {
     int outOffset = bIdx * qHeadNum * k + n1Idx  * k;
-    AscendC::LocalTensor<cType> dstValueLocal = outQueueValue.DeQue<cType>();
-    AscendC::DataCopy(selectNprobeGm[outOffset], dstValueLocal, k);
-    outQueueValue.FreeTensor(dstValueLocal);
-
     AscendC::LocalTensor<int32_t> indicesLocalTensor = outQueueIndices.DeQue<int32_t>();
     AscendC::DataCopy(indicesGm[outOffset], indicesLocalTensor, k);
     outQueueIndices.FreeTensor(indicesLocalTensor);
@@ -405,13 +339,13 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::VectorCompute(LocalTenso
     }
 }
 
-extern "C" __global__ __aicore__ void compute_cent(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR key_ids, GM_ADDR d_l1_cent, GM_ADDR mask_empty, GM_ADDR select_nprobe, GM_ADDR indices, GM_ADDR token_position, GM_ADDR workspace, GM_ADDR tiling) {
+extern "C" __global__ __aicore__ void compute_cent(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR indices, GM_ADDR workspace, GM_ADDR tiling) {
     // GET_TILING_DATA(tiling_data, tiling);
     GET_TILING_DATA_WITH_STRUCT(ComputeCentTilingData, tilingDataIn, tiling);
     const ComputeCentTilingData *__restrict tilingData = &tilingDataIn;
     AscendC::TPipe pipe;
     ComputeCentKernel<half, float> op;
-    op.Init(query, l1_cent, key_ids, d_l1_cent, mask_empty, select_nprobe, indices, token_position, workspace, tilingData, &pipe);
+    op.Init(query, l1_cent, indices, workspace, tilingData, &pipe);
     // op.Process<false, false, false, AscendC::TopKMode::TOPK_NORMAL>();
     op.Process();
     // TODO: user kernel impl

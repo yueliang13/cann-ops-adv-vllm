@@ -74,8 +74,14 @@ def incre_flash_attention_v5(query: torch.Tensor,
         blockposition,num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise
     )
 
-def compute_cent(query: torch.Tensor, l1_cent: torch.Tensor, d_l1_cent: torch.Tensor, mask_empty: torch.Tensor, select_nprobe: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
+def compute_cent(query: torch.Tensor, l1_cent: torch.Tensor) -> torch.Tensor:
     """
     封装 compute_cent 算子的 Python 接口
     """
-    return custom_ops_lib.compute_cent(query, l1_cent, d_l1_cent, mask_empty, select_nprobe, indices)
+    return custom_ops_lib.compute_cent(query, l1_cent)
+
+def select_position(key_ids: torch.Tensor, indices: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    封装 select_position 算子的 Python 接口
+    """
+    return custom_ops_lib.select_position(key_ids, indices)

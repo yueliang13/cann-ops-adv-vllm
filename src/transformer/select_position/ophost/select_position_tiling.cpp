@@ -5,7 +5,7 @@
 using namespace ge;
 using namespace AscendC;
 
-using namespace matmul_tiling;
+#define SPLIT_SEQ_LEN 18432
 
 namespace optiling {
 // static ge::graphStatus TilingFunc(gert::TilingContext* context)
@@ -22,60 +22,49 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
 
   auto ascendcPlatform = platform_ascendc::PlatformAscendC(context->GetPlatformInfo());
   ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::UB, ubSize_);
-  printf("ubSize_: %d\n", ubSize_);
   ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::L1, l1Size_);
   ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::L0_C, l0cSize_);
   ascendcPlatform.GetCoreMemSize(platform_ascendc::CoreMemType::L0_B, l0bSize_);
   aicNum_ = ascendcPlatform.GetCoreNumAic();
   aivNum_ = ascendcPlatform.GetCoreNumAiv();
-
   coreNum_ = aivNum_; // default aiv num
 
-  //BSNGD
+  // key_ids BNS 
   uint32_t batchSize_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
   uint32_t qHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(1);
-  uint32_t seqSize_ = context->GetInputTensor(0)->GetStorageShape().GetDim(2);   //default seq size is 1
-  uint32_t dimNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(3);
-  //NCD
-  uint32_t kvHeadNum_ = context->GetInputTensor(1)->GetStorageShape().GetDim(0);
-  uint32_t clusterNum_ = context->GetInputTensor(1)->GetStorageShape().GetDim(1);
-  uint32_t nNumOfQInOneGroup_ = qHeadNum_ / kvHeadNum_;
+  uint32_t seqLen_ = context->GetInputTensor(0)->GetStorageShape().GetDim(2);
 
-  // BSNK select_nprobe, indices
-  int32_t k_ = context->GetInputTensor(4)->GetStorageShape().GetDim(3); // Default topK value
+  uint32_t splitSeqLen_ = SPLIT_SEQ_LEN > seqLen_ ? seqLen_ : SPLIT_SEQ_LEN;
+  uint32_t splitSeqRemainLen_ = seqLen_ % splitSeqLen_;
 
-  // uint32_t bn = batchSize_ * kvHeadNum_;
-  uint32_t bn = batchSize_ * qHeadNum_;
-  usedCoreNum_ = bn > coreNum_ ? coreNum_ : bn;
+  uint32_t splitSeqNum_ = (seqLen_ + splitSeqLen_ - 1) / splitSeqLen_;
+  printf("seqLen_: %d, splitSeqLen_: %d, splitSeqNum_: %d, splitSeqRemainLen_: %d\n", seqLen_, splitSeqLen_, splitSeqNum_, splitSeqRemainLen_);
 
-  // uint32_t blockSize_ = batchSize_ * kvHeadNum_ / (usedCoreNum_);
-  uint32_t blockSize_ = batchSize_ * qHeadNum_ / (usedCoreNum_);
-  printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
-  printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
-  printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
-  
+  // indices BNK
+  uint32_t k_ = context->GetInputTensor(1)->GetStorageShape().GetDim(2); // Default topK value
+  printf("indices shape: %d, %d, %d\n", context->GetInputTensor(1)->GetStorageShape().GetDim(0), context->GetInputTensor(1)->GetStorageShape().GetDim(1), context->GetInputTensor(1)->GetStorageShape().GetDim(2));
+
+  // token_position BNmax
+  uint32_t maxTokenNum_ = context->GetInputTensor(2)->GetStorageShape().GetDim(2);
+
+  uint32_t bns = batchSize_ * qHeadNum_;
+  usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
+//   uint32_t blockSize_ = bns / (usedCoreNum_);
+  uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
+
+  printf("batchSize_: %d, qHeadNum_: %d, seqLen_: %d, k_: %d, maxTokenNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, seqLen_, k_, maxTokenNum_, usedCoreNum_, blockSize_);
+
   SelectPositionTilingData tiling;
-  tiling.set_blockSize(blockSize_);
-  tiling.set_s1Size(seqSize_);
   tiling.set_bSize(batchSize_);
-  tiling.set_n2Size(kvHeadNum_);
   tiling.set_n1Size(qHeadNum_);
-  tiling.set_gSize(nNumOfQInOneGroup_);
-  tiling.set_dSize(dimNum_);
-  tiling.set_cSize(clusterNum_);
-  tiling.set_usedCoreNum(usedCoreNum_);
-
-  // TopK Tiling
-  uint32_t maxsize = 0;
-  uint32_t minsize = 0;
-  uint32_t dtypesize = 4;  // float32类型
-  int32_t outter = 1;
-  int32_t inner = clusterNum_;
+  tiling.set_seqLen(seqLen_);
+  tiling.set_splitSeqLen(splitSeqLen_);
+  tiling.set_splitSeqNum(splitSeqNum_);
+  tiling.set_maxTokenNum(maxTokenNum_);
   tiling.set_k(k_);
-  AscendC::TopKTilingFunc(ascendcPlatform, inner, outter, k_, dtypesize, false, AscendC::TopKMode::TOPK_NORMAL, true, tiling.topkTilingData);
-  AscendC::GetTopKMaxMinTmpSize(ascendcPlatform, inner, outter, false, false, AscendC::TopKMode::TOPK_NORMAL, true, dtypesize, maxsize, minsize);
-  printf("TopK maxsize: %u, minsize: %u\n", maxsize, minsize);
-  tiling.set_tmpsize(maxsize);
+  tiling.set_blockSize(blockSize_);
+  tiling.set_usedCoreNum(usedCoreNum_);
+  tiling.set_splitSeqRemainLen(splitSeqRemainLen_);
 
   context->SetBlockDim(aivNum_);
   tiling.SaveToBuffer(context->GetRawTilingData()->GetData(), context->GetRawTilingData()->GetCapacity());

@@ -34,8 +34,8 @@ extern "C" {
  * @return aclnnStatus: 返回状态码
  */
 __attribute__((visibility("default"))) aclnnStatus aclnnSelectPositionGetWorkspaceSize(
-    const aclTensor *query, const aclTensor *l1_cent, const aclTensor *d_l1_cent, const aclTensor *mask_empty,
-    const aclTensor *select_nprobe, const aclTensor *indices, const aclTensor *workspace, const aclTensor *tiling,
+    const aclTensor *key_ids, const aclTensor *indices, const aclTensor *token_position, const aclTensor *token_position_length,
+    const aclTensor *workspace, const aclTensor *tiling,
     uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**

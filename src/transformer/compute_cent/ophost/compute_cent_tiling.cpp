@@ -42,11 +42,8 @@ static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
   uint32_t clusterNum_ = context->GetInputTensor(1)->GetStorageShape().GetDim(1);
   uint32_t nNumOfQInOneGroup_ = qHeadNum_ / kvHeadNum_;
 
-  //BNS key_ids
-  uint32_t seqLen_ = context->GetInputTensor(2)->GetStorageShape().GetDim(2);
-
-  // BSNK select_nprobe, indices
-  int32_t k_ = context->GetInputTensor(5)->GetStorageShape().GetDim(3); // Default topK value
+  // BSNK indices
+  int32_t k_ = context->GetInputTensor(2)->GetStorageShape().GetDim(2); // Default topK value
 
   // uint32_t bn = batchSize_ * kvHeadNum_;
   uint32_t bn = batchSize_ * qHeadNum_;
@@ -56,7 +53,7 @@ static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
   uint32_t blockSize_ = batchSize_ * qHeadNum_ / (usedCoreNum_);
   printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
-  printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_);
+  printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d, k_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_, k_);
   
   ComputeCentTilingData tiling;
   tiling.set_blockSize(blockSize_);
@@ -68,7 +65,6 @@ static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
   tiling.set_dSize(dimNum_);
   tiling.set_cSize(clusterNum_);
   tiling.set_usedCoreNum(usedCoreNum_);
-  tiling.set_seqLen(seqLen_);
   // TopK Tiling
   uint32_t maxsize = 0;
   uint32_t minsize = 0;

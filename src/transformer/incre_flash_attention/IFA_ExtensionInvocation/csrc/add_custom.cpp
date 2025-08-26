@@ -16,6 +16,7 @@
 #include "aclnnop/aclnn_incre_flash_attention_v4.h"
 #include "aclnn_incre_flash_attention_v5.h"
 #include "aclnn_compute_cent.h"
+#include "aclnn_select_position.h"
 #include <torch/torch.h>
 using torch::autograd::Function;
 using torch::autograd::AutogradContext;
@@ -759,17 +760,42 @@ at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std:
     }
 }
 
-at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, at::Tensor &d_l1_cent, at::Tensor &mask_empty, at::Tensor &select_nprobe, at::Tensor &indices)
+at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent)
 {
+    // 1. 创建输出张量
+    auto k = 64;
+    auto out_shape = query.sizes().vec();
+    at::Tensor result = at::empty({out_shape[0], out_shape[1], k}, query.options().dtype(torch::kInt32));
+
     // call aclnn interface to perform the computation
     try {
-        EXEC_NPU_CMD(aclnnComputeCent, query, l1_cent, d_l1_cent, mask_empty, select_nprobe, indices);
+        EXEC_NPU_CMD(aclnnComputeCent, query, l1_cent, result);
     } catch (const std::exception &e) {
         throw;
     } catch (...) {
         throw;
     }
-    return indices;
+    return result;
+}
+
+std::tuple<at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &key_ids, const at::Tensor &indices)
+{
+    // 1. 创建输出张量
+    auto max_token_num = 10240;
+    auto batch_size = key_ids.sizes()[0];
+    auto q_head_num = key_ids.sizes()[1];
+    at::Tensor token_position = at::empty({batch_size, q_head_num, max_token_num}, key_ids.options());
+    at::Tensor token_position_length = at::empty({batch_size, q_head_num, 8}, key_ids.options());
+
+    // call aclnn interface to perform the computation
+    try {
+        EXEC_NPU_CMD(aclnnSelectPosition, key_ids, indices, token_position, token_position_length);
+    } catch (const std::exception &e) {
+        throw;
+    } catch (...) {
+        throw;
+    }
+    return std::make_tuple(token_position, token_position_length);
 }
 
 // 为NPU设备注册前反向实现
@@ -780,6 +806,7 @@ TORCH_LIBRARY_IMPL(myops, PrivateUse1, m)
     m.impl("incre_flash_attention_v4", &incre_flash_attention_v4_impl_npu);
     m.impl("incre_flash_attention_v5", &incre_flash_attention_v5_impl_npu);
     m.impl("compute_cent", &compute_cent_impl_npu);
+    m.impl("select_position", &select_position_impl_npu);
 }
 
 // // 给op绑定NPU的自动求导实现
