@@ -224,6 +224,7 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
             );
             
             outQueueIndices.EnQue(dstIndexLocal);
+            CopyOut();
 
             // AscendC::CompareScalar(dstLocal, inputKeyIds, dstIndexLocal[0], CMPMODE::EQ, calCount);
             //     for (uint32_t i = 1; i < k; i++) {
@@ -233,7 +234,6 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
             // 拿到索引
 
 
-            // CopyOut();
 
             // pipe_barrier(PIPE_ALL);
             // DumpTensor(mmResUb, 4, 128);

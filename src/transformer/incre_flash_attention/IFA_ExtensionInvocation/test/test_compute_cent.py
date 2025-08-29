@@ -78,7 +78,7 @@ class TestCustomAdd(TestCase):
         indices = indices.transpose(1, 2)
 
 
-        diff_indices = torch.abs(indices_npu.npu() - indices.npu())
+        diff_indices = torch.abs(output.npu() - indices.npu())
         top_values, top_indices = torch.topk(diff_indices.flatten(), 64)
         print("indices Top 100 differences:", top_values)
 
