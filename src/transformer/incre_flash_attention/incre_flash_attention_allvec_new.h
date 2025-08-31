@@ -1329,54 +1329,45 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
     if constexpr (PAGE_ATTENTION) {
         uint32_t curSeqIdx = s2BatchOffset + startRow; // 当前需要处理的Seq的起点
         uint32_t copyFinishRowCnt = 0;
-        uint64_t logicalOffset, reaminRowCnt, copyRowCnt, idInBlockTable, keyOffset;
+        while (copyFinishRowCnt < dealRowCount) {
+            uint64_t logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
+            uint64_t reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
 
-        if (useBlockPosition)
-        { // 其实是Token-Position
-            while (copyFinishRowCnt < dealRowCount){
+            // 计算可以拷贝行数
+            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
+            if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
+                copyRowCnt = dealRowCount - copyFinishRowCnt;
+            } // 防止拷多了
+
+            uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
+
+            if (useBlockPosition) {
+                // 在初始化阶段打印这些值
+                V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
+                                maxPositionNumPerBatch, blockPositionBaseOffset);
                 uint64_t positionOffset =
-                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + curSeqIdx;
-                    //curSeqIdx可以理解为逻辑值
-                uint64_t TokenIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
-                copyRowCnt = 1;                                                    // 在当前Block 还剩多少Token要拷贝
-                if (TokenIdOffset == (uint64_t)(0x7FFFFFFF)) {
-                    CopyZero(keyUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
-                }else{
-                    keyOffset = TokenIdOffset * step           // 块偏移 表示在Block的那个Token块上
-                                + (uint64_t)(n2Idx * headDim); // 头偏移 在块内的哪个头上
-
-                    CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset,
-                           copyRowCnt); // 输出数据排布还是按照Head_dim去堆 所以不影响Q[BNSD]
-                }
-                // 更新循环变量
-                copyFinishRowCnt += copyRowCnt;
-                curSeqIdx += copyRowCnt;
-
+                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+                blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
             }
-        }
-        else
-        {
-            while (copyFinishRowCnt < dealRowCount) {
-                logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
-                reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
-                                                                        // // 计算可以拷贝行数
-                copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
-                if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
-                    copyRowCnt = dealRowCount - copyFinishRowCnt;
-                } // 防止拷多了
-                idInBlockTable =
-                    blockTableGm.GetValue(blockTableBaseOffset + logicalOffset); // 从block table上的获取编号
 
-                keyOffset =
+            if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
+                V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
+                                copyRowCnt);
+                CopyZero(keyUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
+            } else {
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                uint64_t keyOffset =
                     (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
                     + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
+
                 CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset,
                        copyRowCnt); // 输出数据排布还是按照Head_dim去堆 所以不影响Q[BNSD]
-
-                // 更新循环变量
-                copyFinishRowCnt += copyRowCnt;
-                curSeqIdx += copyRowCnt;
             }
+
+            // 更新循环变量
+            copyFinishRowCnt += copyRowCnt;
+            curSeqIdx += copyRowCnt;
         }
     } else {
         uint64_t keyOffset = tensorBOffset + (uint64_t)startRow * step;
@@ -1469,62 +1460,45 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
     if constexpr (PAGE_ATTENTION) {
         uint32_t curSeqIdx = s2BatchOffset + startRow;
         uint32_t copyFinishRowCnt = 0;
-        uint64_t logicalOffset, reaminRowCnt, copyRowCnt, idInBlockTable, curOffset;
+        while (copyFinishRowCnt < dealRowCount) {
+            uint64_t logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
+            uint64_t reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
 
-        // LocalTensor<int32_t> tokenIdUb = inputQue2.template AllocTensor<int32_t>();
-        // tokenIdUb.SetSize(dealRowCount);
-        // Duplicate(tokenIdUb, static_cast<int32_t>(0), dealRowCount);
-        // uint64_t positionOffset = blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) +
-        //                           curSeqIdx; // curSeqIdx可以理解为逻辑值
-        // AscendC::DataCopy(tokenIdUb, blockPositionGm[positionOffset], dealRowCount);
+            // 计算可以拷贝行数
+            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
+            if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
+                copyRowCnt = dealRowCount - copyFinishRowCnt;
+            } // 防止拷多了
 
+            uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
 
-        if (useBlockPosition) {
-            while (copyFinishRowCnt < dealRowCount) {
-                // if (useBlockPosition) {
+            if (useBlockPosition) {
                 uint64_t positionOffset =
-                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + curSeqIdx;
-                uint64_t TokenIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
-                // uint64_t TokenIdOffset = tokenIdUb.GetValue(copyFinishRowCnt); // 获取blcok table上的索引
-                copyRowCnt = 1; // 在当前Block 还剩多少Token要拷贝
-                if (TokenIdOffset == (uint64_t)(0x7FFFFFFF)) {
-                    CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
-                }else{
-                    curOffset = TokenIdOffset * step + (uint64_t)(n2Idx * headDim);
-                    CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
-                }
-                // 更新循环变量
-                copyFinishRowCnt += copyRowCnt;
-                curSeqIdx += copyRowCnt;
+                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+                blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
             }
-            // inputQue2.FreeTensor(tokenIdUb);
-        }else{
-            while (copyFinishRowCnt < dealRowCount) {
-                logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
-                reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
-                                                              // 计算可以拷贝行数
-                copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
-                if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
-                    copyRowCnt = dealRowCount - copyFinishRowCnt;
-                } // 防止拷多了
-                idInBlockTable =
-                    blockTableGm.GetValue(blockTableBaseOffset + logicalOffset); // 从block table上的获取编号
-                curOffset = (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
-                CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
 
-                // 更新循环变量
-                copyFinishRowCnt += copyRowCnt;
-                curSeqIdx += copyRowCnt;
+            if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
+                V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
+                                copyRowCnt);
+                CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
+            } else {
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                uint64_t curOffset =
+                    (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
+                CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
             }
-        } 
-        }else {
-            uint64_t curOffset = valueOffset + (uint64_t)startRow * step;
-            CopyKV(valueUb, valueGm, curOffset, dealRowCount);
+            // 更新循环变量
+            copyFinishRowCnt += copyRowCnt;
+            curSeqIdx += copyRowCnt;
         }
+    } else {
+        uint64_t curOffset = valueOffset + (uint64_t)startRow * step;
+        CopyKV(valueUb, valueGm, curOffset, dealRowCount);
+    }
     inputQue2.template EnQue(valueUb);
 }
-
-
 
 template <typename IFAT>
 __aicore__ inline void

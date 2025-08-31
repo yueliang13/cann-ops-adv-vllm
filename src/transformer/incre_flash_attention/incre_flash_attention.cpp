@@ -15,7 +15,7 @@
 
 #include "kernel_operator.h"
 #include "incre_flash_attention_allvec_new.h"
-#if (__CCE_AICORE__ > 200) // 默认大于200 调到很大 不使用Cube
+#if (__CCE_AICORE__ > 200)
 #include "incre_flash_attention_split_Bbn2s2_Us2.h"
 #endif
 using namespace AscendC;
@@ -152,8 +152,14 @@ extern "C" __global__ __aicore__ void incre_flash_attention_FIAS(
     获取Op可用WorkSpace空间
     **/
     __gm__ uint8_t *user = GetUserWorkspace(workspace);
+
+// #if (__CCE_AICORE__ > 200)
+//     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
+// #endif
+
+// 暂时希望在910b 上模拟全Vector的效果
 #if (__CCE_AICORE__ > 200)
-    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
+    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
 #endif
 
 #if (ORIG_DTYPE_QUERY == DT_FLOAT16) && (ORIG_DTYPE_ATTENTION_OUT == DT_FLOAT16) && (ORIG_DTYPE_KEY == DT_FLOAT16)
@@ -168,54 +174,69 @@ extern "C" __global__ __aicore__ void incre_flash_attention_FIAS(
                                    LAYOUT::BSH);
     } else if (TILING_KEY_IS(11000000000100001)) {
         INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, true, LAYOUT::BSH);
+    // 暂时把下面的TillingKey放在这里，后续需要调整
+    } else if (TILING_KEY_IS(11000000000200000)) {
+        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(11000000000300000)) {
+        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(11000000000200001)) {
+        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false, LAYOUT::BSH);
+    } else if (TILING_KEY_IS(11000000000300001)) {
+        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BSH);
 #if (__CCE_AICORE__ > 200)
-    // 暂时都调整为Vector核计算 
     } else if (TILING_KEY_IS(10000000000000000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
                                    LAYOUT::BNSD);
     } else if (TILING_KEY_IS(12000000000000000)) {
-        // KERNEL_TASK_TYPE(12000000000000000, KERNEL_TYPE_MIX_AIC_1_1);
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
+        KERNEL_TASK_TYPE(12000000000000000, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
                                    LAYOUT::BNSD);
     } else if (TILING_KEY_IS(10000000000200000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false,
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
                                    LAYOUT::BNSD);
     } else if (TILING_KEY_IS(12000000000200000)) {
-        // KERNEL_TASK_TYPE(12000000000200000, KERNEL_TYPE_MIX_AIC_1_1);
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false,
+        KERNEL_TASK_TYPE(12000000000200000, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
                                    LAYOUT::BNSD);
     } else if (TILING_KEY_IS(10000000000100000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, true,
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
                                    LAYOUT::BNSD);
     } else if (TILING_KEY_IS(10000000000300000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BNSD);
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
+                                   LAYOUT::BNSD);
     } else if (TILING_KEY_IS(10000000000000001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
                                    LAYOUT::BSH);
     } else if (TILING_KEY_IS(12000000000000001)) {
-        // KERNEL_TASK_TYPE(12000000000000001, KERNEL_TYPE_MIX_AIC_1_1);
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
+        KERNEL_TASK_TYPE(12000000000000001, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
                                    LAYOUT::BSH);
     } else if (TILING_KEY_IS(10000000000200001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false, LAYOUT::BSH);
-    } else if (TILING_KEY_IS(12000000000200001)) {
-        // KERNEL_TASK_TYPE(12000000000200001, KERNEL_TYPE_MIX_AIC_1_1);
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false, LAYOUT::BSH);
-    } else if (TILING_KEY_IS(10000000000100001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, true, LAYOUT::BSH);
-    } else if (TILING_KEY_IS(10000000000300001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BSH);
-    } else if (TILING_KEY_IS(20000000000000000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
-                                   LAYOUT::BNSD);
-    } else if (TILING_KEY_IS(20000000000100000)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, true,
-                                   LAYOUT::BNSD);
-    } else if (TILING_KEY_IS(20000000000000001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, false,
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
                                    LAYOUT::BSH);
+    } else if (TILING_KEY_IS(12000000000200001)) {
+        KERNEL_TASK_TYPE(12000000000200001, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(10000000000100001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(10000000000300001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(20000000000000000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BNSD, 0, true);
+    } else if (TILING_KEY_IS(20000000000100000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BNSD, 0, true);
+    } else if (TILING_KEY_IS(20000000000000001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BSH, 0, true);
     } else if (TILING_KEY_IS(20000000000100001)) {
-        INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, false, true, LAYOUT::BSH);
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(IncreFlashAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BSH, 0, true);
 #else
     } else if (TILING_KEY_IS(11000000000200000)) {
         INVOKE_IFA_ALL_VEC_OP_IMPL(IncreFlashAttentionAttenAllVecNew, half, half, half, half, true, false,

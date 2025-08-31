@@ -1825,7 +1825,7 @@ ge::graphStatus IFATiling::GenTilingKey()
     }
 
     originVal = inputQVal;
-
+    // TillingKey[16:0]  15位 perfMode_:core 运行模式 0: C1_V2 (CV配比1:2); 1：全V； 2 C1_V1（CV配比1:1）
     uint64_t baseOffset =
         modeVal * IFA_TILINGKEYOFFSET + (static_cast<uint64_t>(perfMode_)) * IFA_PERF_MODE_TILINGKEYOFFSET;
     if (antiquantMode_ == PER_TOKEN_MODE || antiquantMode_ == PER_CHANNEL_MODE){
@@ -1845,28 +1845,20 @@ ge::graphStatus IFATiling::CalcBlockDim()
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context_->platformInfo);
     auto aicNum = aicNum_;
     auto aivNum = aivNum_;
-    // UpdatePerfMode();
-
-    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
-        // 仅使用Vector核
-        aivNum = usedCoreNum_;
-        aicNum = 0;
+    UpdatePerfMode();
+    if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
+        aivNum = aicNum;
     } else {
-        if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
-            aivNum = aicNum;
-        } else {
-            if (!splitKVFlag_) {
-                if (perfMode_ == IfaPerfMode::C1_V1) { // 2:bn数不超过vector core一半时，CV开启CV 1:1
-                    aivNum = usedCoreNum_;             // CV 1:1时,GetTaskRation()的结果为1,所以aivNum与aicNum相等
-                    aicNum = aivNum;
-                } else {
-                    aivNum = Align(usedCoreNum_, 2U); // aivNum必须为偶数达成CV 1:2
-                    aicNum = (aivNum + 1) / 2;        // cube核的数量为vector核的数量按2向上对齐
-                }
+        if (!splitKVFlag_) {
+            if (perfMode_ == IfaPerfMode::C1_V1) { // 2:bn数不超过vector core一半时，CV开启CV 1:1
+                aivNum = usedCoreNum_;             // CV 1:1时,GetTaskRation()的结果为1,所以aivNum与aicNum相等
+                aicNum = aivNum;
+            } else {
+                aivNum = Align(usedCoreNum_, 2U); // aivNum必须为偶数达成CV 1:2
+                aicNum = (aivNum + 1) / 2;        // cube核的数量为vector核的数量按2向上对齐
             }
         }
     }
-
     context_->blockDim = ascendcPlatform.CalcTschBlockDim(aivNum, aicNum, aivNum); // 暂时与当前代码一致
     OPS_LOG_D(context_->opName, "IFA block dim:%u aivNum:%u aicNum:%u", context_->blockDim, aivNum, aicNum);
     return ge::GRAPH_SUCCESS;

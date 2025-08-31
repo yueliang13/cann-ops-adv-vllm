@@ -706,15 +706,16 @@ bool IFATiling::EnableAllVec()
     if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
         return true;
     }
-    if (pageAttentionFlag_) {
-        return false;
-    }
-    if (sysPrefixFlag_) {
-        return false;
-    }
-    if (nNumOfQInOneGroup_ > 1) {
-        return false;
-    }
+    // // 暂时不考虑以下因素
+    // if (pageAttentionFlag_) {// 如果使用page attention，不开启全VEC
+    //     return false;
+    // }
+    // if (sysPrefixFlag_) {// 如果使用sys prefix，不开启全VEC
+    //     return false;
+    // }
+    // if (nNumOfQInOneGroup_ > 1) {// 如果N/Q不等于1，不开启全VEC
+    //     return false;
+    // }
     if (headDim_ > 512) { // 全VEC模板仅支持headDim_不大于512
         return false;
     }

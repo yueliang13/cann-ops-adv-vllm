@@ -40,3 +40,47 @@ data-dump/
 *.pyc
 __pycache__
 MANIFEST.in
+
+# 构建目录
+**/build_out/
+**/build/
+**/dist/
+**/__pycache__/
+**/*.egg-info/
+**/Code_save/
+**/Sparse_Attention/
+**/output_data/
+
+# Python 编译文件
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.pyd
+
+# C++ 编译文件
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.libs
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+
+# PyTorch 扩展编译文件
+*.cpython-*.so
+*.cpython-*.pyd
+custom_ops_lib*.so
+custom_ops_lib*.dylib
+custom_ops_lib*.dll
+
+# Python wheel 文件
+# *.whl
+*.tar.gz
+*_sample.*
