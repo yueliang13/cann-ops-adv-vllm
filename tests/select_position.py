@@ -61,57 +61,57 @@ class TestCustomAdd(TestCase):
         k = 64
         dim = 128
         seqLen = 32*1024
-        maxTokenNum = 10*1024
+        maxpageNum = 10*1024
         
-        keyIdsShape = [batch, n1, seqLen]
-        tokenPositionShape = [batch, n1, maxTokenNum]
+        blockIdsShape = [batch, n1, seqLen]
+        pagePositionShape = [batch, n1, maxpageNum]
         indicesShape = [batch, n1, k]
         dl1Shape = [batch, n1, c]
-        tokenPositionLengthShape = [batch, n1, 8]
+        pagePositionLengthShape = [batch, n1, 8]
 
-        print("keyIdsShape:", keyIdsShape)
-        print("tokenPositionShape:", tokenPositionShape)
+        print("blockIdsShape:", blockIdsShape)
+        print("pagePositionShape:", pagePositionShape)
         print("indicesShape:", indicesShape)
         print("dl1Shape:", dl1Shape)
-        print("tokenPositionLengthShape:", tokenPositionLengthShape)
+        print("pagePositionLengthShape:", pagePositionLengthShape)
         d_l1_cent = torch.rand(dl1Shape, device='cpu', dtype=torch.float)
         _, torch_indices = torch.topk(d_l1_cent, k, dim=-1)
         indices = torch_indices.to(torch.int32)
         print("indices shape:", indices.shape)
         # indices = torch.randint(0, c, indicesShape, device='cpu', dtype=torch.int32)
 
-        key_ids = torch.randint(0, c, keyIdsShape, device='cpu', dtype=torch.int32)
-        token_position = torch.zeros(tokenPositionShape, device='cpu', dtype=torch.int32)
-        token_position_length = torch.zeros(tokenPositionLengthShape, device='cpu', dtype=torch.int32)
+        key_ids = torch.randint(0, c, blockIdsShape, device='cpu', dtype=torch.int32)
+        page_position = torch.zeros(pagePositionShape, device='cpu', dtype=torch.int32)
+        page_position_length = torch.zeros(pagePositionLengthShape, device='cpu', dtype=torch.int32)
             
         indices_npu = indices.npu()
         key_ids_npu = key_ids.npu()
 
-        token_position_npu, token_position_length_npu = custom_ops.select_position(key_ids_npu, indices_npu)
+        page_position_npu, page_position_length_npu = custom_ops.select_position(key_ids_npu, indices_npu)
 
-        # 计算PyTorch参考实现的token_position并比较
-        # token_position_ref, token_position_length_ref = compute_token_position_torch(key_ids, indices, max_selected_len=maxTokenNum)
+        # 计算PyTorch参考实现的page_position并比较
+        # page_position_ref, page_position_length_ref = compute_page_position_torch(key_ids, indices, max_selected_len=maxpageNum)
 
-        print("token_position_length_npu shape:", token_position_length_npu.shape)
-        print("token_position_length_npu:", token_position_length_npu)
-        # print("token_position_length_ref:", token_position_length_ref)
+        print("page_position_length_npu shape:", page_position_length_npu.shape)
+        print("page_position_length_npu:", page_position_length_npu)
+        # print("page_position_length_ref:", page_position_length_ref)
       
-        # 算子写回的结果在token_position_npu中
-        token_position_out = token_position_npu.cpu()
-        print("token_position_out shape:", token_position_out.shape)
-        print("token_position_out:", token_position_out)
+        # 算子写回的结果在page_position_npu中
+        page_position_out = page_position_npu.cpu()
+        print("page_position_out shape:", page_position_out.shape)
+        print("page_position_out:", page_position_out)
 
         # 对齐dtype与形状（参考实现为-1填充，算子可能填0，做统一处理可选：此处直接比较整数索引序列部分）
         # 仅比较前若干个非-1位置，或直接逐元素比较（若算子与参考一致应完全相等）
-        # is_equal = torch.equal(token_position_ref.to(torch.int32), token_position_out.to(torch.int32))
-        # print(f"Token position equality (PyTorch vs Operator): {is_equal}")
+        # is_equal = torch.equal(page_position_ref.to(torch.int32), page_position_out.to(torch.int32))
+        # print(f"page position equality (PyTorch vs Operator): {is_equal}")
         # if not is_equal:
         #     # 打印首个不一致位置帮助定位
-        #     diff = (token_position_ref.to(torch.int32) != token_position_out.to(torch.int32))
+        #     diff = (page_position_ref.to(torch.int32) != page_position_out.to(torch.int32))
         #     where = diff.nonzero(as_tuple=False)
         #     if where.numel() > 0:
         #         b, h, t = where[0].tolist()
-        #         print(f"First mismatch at [b={b}, h={h}, t={t}] ref={token_position_ref[b,h,t]}, op={token_position_out[b,h,t]}")
+        #         print(f"First mismatch at [b={b}, h={h}, t={t}] ref={page_position_ref[b,h,t]}, op={page_position_out[b,h,t]}")
 
 if __name__ == "__main__":
     run_tests()
