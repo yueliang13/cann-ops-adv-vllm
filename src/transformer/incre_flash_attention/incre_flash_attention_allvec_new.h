@@ -1355,8 +1355,9 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
                                 copyRowCnt);
                 CopyZero(keyUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
             } else {
-                uint64_t idInBlockTable =
-                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                // uint64_t idInBlockTable =
+                //     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                uint64_t idInBlockTable = blockIdOffset;
                 uint64_t keyOffset =
                     (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
                     + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
