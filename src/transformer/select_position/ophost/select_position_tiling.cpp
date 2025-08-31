@@ -4,9 +4,6 @@
 
 using namespace ge;
 using namespace AscendC;
-
-#define SPLIT_SEQ_LEN 18432
-
 namespace optiling {
 // static ge::graphStatus TilingFunc(gert::TilingContext* context)
 static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
@@ -29,42 +26,38 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
   aivNum_ = ascendcPlatform.GetCoreNumAiv();
   coreNum_ = aivNum_; // default aiv num
 
-  // key_ids BNS 
-  uint32_t batchSize_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
-  uint32_t qHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(1);
-  uint32_t seqLen_ = context->GetInputTensor(0)->GetStorageShape().GetDim(2);
+  // block_ids PN 
+  uint32_t qHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
+  uint32_t kvPageLen_ = context->GetInputTensor(0)->GetStorageShape().GetDim(1);
 
-  uint32_t splitSeqLen_ = SPLIT_SEQ_LEN > seqLen_ ? seqLen_ : SPLIT_SEQ_LEN;
-  uint32_t splitSeqRemainLen_ = seqLen_ % splitSeqLen_;
-
-  uint32_t splitSeqNum_ = (seqLen_ + splitSeqLen_ - 1) / splitSeqLen_;
-  printf("seqLen_: %d, splitSeqLen_: %d, splitSeqNum_: %d, splitSeqRemainLen_: %d\n", seqLen_, splitSeqLen_, splitSeqNum_, splitSeqRemainLen_);
+  // block_table maxBP
+  uint32_t maxBatch_ = context->GetInputTensor(1)->GetStorageShape().GetDim(0);
+  uint32_t maxPage_ = context->GetInputTensor(1)->GetStorageShape().GetDim(1);
 
   // indices BNK
-  uint32_t k_ = context->GetInputTensor(1)->GetStorageShape().GetDim(2); // Default topK value
-  printf("indices shape: %d, %d, %d\n", context->GetInputTensor(1)->GetStorageShape().GetDim(0), context->GetInputTensor(1)->GetStorageShape().GetDim(1), context->GetInputTensor(1)->GetStorageShape().GetDim(2));
+  uint32_t batchSize_ = context->GetInputTensor(3)->GetStorageShape().GetDim(0);
+  uint32_t k_ = context->GetInputTensor(3)->GetStorageShape().GetDim(2); // Default topK value
 
-  // token_position BNmax
-  uint32_t maxTokenNum_ = context->GetInputTensor(2)->GetStorageShape().GetDim(2);
+  // page_position BNmax
+  uint32_t maxPageNum_ = context->GetInputTensor(4)->GetStorageShape().GetDim(2);
 
   uint32_t bns = batchSize_ * qHeadNum_;
   usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
 //   uint32_t blockSize_ = bns / (usedCoreNum_);
   uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
 
-  printf("batchSize_: %d, qHeadNum_: %d, seqLen_: %d, k_: %d, maxTokenNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, seqLen_, k_, maxTokenNum_, usedCoreNum_, blockSize_);
+  printf("batchSize_: %d, qHeadNum_: %d, kvPageLen_: %d, k_: %d, maxBatch_: %d, maxPage_: %d, maxPageNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, kvPageLen_, k_, maxBatch_, maxPage_, maxPageNum_, usedCoreNum_, blockSize_);
 
   SelectPositionTilingData tiling;
   tiling.set_bSize(batchSize_);
   tiling.set_n1Size(qHeadNum_);
-  tiling.set_seqLen(seqLen_);
-  tiling.set_splitSeqLen(splitSeqLen_);
-  tiling.set_splitSeqNum(splitSeqNum_);
-  tiling.set_maxTokenNum(maxTokenNum_);
+  tiling.set_kvPageLen(kvPageLen_);
+  tiling.set_maxBatch(maxBatch_);
+  tiling.set_maxPage(maxPage_);
+  tiling.set_maxPageNum(maxPageNum_);
   tiling.set_k(k_);
   tiling.set_blockSize(blockSize_);
   tiling.set_usedCoreNum(usedCoreNum_);
-  tiling.set_splitSeqRemainLen(splitSeqRemainLen_);
 
   context->SetBlockDim(aivNum_);
   tiling.SaveToBuffer(context->GetRawTilingData()->GetData(), context->GetRawTilingData()->GetCapacity());

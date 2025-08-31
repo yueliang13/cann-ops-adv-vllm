@@ -9,7 +9,17 @@ class SelectPosition : public OpDef {
     public:
         explicit SelectPosition(const char* name) : OpDef(name)
         {
-            this->Input("key_ids")
+            this->Input("block_ids")
+                .ParamType(REQUIRED)
+                .DataType({ge::DT_INT32})
+                .Format({ge::FORMAT_ND})
+                .UnknownShapeFormat({ge::FORMAT_ND});
+            this->Input("block_table")
+                .ParamType(REQUIRED)
+                .DataType({ge::DT_INT32})
+                .Format({ge::FORMAT_ND})
+                .UnknownShapeFormat({ge::FORMAT_ND});
+            this->Input("seq_len")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})

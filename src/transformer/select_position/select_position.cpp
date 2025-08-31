@@ -4,38 +4,47 @@
 
 using namespace AscendC;
 
+#define PAGESIZE 128
 class SelectPosition {
 public:
     __aicore__ inline SelectPosition() {}
-    __aicore__ inline void Init(GM_ADDR key_ids, GM_ADDR indices, GM_ADDR token_position, GM_ADDR token_position_length, GM_ADDR workspace, const SelectPositionTilingData *__restrict tilingData)
+    __aicore__ inline void Init(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR workspace, const SelectPositionTilingData *__restrict tilingData)
     {
         batchSize = tilingData->bSize;
         qHeadNum = tilingData->n1Size;
-        seqLen = tilingData->seqLen;
+        kvPageLen = tilingData->kvPageLen;
+        maxBatch = tilingData->maxBatch;
+        maxPage = tilingData->maxPage;
         k = tilingData->k;
-        maxTokenNum = tilingData->maxTokenNum;
+        maxPageNum = tilingData->maxPageNum;
         blockSize = tilingData->blockSize;
         usedCoreNum = tilingData->usedCoreNum;
-        splitSeqNum = tilingData->splitSeqNum;
-        splitSeqLen = tilingData->splitSeqLen;
-        splitSeqRemainLen = tilingData->splitSeqRemainLen;
         blockIdx = AscendC::GetBlockIdx();
+        
 
-        keyIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(key_ids), batchSize * qHeadNum * seqLen);
+        blockIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_ids),  qHeadNum * kvPageLen);
+        blockTableGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table), maxBatch * maxPage);
+        seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(seq_len), batchSize);
         indicesGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(indices), batchSize * qHeadNum * k);
-        tokenPositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(token_position), batchSize * qHeadNum * maxTokenNum);
-        tokenPositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(token_position_length), batchSize * qHeadNum*tplPadding);
+        pagePositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position), batchSize * qHeadNum * maxPageNum);
+        pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position_length), batchSize * qHeadNum*tplPadding);
         // 8 is padding to 32B
 
-        m_pipe.InitBuffer(inKeyIds, 1, splitSeqLen * sizeof(int32_t));
+        seqLen = seqLenGlobal.GetValue(bIdx);
+        pageLen = (seqLen + PAGESIZE - 1) / PAGESIZE; 
+        gatherMaskLen = pageLen / 8; // page num of one batch
+
+        m_pipe.InitBuffer(inBlockIds, 1, kvPageLen * sizeof(int32_t));
+        m_pipe.InitBuffer(inBlockTable, 1, maxPage * sizeof(int32_t));
         m_pipe.InitBuffer(inIndices, 1, k * sizeof(int32_t));
-        m_pipe.InitBuffer(outTokenPosition, 1, maxTokenNum * sizeof(int32_t));
-        m_pipe.InitBuffer(outTokenPositionLength, 1, tplPadding * sizeof(int32_t));
-        m_pipe.InitBuffer(tmpBuffSelectReduce, splitSeqLen / 8 * sizeof(uint8_t));
-        m_pipe.InitBuffer(tmpBuffSelectTmp, splitSeqLen / 8 * sizeof(uint8_t));
-        m_pipe.InitBuffer(selectKeyIdsIndexLocal, splitSeqLen * sizeof(int32_t));
+        m_pipe.InitBuffer(outPagePosition, 1, maxPageNum * sizeof(int32_t));
+        m_pipe.InitBuffer(outPagePositionLength, 1, tplPadding * sizeof(int32_t));
+        m_pipe.InitBuffer(tmpBuffPageBatch, pageLen * sizeof(int32_t));
+        m_pipe.InitBuffer(tmpBuffSelectReduce, gatherMaskLen * sizeof(uint8_t));
+        m_pipe.InitBuffer(tmpBuffSelectTmp, gatherMaskLen * sizeof(uint8_t));
+        m_pipe.InitBuffer(selectBlockIdsIndexLocal, pageLen * sizeof(int32_t));
     }
-    __aicore__ inline void Process(GM_ADDR token_position_length)
+    __aicore__ inline void Process(GM_ADDR page_position_length)
     {
         if (g_coreType == AIV && blockIdx >= usedCoreNum) {
             return;
@@ -50,6 +59,7 @@ public:
                 if (bIdx >= batchSize || n1Idx >= qHeadNum) {
                     return;
                 }
+
                 int64_t indicesOffset = bIdx * qHeadNum * k + n1Idx * k;
                 AscendC::LocalTensor<int32_t> indicesLocal = inIndices.AllocTensor<int32_t>();
                 AscendC::DataCopy(indicesLocal, indicesGlobal[indicesOffset], k);
@@ -57,38 +67,37 @@ public:
                 inIndices.DeQue<int32_t>();
                 indicesLocal.SetSize(k);
 
-                AscendC::LocalTensor<int32_t> tokenPositionLengthLocal = outTokenPositionLength.AllocTensor<int32_t>();
-                tokenPositionLengthLocal.SetSize(tplPadding);
-                AscendC::LocalTensor<int32_t> tokenPositionLocal = outTokenPosition.AllocTensor<int32_t>();
-                tokenPositionLocal.SetSize(maxTokenNum);
-                AscendC::Duplicate(tokenPositionLocal, 0x7fffffff, maxTokenNum);
-                tokenPositionLength = 0;
+                AscendC::LocalTensor<int32_t> pagePositionLengthLocal = outPagePositionLength.AllocTensor<int32_t>();
+                pagePositionLengthLocal.SetSize(tplPadding);
+                AscendC::LocalTensor<int32_t> pagePositionLocal = outPagePosition.AllocTensor<int32_t>();
+                pagePositionLocal.SetSize(maxPageNum);
+                AscendC::Duplicate(pagePositionLocal, 0x7fffffff, maxPageNum);
 
-                for (uint32_t splitSeqIdx = 0; splitSeqIdx < splitSeqNum; splitSeqIdx++) {
-                    uint32_t handleLen = splitSeqIdx==splitSeqNum-1&&splitSeqRemainLen!=0 ? splitSeqRemainLen : splitSeqLen;
-                    CopyIn(splitSeqIdx, handleLen);
-                    Compute(splitSeqIdx, tokenPositionLocal, indicesLocal, handleLen);
-                }
-                AscendC::Duplicate(tokenPositionLengthLocal, tokenPositionLength, tplPadding);
-                outTokenPositionLength.EnQue(tokenPositionLengthLocal);
-                
-            // tokenPositionLengthLocal.SetValue((bn1Idx-multiCoreInnerOffset)*8, tokenPositionLength);
-                outTokenPosition.EnQue(tokenPositionLocal);
+                CopyIn();
+                Compute(pagePositionLocal, indicesLocal);
+                AscendC::Duplicate(pagePositionLengthLocal, pagePositionLength, tplPadding);
+                outPagePositionLength.EnQue(pagePositionLengthLocal);
+                outPagePosition.EnQue(pagePositionLocal);
                 CopyOut();
                 inIndices.FreeTensor(indicesLocal);
-                // tokenPositionLengthGlobal.SetValue(bIdx * qHeadNum + n1Idx, tokenPositionLength);
-                // DataCacheCleanAndInvalid<uint64_t, AscendC::CacheLine::SINGLE_CACHE_LINE, AscendC::DcciDst::CACHELINE_OUT>(tokenPositionLengthGlobal);
             }
         
         }
     }
 private:
-    __aicore__ inline void CopyIn(uint32_t splitSeqIdx, uint32_t handleLen)
+    __aicore__ inline void CopyIn()
     {
-        int64_t keyIdsOffset = bIdx * qHeadNum * seqLen + n1Idx * seqLen + splitSeqIdx * splitSeqLen;
-        AscendC::LocalTensor<int32_t> keyIdsLocal = inKeyIds.AllocTensor<int32_t>();
-        AscendC::DataCopy(keyIdsLocal, keyIdsGlobal[keyIdsOffset], handleLen);
-        inKeyIds.EnQue(keyIdsLocal);
+        int64_t blockIdsOffset = n1Idx * kvPageLen;
+        AscendC::LocalTensor<int32_t> blockIdsLocal = inBlockIds.AllocTensor<int32_t>();
+        AscendC::DataCopy(blockIdsLocal, blockIdsGlobal[blockIdsOffset], kvPageLen);
+        inBlockIds.EnQue(blockIdsLocal);
+
+
+        int64_t blockTableOffset = bIdx * maxPage;
+        AscendC::LocalTensor<int32_t> blockTableLocal = inBlockTable.AllocTensor<int32_t>();
+        AscendC::DataCopy(blockTableLocal, blockTableGlobal[blockTableOffset], maxPage);
+        blockTableLocal.SetSize(maxPage);
+        inBlockTable.EnQue(blockTableLocal);
     }   
 
     __aicore__ inline int32_t Align(uint64_t num, int32_t rnd)
@@ -96,24 +105,37 @@ private:
         return (((rnd) == 0) ? 0 : (((num) + (rnd)-1) / (rnd) * (rnd)));
     }
 
-    __aicore__ inline void Compute(uint32_t splitSeqIdx, AscendC::LocalTensor<int32_t> tokenPositionLocal, AscendC::LocalTensor<int32_t> indicesLocal, uint32_t handleLen)
+    __aicore__ inline void Compute(AscendC::LocalTensor<int32_t> pagePositionLocal, AscendC::LocalTensor<int32_t> indicesLocal)
     {
+        // offset
+        AscendC::LocalTensor<int32_t> blockTableLocal = inBlockTable.DeQue<int32_t>();
+        AscendC::Muls(blockTableLocal, blockTableLocal, int32_t(4), pageLen);
+        // src
+        AscendC::LocalTensor<int32_t> blockIdsLocal = inBlockIds.DeQue<int32_t>();
+        //dst
+        AscendC::LocalTensor<int32_t> pageBatchLocal = tmpBuffPageBatch.Get<int32_t>();
 
-        AscendC::LocalTensor<int32_t> keyIdsLocal = inKeyIds.DeQue<int32_t>();
-        keyIdsLocal.SetSize(handleLen);
+        // const LocalTensor<T>& dstLocal, const LocalTensor<T>& srcLocal, const LocalTensor<uint32_t>& srcOffsetLocal, const uint32_t srcBaseAddr, const uint32_t count)
+        AscendC::Gather(pageBatchLocal, blockIdsLocal, blockTableLocal.ReinterpretCast<uint32_t>(), uint32_t(0), pageLen);
 
-        // 拿到mask掩码和keyids的索引
-        LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
-        LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+        // 拿到mask掩码和blockIds的索引
+        LocalTensor<int32_t> dstResultMaskLocalI32 = tmpBuffSelectReduce.Get<int32_t>();
+        LocalTensor<int32_t> dstMaskLocalTmpI32 = tmpBuffSelectTmp.Get<int32_t>();
+        AscendC::Duplicate(dstResultMaskLocalI32, 0x0, pageLen);
+        AscendC::Duplicate(dstMaskLocalTmpI32, 0x0, pageLen);
+        LocalTensor<uint8_t> dstResultMaskLocal = dstResultMaskLocalI32.ReinterpretCast<uint8_t>();
+        LocalTensor<uint8_t> dstMaskLocalTmp = dstMaskLocalTmpI32.ReinterpretCast<uint8_t>();
 
-        AscendC::CompareScalar(dstResultMaskLocal, keyIdsLocal, indicesLocal.GetValue(0), CMPMODE::EQ, handleLen);
+        // LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
+        // LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+
+        AscendC::CompareScalar(dstResultMaskLocal, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, pageLen);
         for (uint32_t i = 1; i < k; i++) {
-            AscendC::CompareScalar(dstMaskLocalTmp, keyIdsLocal, indicesLocal.GetValue(i), CMPMODE::EQ, handleLen);
-            AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, handleLen);
+            AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(i), CMPMODE::EQ, pageLen);
+            AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
         }
-        LocalTensor<int32_t> keyIdsIndex = selectKeyIdsIndexLocal.Get<int32_t>();
-        AscendC::CreateVecIndex(keyIdsIndex, (int32_t)splitSeqIdx * splitSeqLen, handleLen);
-        // uint32_t mask = seqLen;   //该参数表示处理的src0Local(keyIdsIndex)的元素的数量
+        
+        // uint32_t mask = seqLen;   //该参数表示处理的src0Local(blockIdsIndex)的元素的数量
         uint64_t rsvdCnt = 0;  //该参数表示收集之后的dstLocal的元素数量
         // reduceMode = true; counter模式
         // src0BlockStride = 1; 单次迭代内数据间隔1个datablock，即数据连续读取和写入
@@ -121,62 +143,75 @@ private:
         // src0RepeatStride = 8;源操作数迭代间数据间隔8个datablock
         // src1RepeatStride = 8;源操作数迭代间数据间隔8个datablock
         AscendC::LocalTensor<uint32_t> resultMaskLocal = dstResultMaskLocal.ReinterpretCast<uint32_t>();
-        AscendC::GatherMask(tokenPositionLocal[tokenPositionLength], keyIdsIndex, resultMaskLocal, true, handleLen, {1, 1, 8, 8}, rsvdCnt);
-        tokenPositionLength += Align(rsvdCnt, 32);
+        // 表示页的所有顺序索引
+        LocalTensor<int32_t> blockIdsIndex = selectBlockIdsIndexLocal.Get<int32_t>();
+        AscendC::CreateVecIndex(blockIdsIndex, (int32_t)0, pageLen);
 
-        inKeyIds.FreeTensor(keyIdsLocal);
+
+        AscendC::GatherMask(pagePositionLocal, blockIdsIndex, resultMaskLocal, true, pageLen, {1, 1, 8, 8}, rsvdCnt);
+
+        pagePositionLength = rsvdCnt;
+
+        inBlockIds.FreeTensor(blockIdsLocal);
+        inBlockTable.FreeTensor(blockTableLocal);
     }
     __aicore__ inline void CopyOut()
     {
-        int64_t tokenPositionOffset = bIdx * qHeadNum * maxTokenNum + n1Idx * maxTokenNum;
-        AscendC::LocalTensor<int32_t> tokenPositionLocal = outTokenPosition.DeQue<int32_t>();
-        AscendC::DataCopy(tokenPositionGlobal[tokenPositionOffset], tokenPositionLocal, maxTokenNum);
-        outTokenPosition.FreeTensor(tokenPositionLocal);
+        int64_t pagePositionOffset = bIdx * qHeadNum * maxPageNum + n1Idx * maxPageNum;
+        AscendC::LocalTensor<int32_t> pagePositionLocal = outPagePosition.DeQue<int32_t>();
+        AscendC::DataCopy(pagePositionGlobal[pagePositionOffset], pagePositionLocal, maxPageNum);
+        outPagePosition.FreeTensor(pagePositionLocal);
 
-        int64_t tokenPositionLengthOffset = bIdx * qHeadNum * tplPadding + n1Idx * tplPadding;
-        AscendC::LocalTensor<int32_t> tokenPositionLengthLocal = outTokenPositionLength.DeQue<int32_t>();
-        DataCopy(tokenPositionLengthGlobal[tokenPositionLengthOffset], tokenPositionLengthLocal, tplPadding);
-        outTokenPositionLength.FreeTensor(tokenPositionLengthLocal);
+        int64_t pagePositionLengthOffset = bIdx * qHeadNum * tplPadding + n1Idx * tplPadding;
+        AscendC::LocalTensor<int32_t> pagePositionLengthLocal = outPagePositionLength.DeQue<int32_t>();
+        DataCopy(pagePositionLengthGlobal[pagePositionLengthOffset], pagePositionLengthLocal, tplPadding);
+        outPagePositionLength.FreeTensor(pagePositionLengthLocal);
     }
     
 private:
     AscendC::TPipe m_pipe;
-    AscendC::TQue<AscendC::QuePosition::VECIN, 1> inKeyIds;
+    AscendC::TQue<AscendC::QuePosition::VECIN, 1> inBlockIds;
+    AscendC::TQue<AscendC::QuePosition::VECIN, 1> inBlockTable;
     AscendC::TQue<AscendC::QuePosition::VECIN, 1> inIndices;
-    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outTokenPosition;
-    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outTokenPositionLength;
-    AscendC::GlobalTensor<int32_t> keyIdsGlobal;
+    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePosition;
+    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePositionLength;
+    AscendC::GlobalTensor<int32_t> blockIdsGlobal;
+    AscendC::GlobalTensor<int32_t> blockTableGlobal;
+    AscendC::GlobalTensor<int32_t> seqLenGlobal;
     AscendC::GlobalTensor<int32_t> indicesGlobal;
-    AscendC::GlobalTensor<int32_t> tokenPositionGlobal;
-    AscendC::GlobalTensor<int32_t> tokenPositionLengthGlobal;
+    AscendC::GlobalTensor<int32_t> pagePositionGlobal;
+    AscendC::GlobalTensor<int32_t> pagePositionLengthGlobal;
     // position
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffPageBatch;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectReduce;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectTmp;
-    AscendC::TBuf<AscendC::QuePosition::VECCALC> selectKeyIdsIndexLocal;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> selectBlockIdsIndexLocal;
 private:
     int32_t batchSize = 0;
     int32_t qHeadNum = 0;
-    int32_t seqLen = 0;
+    int32_t kvPageLen = 0;
     int32_t k = 0;
-    int32_t maxTokenNum = 0;
+    int32_t maxPageNum = 0;
+    int32_t maxBatch = 0;
+    int32_t maxPage = 0;
     int32_t blockIdx = 0;
     int32_t blockSize = 0;
     int32_t usedCoreNum = 0;
-    int32_t splitSeqLen = 0;
-    int32_t splitSeqNum = 0;
-    int32_t splitSeqRemainLen = 0;
     int32_t bIdx = 0;
     int32_t n1Idx = 0;
-    int32_t tokenPositionLength = 0;
+    int32_t pagePositionLength = 0;
     int32_t tplPadding = 8; // padding to 32B
+    int32_t seqLen = 0;
+    int32_t pageLen = 0;
+    int32_t gatherMaskLen = 0;
 }; // class SelectPosition
 
-extern "C" __global__ __aicore__ void select_position(GM_ADDR key_ids, GM_ADDR indices, GM_ADDR token_position, GM_ADDR token_position_length, GM_ADDR workspace, GM_ADDR tiling)
+extern "C" __global__ __aicore__ void select_position(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR workspace, GM_ADDR tiling)
 {
     GET_TILING_DATA_WITH_STRUCT(SelectPositionTilingData, tilingDataIn, tiling);
     const SelectPositionTilingData *__restrict tilingData = &tilingDataIn;
 
     SelectPosition op; 
-    op.Init(key_ids, indices, token_position, token_position_length, workspace, tilingData);
-    op.Process(token_position_length);
+    op.Init(block_ids, block_table, seq_len, indices,page_position,page_position_length, workspace, tilingData);
+    op.Process(page_position_length);
 }

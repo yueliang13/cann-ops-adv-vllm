@@ -25,7 +25,6 @@ cmake-build-release
 build/
 build_out/
 output/
-src/transformer/incre_flash_attention/IFA_ExtensionInvocation/test/extra-info/
 *.exception_info.*
 data-dump/
 

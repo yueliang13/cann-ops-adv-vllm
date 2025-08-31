@@ -156,6 +156,9 @@ __aicore__ inline void ComputeCentKernel<aType, cType>::Process()
             n1Idx = bn1Idx % qHeadNum;
             n2Idx = n1Idx / nNumOfQInOneGroup;
 
+            if (bIdx >= batchSize || n1Idx >= qHeadNum) {
+                return;
+            }
             // copy in 
             tensorBCoreOffset = n2Idx * clusterNum * dimNum;
             tensorACoreOffset = bIdx * qHeadNum * dimNum + n1Idx * dimNum;
