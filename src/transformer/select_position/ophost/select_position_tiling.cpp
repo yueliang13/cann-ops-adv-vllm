@@ -27,7 +27,7 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
   coreNum_ = aivNum_; // default aiv num
 
   // block_ids PN 
-  uint32_t qHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
+  uint32_t kvHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
   uint32_t kvPageLen_ = context->GetInputTensor(0)->GetStorageShape().GetDim(1);
 
   // block_table maxBP
@@ -36,6 +36,7 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
 
   // indices BNK
   uint32_t batchSize_ = context->GetInputTensor(3)->GetStorageShape().GetDim(0);
+  uint32_t qHeadNum_ = context->GetInputTensor(3)->GetStorageShape().GetDim(1);
   uint32_t k_ = context->GetInputTensor(3)->GetStorageShape().GetDim(2); // Default topK value
 
   // page_position BNmax
@@ -46,11 +47,12 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
 //   uint32_t blockSize_ = bns / (usedCoreNum_);
   uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
 
-  printf("batchSize_: %d, qHeadNum_: %d, kvPageLen_: %d, k_: %d, maxBatch_: %d, maxPage_: %d, maxPageNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, kvPageLen_, k_, maxBatch_, maxPage_, maxPageNum_, usedCoreNum_, blockSize_);
+  printf("batchSize_: %d, qHeadNum_: %d, kvHeadNum_: %d, kvPageLen_: %d, k_: %d, maxBatch_: %d, maxPage_: %d, maxPageNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, kvHeadNum_, kvPageLen_, k_, maxBatch_, maxPage_, maxPageNum_, usedCoreNum_, blockSize_);
 
   SelectPositionTilingData tiling;
   tiling.set_bSize(batchSize_);
   tiling.set_n1Size(qHeadNum_);
+  tiling.set_n2Size(kvHeadNum_);
   tiling.set_kvPageLen(kvPageLen_);
   tiling.set_maxBatch(maxBatch_);
   tiling.set_maxPage(maxPage_);

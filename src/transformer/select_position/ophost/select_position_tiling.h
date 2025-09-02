@@ -5,6 +5,7 @@ namespace optiling {
 BEGIN_TILING_DATA_DEF(SelectPositionTilingData)
     TILING_DATA_FIELD_DEF(int64_t, bSize);  // Batch size
     TILING_DATA_FIELD_DEF(int64_t, n1Size); // Number of qheads
+    TILING_DATA_FIELD_DEF(int64_t, n2Size); // Number of qheads
     TILING_DATA_FIELD_DEF(int64_t, kvPageLen);  // Size of the sequence dimension of block_ids
     TILING_DATA_FIELD_DEF(int64_t, maxBatch);  // Size of the sequence dimension of block_table
     TILING_DATA_FIELD_DEF(int64_t, maxPage);  // Size of the sequence dimension of block_table

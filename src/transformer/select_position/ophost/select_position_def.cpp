@@ -13,27 +13,32 @@ class SelectPosition : public OpDef {
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous();
             this->Input("block_table")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous();
             this->Input("seq_len")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous();
             this->Input("indices")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND}); 
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous(); 
             this->Output("token_position")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});    
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous();    
             this->Output("token_position_length")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
