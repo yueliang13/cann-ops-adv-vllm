@@ -35,6 +35,7 @@ data-dump/
 *.0
 *.csv
 *.txt
+!CMakeLists.txt
 
 # python cache
 *.pyc

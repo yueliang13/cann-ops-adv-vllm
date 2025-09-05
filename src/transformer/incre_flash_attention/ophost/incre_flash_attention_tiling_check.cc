@@ -633,10 +633,10 @@ ge::graphStatus IFATiling::SharedPrefixCheckShapes(const gert::Shape &keyShape, 
                OPS_LOG_E(context_->opName, "tensor shape of key_shared_prefix and value_shared_prefix not equal."),
                return ge::GRAPH_FAILED);
 
-    OPS_ERR_IF(keyShape.GetDimNum() != context_->query.shape->GetStorageShape().GetDimNum(),
-               OPS_LOG_E(context_->opName, "tensor shape dim of key_shared_prefix[%lu] is not compatable with query",
-                         keyShape.GetDimNum()),
-               return ge::GRAPH_FAILED);
+    // OPS_ERR_IF(keyShape.GetDimNum() != context_->query.shape->GetStorageShape().GetDimNum(),
+    //            OPS_LOG_E(context_->opName, "tensor shape dim of key_shared_prefix[%lu] is not compatable with query",
+    //                      keyShape.GetDimNum()),
+    //            return ge::GRAPH_FAILED);
 
     OPS_ERR_IF(keyShape.GetDim(0) != 1,
                OPS_LOG_E(context_->opName, "batch of key_shared_prefix[%ld] must be 1", keyShape.GetDim(0)),

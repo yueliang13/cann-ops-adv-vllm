@@ -194,6 +194,7 @@ ge::graphStatus IFATiling::QKVPreProcess() {
 
     std::string layout(context_->layOut);
     uint32_t sOfQuery = 0;
+    uint32_t qDimNum = context_->query.shape->GetStorageShape().GetDimNum();
     if (layout == "BSH") {
         inputLayout_ = IfaLayout::BSH_BSND;
         OPS_ERR_IF(context_->query.shape->GetStorageShape().GetDim(2) % numHeads_ != 0,
@@ -203,12 +204,24 @@ ge::graphStatus IFATiling::QKVPreProcess() {
         headDim_ = context_->query.shape->GetStorageShape().GetDim(2) / numHeads_; // 2, dim of H
     } else if (layout == "BSND") {
         inputLayout_ = IfaLayout::BSH_BSND;
-        sOfQuery = context_->query.shape->GetStorageShape().GetDim(1);
-        headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        if (qDimNum == 3U) { // BND
+            // BND[bsz,head,head_dim] -> BNSD[bsz,head,1,head_dim] 适配Vllm框架调用
+            sOfQuery = 1;
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of D
+        } else { // BSND
+            sOfQuery = context_->query.shape->GetStorageShape().GetDim(1); // 2, dim of S
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        }
     } else if (layout == "BNSD") {
         inputLayout_ = IfaLayout::BNSD;
-        sOfQuery = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of S
-        headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        if (qDimNum == 3U) { // BND
+            // BND[bsz,head,head_dim] -> BNSD[bsz,head,1,head_dim] 适配Vllm框架调用
+            sOfQuery = 1; 
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(2); // 3, dim of D
+        } else { // BNSD
+            sOfQuery = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of S
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        }
     } else {
         OPS_LOG_E(context_->opName, "Only support input_layout(BSH, BNSD, BSND), actually is %s", layout.c_str());
         return ge::GRAPH_FAILED;
@@ -224,7 +237,7 @@ ge::graphStatus IFATiling::QKVPreProcess() {
         headDimAlign_ = Align(headDim_, BYTE_BLOCK); // 元素个数按照基本块大小对齐
     }
     
-    OPS_ERR_IF(sOfQuery != 1, OPS_LOG_E(context_->opName, " S of Query:%u is invalid, it should be 1", sOfQuery),
+    OPS_ERR_IF(sOfQuery != 1, OPS_LOG_E(context_->opName, "layout %s S of Query:%u is invalid, it should be 1", layout.c_str(), sOfQuery),
                return ge::GRAPH_FAILED);
     return ge::GRAPH_SUCCESS;
 }
@@ -314,11 +327,15 @@ ge::graphStatus IFATiling::ProcessPageAttentionFlag() {
     sMax_ = maxBlockNumPerBatch_ * blockSize_;
     seqSize_ = sMax_;
     uint32_t kDimNum = context_->key.shape->GetStorageShape().GetDimNum();
-    if (kDimNum == 3U) { // BSH
-        inputLayout_ = IfaLayout::BSH_BSND;
-    } else { // BNSD
-        inputLayout_ = IfaLayout::BNSD;
-    }
+    
+    // if (kDimNum == 3U) { // BSH
+    //     inputLayout_ = IfaLayout::BSH_BSND;
+    // } else { // BNSD
+    //     inputLayout_ = IfaLayout::BNSD;
+    // }
+    
+    inputLayout_ = IfaLayout::BSH_BSND;// 适配Vllm框架调用 固定BSH_BSND
+
     const std::string inputLayoutStr = context_->layOut;
     OPS_ERR_IF((kDimNum == DIM_BNSD && inputLayoutStr != "BNSD"),
                OPS_LOG_E(context_->opName, "when Page Attention scene, kvcache is BNBD, query layout must be BNSD"),
