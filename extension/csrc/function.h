@@ -49,5 +49,6 @@ at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std:
                                              int64_t num_key_value_heads, int64_t block_size, int64_t inner_precise);
 
 at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent);
-std::tuple<at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices);
+std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices);
+std::tuple<at::Tensor, at::Tensor> cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len);
 #endif // FUNCTION_H_

@@ -47,7 +47,9 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
 //   uint32_t blockSize_ = bns / (usedCoreNum_);
   uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
 
-  printf("batchSize_: %d, qHeadNum_: %d, kvHeadNum_: %d, kvPageLen_: %d, k_: %d, maxBatch_: %d, maxPage_: %d, maxPageNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, kvHeadNum_, kvPageLen_, k_, maxBatch_, maxPage_, maxPageNum_, usedCoreNum_, blockSize_);
+  uint32_t gSize_ = qHeadNum_ / kvHeadNum_;
+
+  printf("batchSize_: %d, qHeadNum_: %d, kvHeadNum_: %d, numOfGroupsNum: %d, kvPageLen_: %d, k_: %d, maxBatch_: %d, maxPage_: %d, maxPageNum_: %d, usedCoreNum_: %u, blockSize_: %u\n", batchSize_, qHeadNum_, kvHeadNum_, gSize_, kvPageLen_, k_, maxBatch_, maxPage_, maxPageNum_, usedCoreNum_, blockSize_);
 
   SelectPositionTilingData tiling;
   tiling.set_bSize(batchSize_);
@@ -60,7 +62,7 @@ static ge::graphStatus TilingSelectPosition(gert::TilingContext* context)
   tiling.set_k(k_);
   tiling.set_blockSize(blockSize_);
   tiling.set_usedCoreNum(usedCoreNum_);
-
+  tiling.set_gSize(gSize_);
   context->SetBlockDim(aivNum_);
   tiling.SaveToBuffer(context->GetRawTilingData()->GetData(), context->GetRawTilingData()->GetCapacity());
   context->GetRawTilingData()->SetDataSize(tiling.GetDataSize());

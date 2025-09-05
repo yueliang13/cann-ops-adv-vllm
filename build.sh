@@ -366,3 +366,7 @@ else
     cmake_config
     build_package
 fi
+
+# cd extension
+# bash build.sh
+# cd -

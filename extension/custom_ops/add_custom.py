@@ -80,8 +80,14 @@ def compute_cent(query: torch.Tensor, l1_cent: torch.Tensor) -> torch.Tensor:
     """
     return custom_ops_lib.compute_cent(query, l1_cent)
 
-def select_position(block_ids: torch.Tensor, block_table: torch.Tensor, seq_len: torch.Tensor, indices: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def select_position(block_ids: torch.Tensor, block_table: torch.Tensor, seq_len: torch.Tensor, indices: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     封装 select_position 算子的 Python 接口
     """
     return custom_ops_lib.select_position(block_ids, block_table, seq_len, indices)
+
+def cent_select(query: torch.Tensor, l1_cent: torch.Tensor, block_ids: torch.Tensor, block_table: torch.Tensor, seq_len: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    封装 cent_select 算子的 Python 接口
+    """
+    return custom_ops_lib.cent_select(query, l1_cent, block_ids, block_table, seq_len)

@@ -8,11 +8,12 @@ using namespace AscendC;
 class SelectPosition {
 public:
     __aicore__ inline SelectPosition() {}
-    __aicore__ inline void Init(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR workspace, const SelectPositionTilingData *__restrict tilingData)
+    __aicore__ inline void Init(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR block_table_gather, GM_ADDR workspace, const SelectPositionTilingData *__restrict tilingData)
     {
         batchSize = tilingData->bSize;
         qHeadNum = tilingData->n1Size;
         kvHeadNum = tilingData->n2Size;
+        groupSize = tilingData->gSize;
         kvPageLen = tilingData->kvPageLen;
         maxBatch = tilingData->maxBatch;
         maxPage = tilingData->maxPage;
@@ -29,6 +30,7 @@ public:
         indicesGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(indices), batchSize * qHeadNum * k);
         pagePositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position), batchSize * qHeadNum * maxPageNum);
         pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position_length), batchSize * qHeadNum*tplPadding);
+        blockTableGatherGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table_gather), batchSize * qHeadNum * maxPageNum);
         // 8 is padding to 32B
 
         m_pipe.InitBuffer(inBlockIds, 1, kvPageLen * sizeof(int32_t));
@@ -36,10 +38,12 @@ public:
         m_pipe.InitBuffer(inIndices, 1, k * sizeof(int32_t));
         m_pipe.InitBuffer(outPagePosition, 1, maxPageNum * sizeof(int32_t));
         m_pipe.InitBuffer(outPagePositionLength, 1, tplPadding * sizeof(int32_t));
+
         m_pipe.InitBuffer(tmpBuffPageBatch, maxPage * sizeof(int32_t));
         m_pipe.InitBuffer(tmpBuffSelectReduce, maxPage / 8 * sizeof(uint8_t));
         m_pipe.InitBuffer(tmpBuffSelectTmp, maxPage / 8 * sizeof(uint8_t));
         m_pipe.InitBuffer(selectBlockIdsIndexLocal, maxPage * sizeof(int32_t));
+        m_pipe.InitBuffer(outBlockTableGather, 1, maxPage * sizeof(int32_t));
     }
     __aicore__ inline void Process(GM_ADDR page_position_length)
     {
@@ -53,7 +57,7 @@ public:
             for (uint32_t bn1Idx = multiCoreInnerOffset; bn1Idx < multiCoreInnerLimit; bn1Idx++) {
                 bIdx = bn1Idx / qHeadNum;
                 n1Idx = bn1Idx % qHeadNum;
-                n2Idx = bn1Idx % kvHeadNum;
+                n2Idx = n1Idx / groupSize;
                 if (bIdx >= batchSize || n1Idx >= qHeadNum) {
                     return;
                 }
@@ -118,27 +122,39 @@ private:
         //dst
         AscendC::LocalTensor<int32_t> pageBatchLocal = tmpBuffPageBatch.Get<int32_t>();
 
+
         // const LocalTensor<T>& dstLocal, const LocalTensor<T>& srcLocal, const LocalTensor<uint32_t>& srcOffsetLocal, const uint32_t srcBaseAddr, const uint32_t count)
+        //PipeBarrier<PIPE_V>();
+        pipe_barrier(PIPE_ALL);
         AscendC::Gather(pageBatchLocal, blockIdsLocal, blockTableLocal.ReinterpretCast<uint32_t>(), uint32_t(0), pageLen);
 
+        AscendC::LocalTensor<int32_t> blockTableGatherLocal = outBlockTableGather.AllocTensor<int32_t>();
+        blockTableGatherLocal.SetSize(pageLen);
+        AscendC::DataCopy(blockTableGatherLocal, pageBatchLocal, pageLen);
+        outBlockTableGather.EnQue(blockTableGatherLocal);
+        outBlockTableGather.DeQue<int32_t>();
+        DataCopy(blockTableGatherGlobal[bIdx * qHeadNum * maxPage + n1Idx * maxPage], blockTableGatherLocal, pageLen);
+        outBlockTableGather.FreeTensor(blockTableGatherLocal);
+
         // 拿到mask掩码和blockIds的索引
-        LocalTensor<int32_t> dstResultMaskLocalI32 = tmpBuffSelectReduce.Get<int32_t>();
-        LocalTensor<int32_t> dstMaskLocalTmpI32 = tmpBuffSelectTmp.Get<int32_t>();
-        AscendC::Duplicate(dstResultMaskLocalI32, 0x0, gatherMaskU32Len);
-        AscendC::Duplicate(dstMaskLocalTmpI32, 0x0, gatherMaskU32Len);
-        LocalTensor<uint8_t> dstResultMaskLocal = dstResultMaskLocalI32.ReinterpretCast<uint8_t>();
-        LocalTensor<uint8_t> dstMaskLocalTmp = dstMaskLocalTmpI32.ReinterpretCast<uint8_t>();
+        // LocalTensor<int32_t> dstResultMaskLocalI32 = tmpBuffSelectReduce.Get<int32_t>();
+        // LocalTensor<int32_t> dstMaskLocalTmpI32 = tmpBuffSelectTmp.Get<int32_t>();
+        // AscendC::Duplicate(dstResultMaskLocalI32, 0x0, gatherMaskU32Len);
+        // AscendC::Duplicate(dstMaskLocalTmpI32, 0x0, gatherMaskU32Len);
+        // LocalTensor<uint8_t> dstResultMaskLocal = dstResultMaskLocalI32.ReinterpretCast<uint8_t>();
+        // LocalTensor<uint8_t> dstMaskLocalTmp = dstMaskLocalTmpI32.ReinterpretCast<uint8_t>();
 
-        // LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
-        // LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+        LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
+        LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
 
+        //PipeBarrier<PIPE_V>();
         AscendC::CompareScalar(dstResultMaskLocal, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, pageLen);
-        // DumpTensor(dstResultMaskLocal, 0, gatherMaskLen);
+        // pipe_barrier(PIPE_ALL);
         for (uint32_t i = 1; i < k; i++) {
             AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(i), CMPMODE::EQ, pageLen);
+            pipe_barrier(PIPE_ALL);
             AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
         }
-        // DumpTensor(dstResultMaskLocal, 1, gatherMaskLen);
         // uint32_t mask = seqLen;   //该参数表示处理的src0Local(blockIdsIndex)的元素的数量
         uint64_t rsvdCnt = 0;  //该参数表示收集之后的dstLocal的元素数量
         // reduceMode = true; counter模式
@@ -146,13 +162,12 @@ private:
         // repeatTimes = 1; 该参数表示只迭代一次
         // src0RepeatStride = 8;源操作数迭代间数据间隔8个datablock
         // src1RepeatStride = 8;源操作数迭代间数据间隔8个datablock
-        AscendC::LocalTensor<uint32_t> resultMaskLocal = dstResultMaskLocal.ReinterpretCast<uint32_t>();
         // 表示页的所有顺序索引
         LocalTensor<int32_t> blockIdsIndex = selectBlockIdsIndexLocal.Get<int32_t>();
         AscendC::CreateVecIndex(blockIdsIndex, (int32_t)0, pageLen);
 
-        AscendC::GatherMask(pagePositionLocal, blockIdsIndex, resultMaskLocal, true, pageLen, {1, 1, 8, 8}, rsvdCnt);
-        // DumpTensor(pagePositionLocal, 2, rsvdCnt);
+        //PipeBarrier<PIPE_V>();
+        AscendC::GatherMask(pagePositionLocal, blockIdsIndex, dstResultMaskLocal.ReinterpretCast<uint32_t>(), true, pageLen, {1, 1, 8, 8}, rsvdCnt);
 
         pagePositionLength = rsvdCnt;
 
@@ -179,12 +194,14 @@ private:
     AscendC::TQue<AscendC::QuePosition::VECIN, 1> inIndices;
     AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePosition;
     AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePositionLength;
+    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outBlockTableGather;
     AscendC::GlobalTensor<int32_t> blockIdsGlobal;
     AscendC::GlobalTensor<int32_t> blockTableGlobal;
     AscendC::GlobalTensor<int32_t> seqLenGlobal;
     AscendC::GlobalTensor<int32_t> indicesGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionLengthGlobal;
+    AscendC::GlobalTensor<int32_t> blockTableGatherGlobal;
     // position
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffPageBatch;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectReduce;
@@ -196,6 +213,7 @@ private:
     int32_t kvHeadNum = 0;
     int32_t kvPageLen = 0;
     int32_t k = 0;
+    int32_t groupSize = 0;
     int32_t maxPageNum = 0;
     int32_t maxBatch = 0;
     int32_t maxPage = 0;
@@ -214,12 +232,12 @@ private:
 
 }; // class SelectPosition
 
-extern "C" __global__ __aicore__ void select_position(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR workspace, GM_ADDR tiling)
+extern "C" __global__ __aicore__ void select_position(GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR indices, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR block_table_gather, GM_ADDR workspace, GM_ADDR tiling)
 {
     GET_TILING_DATA_WITH_STRUCT(SelectPositionTilingData, tilingDataIn, tiling);
     const SelectPositionTilingData *__restrict tilingData = &tilingDataIn;
 
     SelectPosition op; 
-    op.Init(block_ids, block_table, seq_len, indices,page_position,page_position_length, workspace, tilingData);
+    op.Init(block_ids, block_table, seq_len, indices,page_position,page_position_length, block_table_gather, workspace, tilingData);
     op.Process(page_position_length);
 }

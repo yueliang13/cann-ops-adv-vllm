@@ -32,17 +32,16 @@ static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
   coreNum_ = aivNum_; // default aiv num
 
   // query, l1_cent, key_ids, d_l1_cent, mask_empty, select_nprobe, indices
-  //BSNGD
+  //BNGD
   uint32_t batchSize_ = context->GetInputTensor(0)->GetStorageShape().GetDim(0);
   uint32_t qHeadNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(1);
-  uint32_t seqSize_ = context->GetInputTensor(0)->GetStorageShape().GetDim(2);   //default seq size is 1
-  uint32_t dimNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(3);
+  uint32_t dimNum_ = context->GetInputTensor(0)->GetStorageShape().GetDim(2);
   //NCD
   uint32_t kvHeadNum_ = context->GetInputTensor(1)->GetStorageShape().GetDim(0);
   uint32_t clusterNum_ = context->GetInputTensor(1)->GetStorageShape().GetDim(1);
   uint32_t nNumOfQInOneGroup_ = qHeadNum_ / kvHeadNum_;
 
-  // BSNK indices
+  // BNK indices
   int32_t k_ = context->GetInputTensor(2)->GetStorageShape().GetDim(2); // Default topK value
 
   // uint32_t bn = batchSize_ * kvHeadNum_;
@@ -51,13 +50,12 @@ static ge::graphStatus TilingComputeCent(gert::TilingContext* context)
   uint32_t blockSize_ = (bn + usedCoreNum_ - 1) / usedCoreNum_;
 
   // uint32_t blockSize_ = batchSize_ * kvHeadNum_ / (usedCoreNum_);
-  printf("batchSize_: %d, qHeadNum_: %d, seqSize_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, seqSize_, dimNum_);
+  printf("batchSize_: %d, qHeadNum_: %d, dimNum_: %d\n", batchSize_, qHeadNum_, dimNum_);
   printf("kvHeadNum_: %d, clusterNum_: %d, nNumOfQInOneGroup_: %d\n", kvHeadNum_, clusterNum_, nNumOfQInOneGroup_);
-  printf("blockSize_: %d, seqSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d, k_: %d\n", blockSize_, seqSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_, k_);
+  printf("blockSize_: %d, batchSize_: %d, kvHeadNum_: %d, qHeadNum_: %d, nNumOfQInOneGroup_: %d, dimNum_: %d, clusterNum_: %d, usedCoreNum_: %d, k_: %d\n", blockSize_, batchSize_, kvHeadNum_, qHeadNum_, nNumOfQInOneGroup_, dimNum_, clusterNum_, usedCoreNum_, k_);
   
   ComputeCentTilingData tiling;
   tiling.set_blockSize(blockSize_);
-  tiling.set_s1Size(seqSize_);
   tiling.set_bSize(batchSize_);
   tiling.set_n2Size(kvHeadNum_);
   tiling.set_n1Size(qHeadNum_);

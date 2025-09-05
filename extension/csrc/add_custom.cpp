@@ -17,6 +17,7 @@
 #include "aclnn_incre_flash_attention_v5.h"
 #include "aclnn_compute_cent.h"
 #include "aclnn_select_position.h"
+#include "aclnn_cent_select.h"
 #include <torch/torch.h>
 using torch::autograd::Function;
 using torch::autograd::AutogradContext;
@@ -778,21 +779,47 @@ at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_c
     return result;
 }
 
-std::tuple<at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices)
+std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices)
 {
     // 1. 创建输出张量
     auto max_page_num = 256;
     auto batch_size = indices.sizes()[0];
     auto q_head_num = indices.sizes()[1];
+    auto max_page_len = block_table.sizes()[1];
     at::Tensor page_position = at::empty({batch_size, q_head_num, max_page_num}, block_ids.options());
     at::Tensor page_position_length = at::empty({batch_size, q_head_num, 8}, block_ids.options());
+    at::Tensor block_table_gather = at::empty({batch_size, q_head_num, max_page_len}, block_ids.options());
 
     // call aclnn interface to perform the computation
     try {
-        EXEC_NPU_CMD(aclnnSelectPosition, block_ids, block_table, seq_len, indices, page_position, page_position_length);
-    } catch (const std::exception &e) {
+        EXEC_NPU_CMD(aclnnSelectPosition, block_ids, block_table, seq_len, indices, page_position, page_position_length, block_table_gather);
+    } catch (const std::exception &e) {        
+        std::cout << "[LOG] EXEC_NPU_CMD failed with exception: " << e.what() << std::endl;
         throw;
     } catch (...) {
+        std::cout << "[LOG] EXEC_NPU_CMD failed with unknown exception" << std::endl;
+        throw;
+    }
+    return std::make_tuple(page_position, page_position_length, block_table_gather);
+}
+
+std::tuple<at::Tensor, at::Tensor>  cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len){
+
+    // 1. 创建输出张量
+    auto max_page_num = 256;
+    auto batch_size = query.sizes()[0];
+    auto q_head_num = query.sizes()[1];
+    auto max_page_len = block_table.sizes()[1];
+    at::Tensor page_position = at::empty({batch_size, q_head_num, max_page_num}, block_ids.options());
+    at::Tensor page_position_length = at::empty({batch_size, q_head_num, 8}, block_ids.options());
+    // call aclnn interface to perform the computation
+    try {
+        EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len, page_position, page_position_length);
+    } catch (const std::exception &e) {
+        std::cout << "[LOG] EXEC_NPU_CMD failed with exception: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cout << "[LOG] EXEC_NPU_CMD failed with unknown exception" << std::endl;
         throw;
     }
     return std::make_tuple(page_position, page_position_length);
@@ -807,6 +834,7 @@ TORCH_LIBRARY_IMPL(myops, PrivateUse1, m)
     m.impl("incre_flash_attention_v5", &incre_flash_attention_v5_impl_npu);
     m.impl("compute_cent", &compute_cent_impl_npu);
     m.impl("select_position", &select_position_impl_npu);
+    m.impl("cent_select", &cent_select_impl_npu);
 }
 
 // // 给op绑定NPU的自动求导实现

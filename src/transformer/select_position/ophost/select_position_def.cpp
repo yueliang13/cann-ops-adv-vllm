@@ -43,7 +43,13 @@ class SelectPosition : public OpDef {
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
-                .UnknownShapeFormat({ge::FORMAT_ND});  
+                .UnknownShapeFormat({ge::FORMAT_ND}); 
+            this->Output("block_table_gather")
+                .ParamType(REQUIRED)
+                .DataType({ge::DT_INT32})
+                .Format({ge::FORMAT_ND})
+                .UnknownShapeFormat({ge::FORMAT_ND})
+                .AutoContiguous();
             OpAICoreConfig aicore_config;
             aicore_config.DynamicCompileStaticFlag(true)
                 .DynamicFormatFlag(true)

@@ -7,7 +7,6 @@ BEGIN_TILING_DATA_DEF(ComputeCentTilingData)
     TILING_DATA_FIELD_DEF(int64_t, n1Size); // Number of qheads
     TILING_DATA_FIELD_DEF(int64_t, n2Size); // Number of kvheads
     TILING_DATA_FIELD_DEF(int64_t, gSize);  // Number of groups
-    TILING_DATA_FIELD_DEF(int64_t, s1Size);  // Size of the  sequence dimension of query
     TILING_DATA_FIELD_DEF(int64_t, dSize);  // Dimension size of query and KV
     TILING_DATA_FIELD_DEF(int64_t, cSize);  // Size of the cluster dimension
     TILING_DATA_FIELD_DEF(int64_t, blockSize);  
@@ -15,9 +14,6 @@ BEGIN_TILING_DATA_DEF(ComputeCentTilingData)
     //TopK:
     TILING_DATA_FIELD_DEF(int32_t, k);
     TILING_DATA_FIELD_DEF(uint32_t, tmpsize);
-    TILING_DATA_FIELD_DEF(int32_t, outter);
-    TILING_DATA_FIELD_DEF(int32_t, inner);
-    TILING_DATA_FIELD_DEF(int32_t, n);
     TILING_DATA_FIELD_DEF_STRUCT(TopkTiling, topkTilingData);
 END_TILING_DATA_DEF;
 
