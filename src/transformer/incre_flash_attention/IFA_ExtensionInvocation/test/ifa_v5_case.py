@@ -495,12 +495,30 @@ class TestIncreFlashAttentionV5(TestCase):
             for block_idx in head_block_indices[h]:
                 # 计算该块在KV缓存中的起始位置 - BSH格式
                 for s in range(block_size):
-                    # BSH格式的起始索引
-                    start_idx = block_idx * block_size * key_num_heads * head_dims + s * key_num_heads * head_dims + h * head_dims
-                    end_idx = start_idx + head_dims
-                    if end_idx <= key_data.numel():
-                        key_data.view(-1)[start_idx:end_idx] = head_value
-                        value_data.view(-1)[start_idx:end_idx] = head_value
+                    # # BSH格式的起始索引
+                    # start_idx = block_idx * block_size * key_num_heads * head_dims + s * key_num_heads * head_dims + h * head_dims
+                    # end_idx = start_idx + head_dims
+                    # if end_idx <= key_data.numel():
+                    #     key_data.view(-1)[start_idx:end_idx] = head_value
+                    #     value_data.view(-1)[start_idx:end_idx] = head_value
+                    
+                    # 形状: [block_num, block_size, key_num_heads, head_dims]
+                    key_data[block_idx, :, h, :] = head_value
+                    value_data[block_idx, :, h, :] = head_value
+    
+        # 验证填充是否正确
+        print("\n=== 填充数据验证 ===")
+        for h in [0, 15, 31]:  # 检查第一个、中间和最后一个头
+            block_idx = head_block_indices[h][0]  # 检查第一个选择的块
+            sample_value = key_data[block_idx, 0, h, 0].item()
+            expected_value = SELECTED_BLOCK_VALUE + h * 0.001
+            
+            print(f"头 {h} 的第一个块 {block_idx} 的样本值: {sample_value:.6f} (期望值: {expected_value:.6f})")
+            if abs(sample_value - expected_value) < 1e-5:
+                print("  ✅ 填充正确")
+            else:
+                print("  ❌ 填充错误")
+            
     
         # 设置实际序列长度
         actual_seq_lengths = torch.tensor([max_actual_block_num_per_seq * block_size], dtype=torch.int64)

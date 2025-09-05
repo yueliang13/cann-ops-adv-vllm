@@ -1351,12 +1351,24 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
             }
 
             if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
-                V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
-                                copyRowCnt);
-                CopyZero(keyUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
-            } else {
+                // 在actualSeqLengths的基础上长度对应的blockIdOffset之后 再搬固定长度30的Token用来计算
+                // 正常来讲 碰见结尾的时候，就搬一个Page的0值，但是现在有搬30个Token的需求 所以拆解成两个部分进行数据搬运
+                uint64_t fix_length = 30;
+                uint64_t final_blockIdOffset = curActualSeqLen / kvCacheBlockSize;// 实际计算量curActualSeqLen对应的最后一个blockIdOffset
+                uint64_t final_reaminRowCnt = curActualSeqLen % kvCacheBlockSize;
                 uint64_t idInBlockTable =
-                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                    blockTableGm.GetValue(blockTableBaseOffset + final_blockIdOffset); // 从block table上的获取编号
+                uint64_t keyOffset =
+                    (idInBlockTable * kvCacheBlockSize + final_reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
+                    + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
+
+                CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset, fix_length);
+                CopyZero(keyUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+
+            } else {
+                // uint64_t idInBlockTable =
+                //     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                uint64_t idInBlockTable = blockIdOffset;
                 uint64_t keyOffset =
                     (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
                     + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
@@ -1479,9 +1491,20 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
             }
 
             if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
-                V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
-                                copyRowCnt);
-                CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
+                // V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
+                //                 copyRowCnt);
+                // CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
+                uint64_t fix_length = 30;
+                uint64_t final_blockIdOffset = curActualSeqLen / kvCacheBlockSize;// 实际计算量curActualSeqLen对应的最后一个blockIdOffset
+                uint64_t final_reaminRowCnt = curActualSeqLen % kvCacheBlockSize;
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + final_blockIdOffset); // 从block table上的获取编号
+                uint64_t curOffset =
+                    (idInBlockTable * kvCacheBlockSize + final_reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
+                    + (uint64_t)(n2Idx * headDim); 
+                CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, fix_length);
+                CopyZero(valueUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+            
             } else {
                 uint64_t idInBlockTable =
                     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
