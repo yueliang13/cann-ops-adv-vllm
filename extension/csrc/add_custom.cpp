@@ -43,6 +43,10 @@ aclTensor *ConvertTensorToAcl(const at::Tensor &tensor)
     {
         aclType = ACL_FLOAT16;
     }
+    else if (tensor.dtype() == torch::kBFloat16)
+    {
+        aclType = ACL_BF16;
+    }
     else if (tensor.dtype() == torch::kFloat32)
     {
         aclType = ACL_FLOAT;

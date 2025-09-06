@@ -340,6 +340,7 @@ protected:
     __aicore__ inline void ProcessVec1(const uint32_t sInnerLoopIdx);
     __aicore__ inline void ProcessVec2(const uint32_t sInnerLoopIdx);
     __aicore__ inline void SInnerLoopFunc(const uint32_t sInnerLoopIdx);
+    template <typename T_UB> __aicore__ inline void SampleAndPrintUbData(const __gm__ char* tensorName, LocalTensor<T_UB>& ubTensor, uint32_t rows, uint32_t cols,uint32_t headIdx);
 
     __aicore__ inline void SoftmaxFlashV2Compute(LocalTensor<T> &mmResUb, LocalTensor<uint8_t> &softmaxTmpUb,
                                                  uint32_t startRow, uint32_t dealRowCount, uint32_t columnCount,
@@ -1342,9 +1343,9 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
             uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
 
             if (useBlockPosition) {
-                // 在初始化阶段打印这些值
-                V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
-                                maxPositionNumPerBatch, blockPositionBaseOffset);
+                // // 在初始化阶段打印这些值
+                // V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
+                //                 maxPositionNumPerBatch, blockPositionBaseOffset);
                 uint64_t positionOffset =
                     blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
                 blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
@@ -1363,8 +1364,11 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
                     + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
 
                 CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset, fix_length);
-                CopyZero(keyUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
-
+                // CopyZero(keyUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+                 // 更新循环变量
+                copyFinishRowCnt += fix_length;
+                curSeqIdx += fix_length;
+                break;//终止
             } else {
                 uint64_t idInBlockTable =
                     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
@@ -1374,11 +1378,10 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
 
                 CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset,
                        copyRowCnt); // 输出数据排布还是按照Head_dim去堆 所以不影响Q[BNSD]
+                // 更新循环变量
+                copyFinishRowCnt += copyRowCnt;
+                curSeqIdx += copyRowCnt;
             }
-
-            // 更新循环变量
-            copyFinishRowCnt += copyRowCnt;
-            curSeqIdx += copyRowCnt;
         }
     } else {
         uint64_t keyOffset = tensorBOffset + (uint64_t)startRow * step;
@@ -1502,17 +1505,22 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
                     (idInBlockTable * kvCacheBlockSize + final_reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
                     + (uint64_t)(n2Idx * headDim); 
                 CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, fix_length);
-                CopyZero(valueUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+                // CopyZero(valueUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+                 // 更新循环变量
+                copyFinishRowCnt += fix_length;
+                curSeqIdx += fix_length;
+                break;//终止
             } else {
                 uint64_t idInBlockTable =
                     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
                 uint64_t curOffset =
                     (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
                 CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
+                // 更新循环变量
+                copyFinishRowCnt += copyRowCnt;
+                curSeqIdx += copyRowCnt;
             }
-            // 更新循环变量
-            copyFinishRowCnt += copyRowCnt;
-            curSeqIdx += copyRowCnt;
+            
         }
     } else {
         uint64_t curOffset = valueOffset + (uint64_t)startRow * step;
@@ -1889,19 +1897,79 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ProcessVec2(cons
 }
 
 template <typename IFAT>
+template <typename T_UB>
+__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SampleAndPrintUbData(
+    const __gm__ char* tensorName, 
+    LocalTensor<T_UB>& ubTensor, 
+    uint32_t rows, 
+    uint32_t cols,
+    uint32_t headIdx)
+{
+#if V5_SPARSE_DEBUG_ENABLE
+    // 只在特定的头或条件下打印，避免日志泛滥
+    if (headIdx == 0 || headIdx == 15 || headIdx == 31) {
+        V5_DEBUG_PRINTF("--- Sampling UB Data for [%s], Head: %u, Shape: (%u, %u) ---\n", tensorName, headIdx, rows, cols);
+        
+        // 定义采样点
+        const uint32_t sample_points = 4; // 每个采样区域打印的点数
+        
+        // 打印头部数据
+        V5_DEBUG_PRINTF("  Head data:\n");
+        for (uint32_t r = 0; r < min(rows, 2u); ++r) {
+            for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
+                float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
+                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+            }
+        }
+
+        // 打印中间数据
+        if (rows > 4) {
+            V5_DEBUG_PRINTF("  Middle data:\n");
+            uint32_t mid_row = rows / 2;
+            for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
+                float val = static_cast<float>(ubTensor.GetValue(mid_row * cols + c));
+                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", mid_row, c, val);
+            }
+        }
+
+        // 打印尾部数据
+        if (rows > 2) {
+            V5_DEBUG_PRINTF("  Tail data:\n");
+            for (uint32_t r = rows - min(rows, 2u); r < rows; ++r) {
+                for (uint32_t c = cols - min(cols, sample_points); c < cols; ++c) {
+                    float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
+                    V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+                }
+            }
+        }
+        V5_DEBUG_PRINTF("--- End Sampling [%s] ---\n", tensorName);
+    }
+#endif
+}
+
+template <typename IFAT>
 __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SInnerLoopFunc(const uint32_t sInnerLoopIdx)
 {
     // mm1
     Bmm1Compute();
+    // 采样 Bmm1 的结果 (Q @ K.T)
+    // SampleAndPrintUbData("Bmm1Res (Scores)", bmm1ResUb, 1, actualSingleProcessSInnerSizeAlign, n2Idx);
 
     // v1
     ProcessVec1(sInnerLoopIdx);
+    // 采样 Softmax 后的结果 (Probabilities)
+    // 注意：Softmax的结果通常会写回bmm1ResUb，所以我们再次采样它
+    // SampleAndPrintUbData("SoftmaxRes (Probs)", bmm1ResUb, 1, actualSingleProcessSInnerSizeAlign, n2Idx);
 
     // mm2
     Bmm2Compute();
-
+    // 采样 Bmm2 的结果 (Probs @ V)
+    // SampleAndPrintUbData("Bmm2Res (Weighted V)", bmm2ResUb, 1, headDimAlign, n2Idx);
+    
     // v2
     ProcessVec2(sInnerLoopIdx);
+    // 如果需要，可以在ProcessVec2之后再次采样bmm2ResUb，观察最终的输出
+    // SampleAndPrintUbData("Final Output", bmm2ResUb, 1, headDimAlign, n2Idx);
 }
 
 template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
