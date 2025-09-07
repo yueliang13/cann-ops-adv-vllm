@@ -48,7 +48,6 @@ public:
     __aicore__ inline void Process(GM_ADDR page_position_length)
     {
         if (g_coreType == AIV && blockIdx >= usedCoreNum) {
-            return;
             // skip cores
         } else {
             int64_t multiCoreInnerOffset = this->blockIdx * this->blockSize;
@@ -59,33 +58,41 @@ public:
                 n1Idx = bn1Idx % qHeadNum;
                 n2Idx = n1Idx / groupSize;
                 if (bIdx >= batchSize || n1Idx >= qHeadNum) {
-                    return;
+                    
+                } else {
+                    int64_t indicesOffset = bIdx * qHeadNum * k + n1Idx * k;
+                    AscendC::LocalTensor<int32_t> indicesLocal = inIndices.AllocTensor<int32_t>();
+                    AscendC::DataCopy(indicesLocal, indicesGlobal[indicesOffset], k);
+                    inIndices.EnQue(indicesLocal);
+                    inIndices.DeQue<int32_t>();
+                    indicesLocal.SetSize(k);
+
+                    AscendC::LocalTensor<int32_t> pagePositionLengthLocal = outPagePositionLength.AllocTensor<int32_t>();
+                    pagePositionLengthLocal.SetSize(tplPadding);
+                    AscendC::LocalTensor<int32_t> pagePositionLocal = outPagePosition.AllocTensor<int32_t>();
+                    pagePositionLocal.SetSize(maxPageNum);
+                    AscendC::Duplicate(pagePositionLocal, 0x7fffffff, maxPageNum);
+
+                    CopyIn();
+                    Compute(pagePositionLocal, indicesLocal);
+                    AscendC::Duplicate(pagePositionLengthLocal, pagePositionLength, tplPadding);
+                    outPagePositionLength.EnQue(pagePositionLengthLocal);
+                    outPagePosition.EnQue(pagePositionLocal);
+                    CopyOut();
+                    inIndices.FreeTensor(indicesLocal);
                 }
-
-                int64_t indicesOffset = bIdx * qHeadNum * k + n1Idx * k;
-                AscendC::LocalTensor<int32_t> indicesLocal = inIndices.AllocTensor<int32_t>();
-                AscendC::DataCopy(indicesLocal, indicesGlobal[indicesOffset], k);
-                inIndices.EnQue(indicesLocal);
-                inIndices.DeQue<int32_t>();
-                indicesLocal.SetSize(k);
-
-                AscendC::LocalTensor<int32_t> pagePositionLengthLocal = outPagePositionLength.AllocTensor<int32_t>();
-                pagePositionLengthLocal.SetSize(tplPadding);
-                AscendC::LocalTensor<int32_t> pagePositionLocal = outPagePosition.AllocTensor<int32_t>();
-                pagePositionLocal.SetSize(maxPageNum);
-                AscendC::Duplicate(pagePositionLocal, 0x7fffffff, maxPageNum);
-
-                CopyIn();
-                Compute(pagePositionLocal, indicesLocal);
-                AscendC::Duplicate(pagePositionLengthLocal, pagePositionLength, tplPadding);
-                outPagePositionLength.EnQue(pagePositionLengthLocal);
-                outPagePosition.EnQue(pagePositionLocal);
-                CopyOut();
-                inIndices.FreeTensor(indicesLocal);
             }
         
         }
-    }
+        printf("__CCE_AICORE__: %d\n", __CCE_AICORE__);
+        #if (__CCE_AICORE__ > 200)
+            SyncAll();
+
+            if (blockIdx == 0) {
+                printf("blockIdx: %d, usedCoreNum: %d\n", blockIdx, usedCoreNum);
+            }
+        #endif
+}
 private:
     __aicore__ inline void CopyIn()
     {

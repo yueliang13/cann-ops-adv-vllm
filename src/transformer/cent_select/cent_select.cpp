@@ -51,6 +51,7 @@ public:
         seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(seq_len), batchSize);
         pagePositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position), batchSize * qHeadNum * maxPageNum);
         pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position_length), batchSize * qHeadNum*tplPadding);
+
         // 8 is padding to 32B
 
         // init buffer
@@ -80,14 +81,13 @@ public:
         m_pipe.InitBuffer(selectBlockIdsIndexLocal, maxPage * sizeof(int32_t));
 
         //max page position length
-        // m_pipe.InitBuffer(tmpGlobalPagePositionLength, batchSize * qHeadNum * sizeof(int32_t));
+        // m_pipe.InitBuffer(tmpGlobalPagePositionLength, batchSize * qHeadNum * tplPadding * sizeof(int32_t));
 
     }
     __aicore__ inline void Process(GM_ADDR page_position_length)
     {
         if (g_coreType == AIV && blockIdx >= usedCoreNum) {
-            return;
-            // skip cores
+            // skip
         } else {
             int64_t multiCoreInnerOffset = this->blockIdx * this->blockSize;
             int64_t multiCoreInnerLimit = multiCoreInnerOffset + this->blockSize;
@@ -97,27 +97,19 @@ public:
                 n1Idx = bn1Idx % qHeadNum;
                 n2Idx = n1Idx / numOfGroups;
 
-                if (bIdx >= batchSize || n1Idx >= qHeadNum) {
-                    return;
+                if (bIdx < batchSize && n1Idx < qHeadNum) {
+                    CopyIn();
+                    AscendC::LocalTensor<int32_t> dstIndexLocal = topKDstIndex.Get<int32_t>();
+                    ComputeCent(dstIndexLocal);
+                    SelectPosition(dstIndexLocal);
+                    CopyOut();
                 }
-
-                CopyIn();
-                AscendC::LocalTensor<int32_t> dstIndexLocal = topKDstIndex.Get<int32_t>();
-                ComputeCent(dstIndexLocal);
-                SelectPosition(dstIndexLocal);
-                CopyOut();
             }
-        
         }
-        // SyncAll();
-        // if (g_coreType == AIV && blockIdx == 0) {
-        //     AscendC::LocalTensor<int32_t> pagePositionLengthLocal = tmpGlobalPagePositionLength.AllocTensor<int32_t>();
-
-        //     DataCopyIn(pagePositionLengthLocal, pagePositionLengthGlobal, batchSize * qHeadNum);
-
-        //     printf("blockIdx: %d\n", blockIdx);
-
-        // }
+        SyncAll();
+        if (blockIdx == 0) {
+            printf("blockIdx: %d, usedCoreNum: %d\n", blockIdx, usedCoreNum);
+        }
     }
 private:
     template <typename T> __aicore__ inline T Align(T num, T rnd)
@@ -128,6 +120,13 @@ private:
     template <typename T>
     __aicore__ inline void DataCopyIn(LocalTensor<T> &dstLocal, GlobalTensor<T> srcGm, uint64_t offset,uint32_t blkCnt, uint32_t CntAlign, uint32_t actualCnt)
     {
+        /*
+         * datablock(block) = 32B  （文档中的数据块）
+         * blockCount 指的是有传输多少个blockLen
+         * blockLen 指的是每次传输有多少个datablock  （文档中的连续数据块）   （因此总数据量是：blockCount * blockLen * 32B）
+         * srcStride 原地址的连续数据块的间隔
+         * dstStride 目的地址的连续数据块的间隔
+        */
         uint32_t typeElementSize = ONE_BLK_SIZE / sizeof(T);
         DataCopyParams intriParams;
         intriParams.blockCount = blkCnt;
@@ -152,11 +151,6 @@ private:
         LocalTensor<half> inputUa = inQuery.AllocTensor<half>();
         DataCopyIn<half>(inputUa, queryGlobal, queryOffset, 1, dimNum, dimNum);
         inQuery.EnQue(inputUa);
-
-        // int64_t l1CentOffset = n2Idx * clusterNum * dimNum;
-        // LocalTensor<half> inputUb = inL1Cent.AllocTensor<half>();
-        // DataCopyIn<half>(inputUb, l1CentGlobal, l1CentOffset, clusterNum, dimNum, dimNum);
-        // inL1Cent.EnQue(inputUb);
 
         int64_t blockIdsOffset = n2Idx * kvPageLen;
         AscendC::LocalTensor<int32_t> blockIdsLocal = inBlockIds.AllocTensor<int32_t>();
@@ -186,10 +180,6 @@ private:
             BlockingL1CentCopyIn(clusterBlockOffset);
             LocalTensor<half> inputUb = inL1Cent.DeQue<half>();
             LocalTensor<float> tmpBmm1ResUb = tmpBmm1ResBuff.Get<float>();
-            // uint32_t clusterBlockSize = clusterBlockSize;
-            // if (i == clusterBlockNum - 1) {
-            //     clusterBlockSize = clusterNum - clusterBlockOffset;
-            // }
             VectorCompute(tmpBmm1ResUb, inputUa, inputUb, clusterBlockSize);
             DataCopy(mmResUb[clusterBlockOffset], tmpBmm1ResUb, clusterBlockSize);
             inL1Cent.FreeTensor(inputUb);
@@ -359,11 +349,6 @@ private:
         AscendC::LocalTensor<int32_t> pagePositionLengthLocal = outPagePositionLength.DeQue<int32_t>();
         DataCopy(pagePositionLengthGlobal[pagePositionLengthOffset], pagePositionLengthLocal, tplPadding);
         outPagePositionLength.FreeTensor(pagePositionLengthLocal);
-
-        // int64_t indicesOffset = bIdx * qHeadNum * k + n1Idx * k;
-        // AscendC::LocalTensor<int32_t> indicesLocal = outIndices.DeQue<int32_t>();
-        // DataCopy(indicesGlobal[indicesOffset], indicesLocal, k);
-        // outIndices.FreeTensor(indicesLocal);
     }
     
 private:
@@ -372,25 +357,23 @@ private:
     AscendC::TQue<AscendC::QuePosition::VECIN, 1> inL1Cent;
     AscendC::TQue<AscendC::QuePosition::VECIN, 1> inBlockIds;
     AscendC::TQue<AscendC::QuePosition::VECIN, 1> inBlockTable;
-    // AscendC::TQue<AscendC::QuePosition::VECIN, 1> inIndices;
     AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePosition;
     AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outPagePositionLength;
-    AscendC::TQue<AscendC::QuePosition::VECOUT, 1> outIndices;
     AscendC::GlobalTensor<int32_t> blockIdsGlobal;
     AscendC::GlobalTensor<int32_t> blockTableGlobal;
     AscendC::GlobalTensor<int32_t> seqLenGlobal;
-    // AscendC::GlobalTensor<int32_t> indicesGlobal;
     AscendC::GlobalTensor<half> queryGlobal;
     AscendC::GlobalTensor<half> l1CentGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionLengthGlobal;
-    AscendC::GlobalTensor<int32_t> indicesGlobal;
+
+
     // position
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffPageBatch;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectReduce;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectTmp;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> selectBlockIdsIndexLocal;
-    AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpGlobalPagePositionLength;
+    // AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpGlobalPagePositionLength;
 
     // compute cent
     AscendC::TBuf<> tmpBuff1;    // 32K
