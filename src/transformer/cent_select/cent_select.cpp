@@ -81,7 +81,7 @@ public:
         m_pipe.InitBuffer(selectBlockIdsIndexLocal, maxPage * sizeof(int32_t));
 
         //max page position length
-        // m_pipe.InitBuffer(tmpGlobalPagePositionLength, batchSize * qHeadNum * tplPadding * sizeof(int32_t));
+        m_pipe.InitBuffer(tmpGlobalPagePositionLength, qHeadNum * sizeof(int32_t));
 
     }
     __aicore__ inline void Process(GM_ADDR page_position_length)
@@ -107,7 +107,15 @@ public:
             }
         }
         SyncAll();
-        if (blockIdx == 0) {
+        if (g_coreType == AIV && blockIdx < batchSize) {
+            AscendC::LocalTensor<int32_t> tmpGlobalPagePositionLengthLocal = tmpGlobalPagePositionLength.Get<int32_t>();
+            uint64_t mask = [72340172838076673,0]
+            uint32_t repeatTimes = qHeadNum / 8;
+            CopyRepeatParams repeatParams = {1, 1, 8, 8};
+            int32_t offset = blockIdx;
+            DumpTensor(pagePositionLengthLocal[offset], 0, qHeadNum*tplPadding);
+            AscendC::Copy(tmpGlobalPagePositionLengthLocal, pagePositionLengthLocal[offset], mask, repeatTimes, repeatParams);
+            DumpTensor(tmpGlobalPagePositionLengthLocal, 1, qHeadNum);
             printf("blockIdx: %d, usedCoreNum: %d\n", blockIdx, usedCoreNum);
         }
     }
@@ -373,7 +381,7 @@ private:
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectReduce;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffSelectTmp;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> selectBlockIdsIndexLocal;
-    // AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpGlobalPagePositionLength;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpGlobalPagePositionLength;
 
     // compute cent
     AscendC::TBuf<> tmpBuff1;    // 32K
