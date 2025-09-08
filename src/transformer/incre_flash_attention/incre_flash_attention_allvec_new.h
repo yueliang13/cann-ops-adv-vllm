@@ -2003,10 +2003,12 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
             GetBN2id(bn2Idx);
             GetActualSeqLen();
             CalculateSUnitSize();
-            // ComputeKVPaddingBeginOffset return false means this loop skip calculation
-            if (!ComputeKVPaddingBeginOffset()) {
-                continue;
-            }
+            
+            // 不考虑KVpadding <暂时在vllm中没开这个特性>
+            // // ComputeKVPaddingBeginOffset return false means this loop skip calculation
+            // if (!ComputeKVPaddingBeginOffset()) {
+            //     continue;
+            // }
 
             // 计算BN2方向的offset
             CalcBN2Offset();
