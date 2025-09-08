@@ -1,0 +1,13 @@
+Fail to import hypothesis in common_utils, tests are not derandomized
+qShape: [4, 32, 128]
+l1Shape: [8, 512, 128]
+blockIdsShape: [8, 1280]
+blockTableShape: [256, 1024]
+seqLenShape: [4]
+indicesShape: [4, 32, 64]
+batchSize_: 4, qHeadNum_: 32, kvHeadNum_: 8, kvPageLen_: 1280, k_: 64, maxBatch_: 256, maxPage_: 1024, maxPageNum_: 256, usedCoreNum_: 48, blockSize_: 3, numOfGroups_: 4
+batchSize_: 4, qHeadNum_: 32, kvHeadNum_: 8, numOfGroups_: 4, blockSize_: 3, usedCoreNum_: 48
+dimNum_: 128, clusterNum_: 512
+kvPageLen_: 1280, maxBatch_: 256, maxPage_: 1024, maxPageNum_: 256
+k_: 64
+TopK maxsize: 10240, minsize: 10240
