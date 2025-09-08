@@ -44,17 +44,22 @@ class CentSelect : public OpDef {
             //     .Format({ge::FORMAT_ND})
             //     .UnknownShapeFormat({ge::FORMAT_ND})
             //     .AutoContiguous(); 
-            this->Output("token_position")
+            this->Output("page_position")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
                 .UnknownShapeFormat({ge::FORMAT_ND})
                 .AutoContiguous();    
-            this->Output("token_position_length")
+            this->Output("page_position_length")
                 .ParamType(REQUIRED)
                 .DataType({ge::DT_INT32})
                 .Format({ge::FORMAT_ND})
                 .UnknownShapeFormat({ge::FORMAT_ND});  
+            this->Output("max_page_position_length")
+                .ParamType(REQUIRED)
+                .DataType({ge::DT_INT32})
+                .Format({ge::FORMAT_ND})
+                .UnknownShapeFormat({ge::FORMAT_ND});
             // this->Output("indices")
             //     .ParamType(REQUIRED)
             //     .DataType({ge::DT_INT32})
