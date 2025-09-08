@@ -1317,15 +1317,19 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
                                                                                  uint32_t dealRowCount)
 {
     uint64_t step;
-    if constexpr (!PAGE_ATTENTION) {
-        if constexpr (LAYOUT_T == LAYOUT::BNSD) {
-            step = headDim;
-        } else {
-            step = kvHeadNum * headDim;
-        }
-    } else {
-        step = kvHeadNum * headDim;
-    }
+    // if constexpr (!PAGE_ATTENTION) {
+    //     if constexpr (LAYOUT_T == LAYOUT::BNSD) {
+    //         step = headDim;
+    //     } else {
+    //         step = kvHeadNum * headDim;
+    //     }
+    // } else {
+    //     step = kvHeadNum * headDim;
+    // }
+    
+    // 当前场景的vllm 输入的KV都是BSH的，所以step可以固定为kvHeadNum * headDim
+    step = kvHeadNum * headDim;
+
     LocalTensor<KV_T> keyUb = inputQue2.template AllocTensor<KV_T>();
     if constexpr (PAGE_ATTENTION) {
         uint32_t curSeqIdx = s2BatchOffset + startRow; // 当前需要处理的Seq的起点
@@ -1340,16 +1344,20 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
                 copyRowCnt = dealRowCount - copyFinishRowCnt;
             } // 防止拷多了
 
-            uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
+            // uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
 
-            if (useBlockPosition) {
-                // // 在初始化阶段打印这些值
-                // V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
-                //                 maxPositionNumPerBatch, blockPositionBaseOffset);
-                uint64_t positionOffset =
-                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
-                blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
-            }
+            // if (useBlockPosition) {
+            //     // // 在初始化阶段打印这些值
+            //     // V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
+            //     //                 maxPositionNumPerBatch, blockPositionBaseOffset);
+            //     uint64_t positionOffset =
+            //         blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            //     blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+            // }
+
+            // vllm 场景下默认输入useBlockPosition
+            uint64_t positionOffset = blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            uint64_t blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
 
             if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
                 // 在actualSeqLengths的基础上长度对应的blockIdOffset之后 再搬固定长度30的Token用来计算
@@ -1460,15 +1468,18 @@ template <typename IFAT>
 __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(uint32_t startRow, uint32_t dealRowCount)
 {
     uint64_t step;
-    if constexpr (!PAGE_ATTENTION) {
-        if constexpr (LAYOUT_T == LAYOUT::BNSD) {
-            step = headDim;
-        } else {
-            step = kvHeadNum * headDim;
-        }
-    } else {
-        step = kvHeadNum * headDim;
-    }
+    // if constexpr (!PAGE_ATTENTION) {
+    //     if constexpr (LAYOUT_T == LAYOUT::BNSD) {
+    //         step = headDim;
+    //     } else {
+    //         step = kvHeadNum * headDim;
+    //     }
+    // } else {
+    //     step = kvHeadNum * headDim;
+    // }
+    
+    // vllm 场景下 只支持BSH的kv
+    step = kvHeadNum * headDim;
 
     LocalTensor<KV_T> valueUb = inputQue2.template AllocTensor<KV_T>();
     if constexpr (PAGE_ATTENTION) {
@@ -1484,13 +1495,16 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
                 copyRowCnt = dealRowCount - copyFinishRowCnt;
             } // 防止拷多了
 
-            uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
+            // uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
 
-            if (useBlockPosition) {
-                uint64_t positionOffset =
-                    blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
-                blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
-            }
+            // if (useBlockPosition) {
+            //     uint64_t positionOffset =
+            //         blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            //     blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+            // }
+            uint64_t positionOffset =
+                blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            uint64_t blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
 
             if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
                 // V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
@@ -1513,6 +1527,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
             } else {
                 uint64_t idInBlockTable =
                     blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                
                 uint64_t curOffset =
                     (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
                 CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
