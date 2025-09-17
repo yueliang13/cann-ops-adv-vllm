@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 /**
- * @brief aclnnIncreFlashAttentionV5GetWorkspaceSize的第一段接口，根据具体的计算流程，计算workspace大小。
+ * @brief aclnnSparsePagedAttentionGetWorkspaceSize的第一段接口，根据具体的计算流程，计算workspace大小。
  * @domain aclnn_ops_infer
  * @param [in] query : required
  * @param [in] key : dynamic
@@ -47,7 +47,7 @@ extern "C" {
  * @param [out] executor : executor context(output).
  * @return aclnnStatus: 返回状态码
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttentionV5GetWorkspaceSize(
+__attribute__((visibility("default"))) aclnnStatus aclnnSparsePagedAttentionGetWorkspaceSize(
     const aclTensor *query, const aclTensorList *key, const aclTensorList *value, const aclTensor *pseShift,
     const aclTensor *attenMask, const aclIntArray *actualSeqLengths, const aclTensor *dequantScale1,
     const aclTensor *quantScale1, const aclTensor *dequantScale2, const aclTensor *quantScale2,
@@ -57,14 +57,14 @@ __attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttentionV5Get
     const aclTensor *attentionOut, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**
- * funtion: aclnnIncreFlashAttentionV5
+ * funtion: aclnnSparsePagedAttention
  * @param [in] workspace : workspace memory addr(input).
  * @param [in] workspaceSize : size of workspace(input).
  * @param [in] executor : executor context(input).
  * @param [in] stream : acl stream.
  * @return aclnnStatus: 返回状态码
  */
-__attribute__((visibility("default"))) aclnnStatus aclnnIncreFlashAttentionV5(void *workspace, uint64_t workspaceSize,
+__attribute__((visibility("default"))) aclnnStatus aclnnSparsePagedAttention(void *workspace, uint64_t workspaceSize,
                                                                               aclOpExecutor *executor,
                                                                               const aclrtStream stream);
 

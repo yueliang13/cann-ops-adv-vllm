@@ -37,7 +37,7 @@ at::Tensor incre_flash_attention_v4_impl_npu(const at::Tensor &query,
                                              int64_t num_key_value_heads,
                                              int64_t block_size,
                                              int64_t inner_precise);
-at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std::vector<at::Tensor> &key_list,
+at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::vector<at::Tensor> &key_list,
                                              const std::vector<at::Tensor> &value_list, const at::Tensor &pse_shift,
                                              const at::Tensor &attention_mask, const at::Tensor &actual_seq_lengths,
                                              const at::Tensor &dequant_scale1, const at::Tensor &quant_scale1,

@@ -28,7 +28,7 @@ target_sources(opapi PRIVATE
         aclnn_incre_flash_attention_v2.cpp
         aclnn_incre_flash_attention_v3.cpp
         aclnn_incre_flash_attention_v4.cpp
-        aclnn_incre_flash_attention_v5.cpp
+        aclnn_sparse_paged_attention.cpp
 )
 
 target_sources(optiling PRIVATE
@@ -53,6 +53,6 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention.h
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v2.h
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v3.h
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v4.h
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v5.h
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_sparse_paged_attention.h
         DESTINATION ${ACLNN_INC_INSTALL_DIR} OPTIONAL
 )

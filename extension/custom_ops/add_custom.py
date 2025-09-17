@@ -38,7 +38,7 @@ def incre_flash_attention_v4(query: torch.Tensor,
         antiquant_scale, antiquant_offset, blocktable, kv_padding_size,
         num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise
     )
-def incre_flash_attention_v5(query: torch.Tensor,
+def sparse_paged_attention(query: torch.Tensor,
                            key: torch.Tensor,
                            value: torch.Tensor,
                            pse_shift: torch.Tensor,
@@ -61,13 +61,13 @@ def incre_flash_attention_v5(query: torch.Tensor,
                            block_size: int,
                            inner_precise: int) -> torch.Tensor:
     """
-    封装 incre_flash_attention_v5 算子的 Python 接口
+    封装 sparse_paged_attention 算子的 Python 接口
     """
 
     key_list = [key]
     value_list = [value]
 
-    return custom_ops_lib.incre_flash_attention_v5(
+    return custom_ops_lib.sparse_paged_attention(
         query, key_list, value_list, pse_shift, attention_mask, actual_seq_lengths,
         dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2,
         antiquant_scale, antiquant_offset, blocktable, kv_padding_size,

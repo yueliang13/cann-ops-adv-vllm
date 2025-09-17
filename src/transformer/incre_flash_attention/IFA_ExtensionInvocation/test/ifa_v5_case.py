@@ -7,7 +7,7 @@ import copy
 import math
 import numpy as np # 导入 numpy 来进行精确的类型转换
 
-class TestIncreFlashAttentionV5(TestCase):
+class Test_aclnnSparsePagedAttention(TestCase):
    
     def test_multi_head_block_table_and_position(self):
         """
@@ -711,7 +711,7 @@ class TestIncreFlashAttentionV5(TestCase):
 
         print("调用算子...")
         # 调用算子
-        output = custom_ops.incre_flash_attention_v5(
+        output = custom_ops.sparse_paged_attention(
             query_npu, key_npu, value_npu,
             empty_tensor,  # pse_shift
             empty_tensor,  # mask
@@ -823,7 +823,7 @@ class TestIncreFlashAttentionV5(TestCase):
 
 if __name__ == "__main__":
     def run_single_test():
-        test = TestIncreFlashAttentionV5("test_block_size_head_layout_vllm_result")
+        test = Test_aclnnSparsePagedAttention("test_block_size_head_layout_vllm_result")
         test.setUp()
         test.test_block_size_head_layout_vllm_result()
         test.tearDown()

@@ -14,7 +14,7 @@
 #include <iostream> // 1. 包含 iostream 头文件
 #include "acl/acl.h"
 #include "aclnnop/aclnn_incre_flash_attention_v4.h"
-#include "aclnn_incre_flash_attention_v5.h"
+#include "aclnn_sparse_paged_attention.h"
 #include "aclnn_compute_cent.h"
 #include "aclnn_select_position.h"
 #include "aclnn_cent_select.h"
@@ -536,7 +536,7 @@ at::Tensor incre_flash_attention_v4_impl_npu_ues_CMD(const at::Tensor &query,
 
 // 为NPU设备注册前向实现 - 按照官方接口完整参数
 // 主要实现函数
-at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std::vector<at::Tensor> &key_list_vec,
+at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::vector<at::Tensor> &key_list_vec,
                                              const std::vector<at::Tensor> &value_list_vec, const at::Tensor &pse_shift,
                                              const at::Tensor &attention_mask, const at::Tensor &actual_seq_lengths,
                                              const at::Tensor &dequant_scale1, const at::Tensor &quant_scale1,
@@ -625,11 +625,11 @@ at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std:
         aclOpExecutor *executor = nullptr;
 
         #ifdef DEBUG
-        std::cout << "[LOG] Calling aclnnIncreFlashAttentionV5GetWorkspaceSize..." << std::endl;
+        std::cout << "[LOG] Calling aclnnSparsePagedAttentionGetWorkspaceSize..." << std::endl;
         std::cout.flush();
         #endif
 
-        int ret = aclnnIncreFlashAttentionV5GetWorkspaceSize(
+        int ret = aclnnSparsePagedAttentionGetWorkspaceSize(
             queryTensor,           // 1. queryTensor
             tensorKeyList,         // 2. tensorKeyList
             tensorValueList,       // 3. tensorValueList
@@ -700,15 +700,15 @@ at::Tensor incre_flash_attention_v5_impl_npu(const at::Tensor &query, const std:
         // 获取当前 NPU 流
         auto stream = c10_npu::getCurrentNPUStream().stream(false);
 
-        ret = aclnnIncreFlashAttentionV5(workspaceAddr, workspaceSize, executor, stream);
+        ret = aclnnSparsePagedAttention(workspaceAddr, workspaceSize, executor, stream);
 
         #ifdef DEBUG
-        std::cout << "[LOG] aclnnIncreFlashAttentionV5 returned: " << ret << std::endl;
+        std::cout << "[LOG] aclnnSparsePagedAttention returned: " << ret << std::endl;
         #endif
 
         if (ret != 0) {
             std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
-            throw std::runtime_error("aclnnIncreFlashAttentionV5 failed with code: " + std::to_string(ret));
+            throw std::runtime_error("aclnnSparsePagedAttention failed with code: " + std::to_string(ret));
         }
 
         // 7. 清理资源
@@ -836,7 +836,7 @@ std::tuple<at::Tensor, at::Tensor>  cent_select_impl_npu(const at::Tensor &query
 TORCH_LIBRARY_IMPL(myops, PrivateUse1, m)
 {
     m.impl("incre_flash_attention_v4", &incre_flash_attention_v4_impl_npu);
-    m.impl("incre_flash_attention_v5", &incre_flash_attention_v5_impl_npu);
+    m.impl("sparse_paged_attention", &sparse_paged_attention_impl_npu);
     m.impl("compute_cent", &compute_cent_impl_npu);
     m.impl("select_position", &select_position_impl_npu);
     m.impl("cent_select", &cent_select_impl_npu);

@@ -8,7 +8,7 @@
  * See LICENSE in the root of the software repository for the full text of the License.
  */
 
-#include "aclnn_incre_flash_attention_v5.h"
+#include "aclnn_sparse_paged_attention.h"
 #include "graph/types.h"
 
 #ifdef __cplusplus
@@ -27,7 +27,7 @@ extern aclnnStatus aclnnInnerIncreFlashAttentionGetWorkspaceSize(
 extern aclnnStatus aclnnInnerIncreFlashAttention(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
                                                  const aclrtStream stream);
 
-aclnnStatus aclnnIncreFlashAttentionV5GetWorkspaceSize(
+aclnnStatus aclnnSparsePagedAttentionGetWorkspaceSize(
     const aclTensor *query, const aclTensorList *key, const aclTensorList *value, const aclTensor *pseShift,
     const aclTensor *attenMask, const aclIntArray *actualSeqLengths, const aclTensor *deqScale1,
     const aclTensor *quantScale1, const aclTensor *deqScale2, const aclTensor *quantScale2,
@@ -44,7 +44,7 @@ aclnnStatus aclnnIncreFlashAttentionV5GetWorkspaceSize(
     return ret;
 }
 
-aclnnStatus aclnnIncreFlashAttentionV5(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
+aclnnStatus aclnnSparsePagedAttention(void *workspace, uint64_t workspaceSize, aclOpExecutor *executor,
                                        const aclrtStream stream)
 {
     aclnnStatus ret = aclnnInnerIncreFlashAttention(workspace, workspaceSize, executor, stream);
