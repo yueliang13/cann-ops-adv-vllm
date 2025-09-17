@@ -146,9 +146,9 @@ def compare_tensors(tensor1: torch.Tensor, tensor2: torch.Tensor,
         bool: 是否一致
     """
     if verbose:
-        print(f"{context} : 比较tensor1和tensor2")
-        print(f"           tensor1 shape: {tensor1.shape}, dtype: {tensor1.dtype}, device: {tensor1.device}")
-        print(f"           tensor2 shape: {tensor2.shape}, dtype: {tensor2.dtype}, device: {tensor2.device}")
+        print(f"{context} : 比较kernel和torch的结果")
+        print(f"           kernel out shape: {tensor1.shape}, dtype: {tensor1.dtype}, device: {tensor1.device}")
+        print(f"           torch out shape: {tensor2.shape}, dtype: {tensor2.dtype}, device: {tensor2.device}")
     
     # 检查形状
     if check_shape and tensor1.shape != tensor2.shape:
