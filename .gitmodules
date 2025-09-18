@@ -1,0 +1,4 @@
+[submodule "ascend-pytorch"]
+	path = external/ascend-pytorch
+	url = https://gitee.com/ascend/pytorch.git
+	branch = v2.1.0-7.1.0
