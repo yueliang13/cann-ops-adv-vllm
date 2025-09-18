@@ -54,7 +54,7 @@ public:
         seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(seq_len), batchSize);
         pagePositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position), batchSize * qHeadNum * maxPageNum);
         pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position_length), batchSize * qHeadNum * tplPadding);
-        maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(max_page_position_length), batchSize * tplPadding);
+        maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(max_page_position_length), batchSize * tplPadding);
 
         // 8 is padding to 32B
 
@@ -88,12 +88,13 @@ public:
         // m_pipe.InitBuffer(gatherPagePositionLength, qHeadNum * tplPadding * sizeof(int32_t));
         m_pipe.InitBuffer(totalPagePositionLength, qHeadNum * tplPadding * sizeof(int32_t));
         m_pipe.InitBuffer(totalPagePositionLengthFloat, qHeadNum * tplPadding * sizeof(float));
+        m_pipe.InitBuffer(outMaxPagePositionLengthInt32, qHeadNum * tplPadding * sizeof(int32_t));
         // m_pipe.InitBuffer(gatherPageMask, tplPadding * sizeof(uint32_t));
 
         // max
         m_pipe.InitBuffer(maxWorkLocal, maxWorkSize * sizeof(uint8_t));
         m_pipe.InitBuffer(dstMaxLocal, 1 * sizeof(float));
-        m_pipe.InitBuffer(outMaxPagePositionLength,1 , tplPadding * sizeof(int32_t));
+        m_pipe.InitBuffer(outMaxPagePositionLength,1 , tplPadding * sizeof(int64_t));
 
     }
     __aicore__ inline void Process(GM_ADDR page_position_length)
@@ -122,7 +123,7 @@ public:
         if (g_coreType == AIV && blockIdx < batchSize) {
             AscendC::LocalTensor<int32_t> totalPagePositionLengthLocal = totalPagePositionLength.Get<int32_t>();
             // AscendC::LocalTensor<int32_t> gatherPagePositionLengthLocal = gatherPagePositionLength.Get<int32_t>();
-            AscendC::DataCopy(totalPagePositionLengthLocal, pagePositionLengthGlobal[blockIdx], qHeadNum*tplPadding);
+            AscendC::DataCopy(totalPagePositionLengthLocal, pagePositionLengthGlobal[blockIdx * qHeadNum * tplPadding], qHeadNum*tplPadding);
             // DumpTensor(totalPagePositionLengthLocal, 0, qHeadNum*tplPadding);
 
             AscendC::LocalTensor<float> totalPagePositionLengthFloatLocal = totalPagePositionLengthFloat.Get<float>();
@@ -139,13 +140,13 @@ public:
             // printf("dstLocal: %f,\n", dstLocal.GetValue(0));
             float tmp = dstLocal.GetValue(0);
             int32_t maxSeqLen = dstLocal.GetValue(0) * 128;
-            // printf("dstLocal: %d,\n", maxSeqLen);
+            AscendC::LocalTensor<int32_t> outMaxPagePositionLengthInt32Local = outMaxPagePositionLengthInt32.Get<int32_t>();
+            AscendC::Duplicate(outMaxPagePositionLengthInt32Local, maxSeqLen, tplPadding);
 
-            AscendC::LocalTensor<int32_t> outMaxPagePositionLengthLocal = outMaxPagePositionLength.AllocTensor<int32_t>();
-
-            AscendC::Duplicate(outMaxPagePositionLengthLocal, maxSeqLen, tplPadding);
+            AscendC::LocalTensor<int64_t> outMaxPagePositionLengthLocal = outMaxPagePositionLength.AllocTensor<int64_t>();
+            AscendC::Cast(outMaxPagePositionLengthLocal, outMaxPagePositionLengthInt32Local,  AscendC::RoundMode::CAST_NONE, tplPadding);
             outMaxPagePositionLength.EnQue(outMaxPagePositionLengthLocal);
-            outMaxPagePositionLength.DeQue<int32_t>();
+            outMaxPagePositionLength.DeQue<int64_t>();
             AscendC::DataCopy(maxPagePositionLengthGlobal[blockIdx*tplPadding], outMaxPagePositionLengthLocal, tplPadding);
             outMaxPagePositionLength.FreeTensor(outMaxPagePositionLengthLocal);
 
@@ -412,7 +413,7 @@ private:
     AscendC::GlobalTensor<half> l1CentGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionLengthGlobal;
-    AscendC::GlobalTensor<int32_t> maxPagePositionLengthGlobal;
+    AscendC::GlobalTensor<int64_t> maxPagePositionLengthGlobal;
 
 
 
@@ -424,6 +425,7 @@ private:
     // AscendC::TBuf<AscendC::QuePosition::VECCALC> gatherPagePositionLength;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> totalPagePositionLength;
     AscendC::TBuf<AscendC::QuePosition::VECCALC> totalPagePositionLengthFloat;
+    AscendC::TBuf<AscendC::QuePosition::VECCALC> outMaxPagePositionLengthInt32;
     // AscendC::TBuf<AscendC::QuePosition::VECCALC> gatherPageMask;
 
 
@@ -482,7 +484,8 @@ private:
     uint64_t n1Idx = 0;
     uint64_t n2Idx = 0;
     int32_t pagePositionLength = 0;
-    int32_t tplPadding = 8; // padding to 32B
+    int32_t tplPadding = 8; // padding to 32B for int32
+    int32_t tplPaddingHalf = 4; // padding to 32B for int64
     int32_t seqLen = 0;
     int32_t pageLen = 0;
     int32_t gatherMaskLen = 0;

@@ -816,7 +816,7 @@ std::tuple<at::Tensor, at::Tensor>  cent_select_impl_npu(const at::Tensor &query
     auto max_page_len = block_table.sizes()[1];
     at::Tensor page_position = at::empty({batch_size, q_head_num, max_page_num}, block_ids.options());
     at::Tensor page_position_length = at::empty({batch_size, q_head_num, 8}, block_ids.options());
-    at::Tensor max_page_position_length = at::empty({batch_size, 8}, block_ids.options());
+    at::Tensor max_page_position_length = at::empty({batch_size, 8}, block_ids.options().dtype(torch::kInt64));
     // call aclnn interface to perform the computation
     try {
         EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len, page_position, page_position_length, max_page_position_length);

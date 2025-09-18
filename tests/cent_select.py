@@ -11,7 +11,7 @@ class TestCustomAdd(TestCase):
     def test_add_custom_ops(self):
         torch.npu.set_device(0)
         
-        batch = 4
+        batch = 8
         n1 = 32
         n2 = 8
         g = n1 // n2
@@ -54,23 +54,24 @@ class TestCustomAdd(TestCase):
         block_table_npu = block_table.npu()
         seq_len_npu = seq_len.npu()
 
+        print("q_npu shape:", q_npu.shape)
+        print("l1_npu shape:", l1_npu.shape)
+        print("block_ids_npu shape:", block_ids_npu.shape)
+        print("block_table_npu shape:", block_table_npu.shape)
+        print("seq_len_npu shape:", seq_len_npu.shape)
+
         page_position, max_page_position_length = custom_ops.cent_select(q_npu, l1_npu, block_ids_npu, block_table_npu, seq_len_npu)
 
         torch_indices = torch_compute_cent(q_npu, l1_npu)
         torch_page_position, torch_page_position_length, torch_indices_full = torch_select_position(block_ids_npu, block_table_npu, seq_len_npu, torch_indices, block_size=blockSize)
 
-        print("max_page_position_length:", max_page_position_length)
-
-        # print("page_position:", page_position)
-        # print("torch_page_position:", torch_page_position)
-        # print("page_position_length:", page_position_length[:,:,0])
-        # print("torch_page_position_length:", torch_page_position_length)
+        print(f"max_page_position_length: {max_page_position_length}, shape: {max_page_position_length.shape}, dtype: {max_page_position_length.dtype}")
+        print("max_page_position_length[:,0]:", max_page_position_length[:,0])
+        max_page_position_length = max_page_position_length[:,0]
+        torch_page_position_length = torch_page_position_length.to(torch.int64).max(dim=1)[0] * blockSize
 
         compare_tensors(page_position, torch_page_position, context="page_position", check_shape=False, check_dtype=False)
-        # print("page_position_length:", page_position_length[:,:,0])
-        # print("torch_page_position_length:", torch_page_position_length)
-        # compare_tensors(page_position_length[:,:,0], torch_page_position_length, context="page_position_length", check_shape=False, check_dtype=False)
-        # compare_tensors(indices_npu, torch_indices_full, context="indices", check_shape=False, check_dtype=False)
+        compare_tensors(max_page_position_length, torch_page_position_length, context="max_page_position_length", check_shape=False, check_dtype=False)
 
 if __name__ == "__main__":
     run_tests()
