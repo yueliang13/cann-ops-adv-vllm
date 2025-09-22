@@ -9,11 +9,11 @@
  */
 
 /*!
- * \file incre_flash_attention_allvec_new.h
+ * \file sparse_paged_attention_allvec_new.h 
  * \brief
  */
-#ifndef INCRE_FLASH_ATTENTION_ALLVEC_NEW
-#define INCRE_FLASH_ATTENTION_ALLVEC_NEW
+#ifndef SPARCE_PAGED_ATTENTION_ALLVEC_NEW
+#define SPARCE_PAGED_ATTENTION_ALLVEC_NEW
 
 #include "kernel_operator.h"
 #include "kernel_operator_list_tensor_intf.h"
@@ -1965,4 +1965,4 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
         FlashDecodeCompute();
     }
 }
-#endif // INCRE_FLASH_ATTENTION_ALLVEC_NEW
+#endif // SPARCE_PAGED_ATTENTION_ALLVEC_NEW

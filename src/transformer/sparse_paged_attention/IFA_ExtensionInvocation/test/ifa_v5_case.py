@@ -2,7 +2,7 @@
 import torch
 import torch_npu
 from torch_npu.testing.testcase import TestCase, run_tests
-import custom_ops # pybind导入麻烦
+# import custom_ops # pybind导入麻烦
 import copy
 import math
 import numpy as np # 导入 numpy 来进行精确的类型转换
@@ -206,7 +206,7 @@ class Test_aclnnSparsePagedAttention(TestCase):
         block_num = total_seq_len_kv // block_size
 
         # 设置基准块数和最大差异
-        base_block_num = (4 * 1024) // block_size
+        base_block_num = (10 * 1024) // block_size
         max_actual_block_num_per_seq = base_block_num
 
         print(f"批次大小: {batch_size}, 头数: {num_heads}, 键头数: {key_num_heads}")
@@ -250,8 +250,8 @@ class Test_aclnnSparsePagedAttention(TestCase):
         value_data = torch.full(value_shape, UNSELECTED_BLOCK_VALUE, dtype=torch.float16)
 
         # 必须是int32!!!
-        block_table_data = torch.full(block_table_shape, 0x7FFFFFFF, dtype=torch.int32)
-        block_position_data = torch.full(block_position_shape, 0x7FFFFFFF, dtype=torch.int32)
+        block_table_data = torch.full(block_table_shape, 1, dtype=torch.int32)
+        block_position_data = torch.full(block_position_shape, 1, dtype=torch.int32)
 
         # 优化：预先计算每个头的块索引和值
         head_block_indices = {}
@@ -318,7 +318,7 @@ class Test_aclnnSparsePagedAttention(TestCase):
 
         print("调用算子...")
         # 调用算子
-        output = custom_ops.incre_flash_attention_v5(
+        output = custom_ops.incre_flash_attention_v4(
             query_npu, key_npu, value_npu,
             empty_tensor,  # pse_shift
             empty_tensor,  # mask
@@ -332,7 +332,7 @@ class Test_aclnnSparsePagedAttention(TestCase):
             empty_tensor,  # antiquant_offset
             block_table_npu,
             empty_tensor,  # kv_padding_size
-            block_position_npu,
+            # block_position_npu,
             num_heads,
             np.float32(scale_value),
             layout,
@@ -710,33 +710,78 @@ class Test_aclnnSparsePagedAttention(TestCase):
         inner_precise = 1
 
         print("调用算子...")
+        
+        # # warmup
+        for i in range(10):
+            # 调用算子
+            output = torch_npu.npu_sparse_paged_attention(
+                # positional arguments
+                query_npu,
+                key_npu,
+                value_npu,
+                # keyword-only arguments
+                actual_seq_lengths=seq_len_npu,
+                block_table=block_table_npu,
+                block_position=block_position_npu,
+                num_heads=num_heads,
+                scale_value=np.float32(scale_value),
+                input_layout=layout,
+                num_key_value_heads=key_num_heads,
+                block_size=block_size,
+                inner_precise=inner_precise
+            )
+            
+        torch_npu.npu.synchronize()   
+        import time;
+        start = time.time()
         # 调用算子
-        output = custom_ops.sparse_paged_attention(
-            query_npu, key_npu, value_npu,
-            empty_tensor,  # pse_shift
-            empty_tensor,  # mask
-            seq_len_npu,
-            empty_tensor,  # dequant_scale1
-            empty_tensor,  # quant_scale1
-            empty_tensor,  # dequant_scale2
-            empty_tensor,  # quant_scale2
-            empty_tensor,  # quant_offset2
-            empty_tensor,  # antiquant_scale
-            empty_tensor,  # antiquant_offset
-            block_table_npu,
-            empty_tensor,  # kv_padding_size
-            block_position_npu,
-            num_heads,
-            np.float32(scale_value),
-            layout,
-            key_num_heads,
-            block_size,
-            inner_precise
+        # output = custom_ops.sparse_paged_attention(
+        #         query_npu, key_npu, value_npu,
+        #         empty_tensor,  # pse_shift
+        #         empty_tensor,  # mask
+        #         seq_len_npu,
+        #         empty_tensor,  # dequant_scale1
+        #         empty_tensor,  # quant_scale1
+        #         empty_tensor,  # dequant_scale2
+        #         empty_tensor,  # quant_scale2
+        #         empty_tensor,  # quant_offset2
+        #         empty_tensor,  # antiquant_scale
+        #         empty_tensor,  # antiquant_offset
+        #         block_table_npu,
+        #         empty_tensor,  # kv_padding_size
+        #         block_position_npu,
+        #         num_heads,
+        #         np.float32(scale_value),
+        #         layout,
+        #         key_num_heads,
+        #         block_size,
+        #         inner_precise
+        #     )
+        output = torch_npu.npu_sparse_paged_attention(
+            # positional arguments
+            query_npu,
+            key_npu,
+            value_npu,
+            # keyword-only arguments
+            actual_seq_lengths=seq_len_npu,
+            block_table=block_table_npu,
+            block_position=block_position_npu,
+            num_heads=num_heads,
+            scale_value=np.float32(scale_value),
+            input_layout=layout,
+            num_key_value_heads=key_num_heads,
+            block_size=block_size,
+            inner_precise=inner_precise
         )
-
+        
+        torch_npu.npu.synchronize()
+        end = time.time()
+        elapsed_us = (end - start) * 1000000
+        print(f"执行时间: {elapsed_us:.2f} us")
+        
         # 结果验证
         custom_output = output.unsqueeze(2).cpu()
-
+        
         # 分头统计结果
         print("\n=== 计算结果分析 ===")
         for h in range(num_heads):
@@ -827,6 +872,12 @@ if __name__ == "__main__":
         test.setUp()
         test.test_block_size_head_layout_vllm_result()
         test.tearDown()
+    def run_single_test_v4():
+        test = Test_aclnnSparsePagedAttention("test_block_size_head_layout")
+        test.setUp()
+        test.test_block_size_head_layout()
+        test.tearDown()
         
     # run_tests()  # 注释掉原来的运行所有测试的代码
     run_single_test()  # 只运行指定的测试
+    # run_single_test_v4()

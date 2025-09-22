@@ -35,6 +35,7 @@ static const size_t ANTIQUANT_SCALE_INDEX = 11;
 static const size_t ANTIQUANT_OFFSET_INDEX = 12;
 static const size_t BLOCK_TABLE_INDEX = 13;
 static const size_t KV_PADDING_SIZE_INDEX = 14;
+static const size_t BLOCK_POSITION_INDEX = 15;
 static const size_t NUM_HEADS_INDEX = 0;
 static const size_t SCALE_VALUE_INDEX = 1;
 static const size_t LAYOUT_INDEX = 2;
@@ -42,7 +43,7 @@ static const size_t KV_HEAD_NUM_INDEX = 3;
 static const size_t BLOCK_SIZE_INDEX = 4;
 static const size_t INNER_PRECISE_INDEX = 5;
 
-graphStatus IncreHostExecuteFunc(OpExecuteContext *host_api_ctx)
+graphStatus SparseIncreHostExecuteFunc(OpExecuteContext *host_api_ctx)
 {
     OPS_ERR_IF(host_api_ctx == nullptr, OPS_LOG_E("aclnnfallback", "host_api_ctx is null"), return GRAPH_FAILED);
 
@@ -76,6 +77,7 @@ graphStatus IncreHostExecuteFunc(OpExecuteContext *host_api_ctx)
     auto antiquantOffsetGe = host_api_ctx->GetOptionalInputTensor(ANTIQUANT_OFFSET_INDEX);
     auto blocktableGe = host_api_ctx->GetOptionalInputTensor(BLOCK_TABLE_INDEX);
     auto kvPaddingSizeGe = host_api_ctx->GetOptionalInputTensor(KV_PADDING_SIZE_INDEX);
+    auto blockPositionGe = host_api_ctx->GetOptionalInputTensor(BLOCK_POSITION_INDEX);
 
     std::vector<int64_t> actSeqArray;
     if (actualSeqLengthsGe != nullptr) {
@@ -96,18 +98,18 @@ graphStatus IncreHostExecuteFunc(OpExecuteContext *host_api_ctx)
 
     double dScaleValue = *scaleValue;
 
-    // // execute opapi aclnnIncreFlashAttentionV4
+    // execute opapi
     auto api_ret =
-        EXEC_OPAPI_CMD(aclnnIncreFlashAttentionV5, query, ge_tenserListKey, ge_tenserListValue, pseShiftGe, attenMaskGe,
+        EXEC_OPAPI_CMD(aclnnSparsePagedAttention, query, ge_tenserListKey, ge_tenserListValue, pseShiftGe, attenMaskGe,
                        actSeqArray, dequantScale1Ge, quantScale1Ge, dequantScale2Ge, quantScale2Ge, quantOffset2Ge,
-                       antiquantScaleGe, antiquantOffsetGe, blocktableGe, kvPaddingSizeGe, *num_heads, dScaleValue,
+                       antiquantScaleGe, antiquantOffsetGe, blocktableGe, kvPaddingSizeGe, blockPositionGe, *num_heads, dScaleValue,
                        layout, *kvHeadNum, *blockSize, *innerPrecise, output);
     OPS_ERR_IF(api_ret != GRAPH_SUCCESS, OPS_LOG_E("aclnnfallback", "api_ret faild:%u", api_ret), return GRAPH_FAILED);
 
     return GRAPH_SUCCESS;
 }
 
-IMPL_OP(IncreFlashAttention).OpExecuteFunc(IncreHostExecuteFunc).HostInputs({5});
+IMPL_OP(sparsePagedAttention).OpExecuteFunc(SparseIncreHostExecuteFunc).HostInputs({5});
 
 } // namespace fallback
 
