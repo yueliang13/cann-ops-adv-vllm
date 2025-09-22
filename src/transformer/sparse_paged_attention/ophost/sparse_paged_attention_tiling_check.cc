@@ -679,9 +679,9 @@ ge::graphStatus SparseIFATiling::CheckUbSpace()
 
 bool SparseIFATiling::IsFlashDecode() const
 {
-    if (pageAttentionFlag_ && socVersion_ == IfaSocVersion::SOC_ASCEND_910B) {
-        return false;
-    }
+    // if (pageAttentionFlag_ && socVersion_ == IfaSocVersion::SOC_ASCEND_910B) {
+    //     return false;
+    // }
 
     float flashDecodeBNRatio = static_cast<float>(0.4); // 0.4, 经验值
     if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
