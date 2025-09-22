@@ -86,7 +86,7 @@ def select_position(block_ids: torch.Tensor, block_table: torch.Tensor, seq_len:
     """
     return custom_ops_lib.select_position(block_ids, block_table, seq_len, indices)
 
-def cent_select(query: torch.Tensor, l1_cent: torch.Tensor, block_ids: torch.Tensor, block_table: torch.Tensor, seq_len: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def cent_select(query: torch.Tensor, l1_cent: torch.Tensor, block_ids: torch.Tensor, block_table: torch.Tensor, seq_len: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     封装 cent_select 算子的 Python 接口
     """

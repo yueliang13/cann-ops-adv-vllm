@@ -37,6 +37,11 @@ class CentSelect : public OpDef {
                 .Format({ge::FORMAT_ND})
                 .UnknownShapeFormat({ge::FORMAT_ND})
                 .AutoContiguous();
+            this->Input("importance")
+                .ParamType(REQUIRED)
+                .DataType({ge::DT_FLOAT})
+                .Format({ge::FORMAT_ND})
+                .UnknownShapeFormat({ge::FORMAT_ND});
             // this->Attr("k").AttrType(REQUIRED).Int(64);
             // this->Input("indices")
             //     .ParamType(REQUIRED)

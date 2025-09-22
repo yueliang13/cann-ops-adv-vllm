@@ -18,7 +18,7 @@ constexpr uint32_t BUFFER_NUM = 1;
 class CentSelect {
 public:
     __aicore__ inline CentSelect() {}
-    __aicore__ inline void Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR max_page_position_length, GM_ADDR workspace, const CentSelectTilingData *__restrict tilingData)
+    __aicore__ inline void Init(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR importance, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR max_page_position_length, GM_ADDR workspace, const CentSelectTilingData *__restrict tilingData)
     {
         // base
         batchSize = tilingData->bSize;
@@ -52,6 +52,7 @@ public:
         blockIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_ids),  kvHeadNum * kvPageLen);
         blockTableGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table), maxBatch * maxPage);
         seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(seq_len), batchSize);
+        importanceGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ float *>(importance), batchSize * kvHeadNum);
         pagePositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position), batchSize * qHeadNum * maxPageNum);
         pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(page_position_length), batchSize * qHeadNum * tplPadding);
         maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(max_page_position_length), batchSize * tplPadding);
@@ -139,7 +140,7 @@ public:
             
             // printf("dstLocal: %f,\n", dstLocal.GetValue(0));
             float tmp = dstLocal.GetValue(0);
-            int32_t maxSeqLen = dstLocal.GetValue(0) * 128;
+            int32_t maxSeqLen = dstLocal.GetValue(0) * PAGESIZE;
             AscendC::LocalTensor<int32_t> outMaxPagePositionLengthInt32Local = outMaxPagePositionLengthInt32.Get<int32_t>();
             AscendC::Duplicate(outMaxPagePositionLengthInt32Local, maxSeqLen, tplPadding);
 
@@ -212,7 +213,9 @@ private:
         inBlockTable.EnQue(blockTableLocal);
 
         seqLen = seqLenGlobal.GetValue(bIdx);
+        // importance_ = importanceGlobal.GetValue(bIdx * kvHeadNum + n2Idx);
         pageLen = (seqLen + PAGESIZE - 1) / PAGESIZE; 
+        workLoadThreshold = pageLen / 8;;
         gatherMaskLen = pageLen / 8; // page num of one batch
         gatherMaskU32Len = pageLen / 32;
     }   
@@ -374,7 +377,13 @@ private:
         AscendC::Duplicate(pagePositionLocal, 0x7fffffff, maxPageNum);
 
         AscendC::GatherMask(pagePositionLocal, blockIdsIndex, dstResultMaskLocal.ReinterpretCast<uint32_t>(), true, pageLen, {1, 1, 8, 8}, rsvdCnt);
-        pagePositionLength = rsvdCnt;
+        // printf("rsvdCnt: %d, workLoadThreshold: %d\n", rsvdCnt, workLoadThreshold);
+        if (rsvdCnt > workLoadThreshold) {
+            pagePositionLength = workLoadThreshold;
+        } else {
+            pagePositionLength = rsvdCnt;
+        }
+        // pagePositionLength = rsvdCnt;
 
         //output
         AscendC::Duplicate(pagePositionLengthLocal, pagePositionLength, tplPadding);
@@ -409,13 +418,12 @@ private:
     AscendC::GlobalTensor<int32_t> blockIdsGlobal;
     AscendC::GlobalTensor<int32_t> blockTableGlobal;
     AscendC::GlobalTensor<int32_t> seqLenGlobal;
+    AscendC::GlobalTensor<float> importanceGlobal;
     AscendC::GlobalTensor<half> queryGlobal;
     AscendC::GlobalTensor<half> l1CentGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionGlobal;
     AscendC::GlobalTensor<int32_t> pagePositionLengthGlobal;
     AscendC::GlobalTensor<int64_t> maxPagePositionLengthGlobal;
-
-
 
     // position
     AscendC::TBuf<AscendC::QuePosition::VECCALC> tmpBuffPageBatch;
@@ -487,8 +495,10 @@ private:
     int32_t tplPadding = 8; // padding to 32B for int32
     int32_t tplPaddingHalf = 4; // padding to 32B for int64
     int32_t seqLen = 0;
+    float32_t importance_ = 0;
     int32_t pageLen = 0;
     int32_t gatherMaskLen = 0;
+    int32_t workLoadThreshold = 0;
     int32_t gatherMaskU32Len = 0;
 
     // max
@@ -496,12 +506,12 @@ private:
 
 }; // class CentSelect
 
-extern "C" __global__ __aicore__ void cent_select(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR max_page_position_length, GM_ADDR workspace, GM_ADDR tiling)
+extern "C" __global__ __aicore__ void cent_select(GM_ADDR query, GM_ADDR l1_cent, GM_ADDR block_ids, GM_ADDR block_table, GM_ADDR seq_len, GM_ADDR importance, GM_ADDR page_position, GM_ADDR page_position_length, GM_ADDR max_page_position_length, GM_ADDR workspace, GM_ADDR tiling)
 {
     GET_TILING_DATA_WITH_STRUCT(CentSelectTilingData, tilingDataIn, tiling);
     const CentSelectTilingData *__restrict tilingData = &tilingDataIn;
 
     CentSelect op; 
-    op.Init(query, l1_cent, block_ids, block_table, seq_len, page_position,page_position_length, max_page_position_length, workspace, tilingData);
+    op.Init(query, l1_cent, block_ids, block_table, seq_len, importance, page_position,page_position_length, max_page_position_length, workspace, tilingData);
     op.Process(page_position_length);
 }

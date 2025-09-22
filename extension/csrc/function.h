@@ -50,5 +50,5 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
 
 at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent);
 std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices);
-std::tuple<at::Tensor, at::Tensor> cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len);
+std::tuple<at::Tensor, at::Tensor, at::Tensor> cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len);
 #endif // FUNCTION_H_

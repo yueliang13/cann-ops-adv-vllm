@@ -54,8 +54,8 @@ static ge::graphStatus TilingCentSelect(gert::TilingContext* context)
   uint32_t k_ = 64;
 
 
-  // page_position BNmax
-  uint32_t maxPageNum_ = context->GetInputTensor(5)->GetStorageShape().GetDim(2);
+  // page_position 6 BNmax
+  uint32_t maxPageNum_ = context->GetInputTensor(6)->GetStorageShape().GetDim(2);
 
   uint32_t bns = batchSize_ * qHeadNum_;
   usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
