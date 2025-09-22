@@ -9,7 +9,7 @@
  */
 
 /*!
- * \file incre_flash_attention_tiling_base.h
+ * \file sparse_paged_attention_tiling_base.h
  * \brief
  */
 #ifndef IFA_TILING_BASE_DEFINE_H
@@ -80,6 +80,8 @@ constexpr uint32_t ANTIQUANT_SCALE_INPUT_INDEX = 11;
 constexpr uint32_t ANTIQUANT_OFFSET_INPUT_INDEX = 12;
 constexpr uint32_t BLOCK_TABLE_INPUT_INDEX = 13;
 constexpr uint32_t KV_PADDING_SIZE_INPUT_INDEX = 14;
+constexpr uint32_t BLOCK_POSITION_INPUT_INDEX = 15; // blockPosition张量
+
 constexpr uint32_t PER_TOKEN_Split_B = 0;
 constexpr uint32_t PER_TOKEN_Split_S = 1;
 constexpr uint32_t BNSD_B_IDX = 0;

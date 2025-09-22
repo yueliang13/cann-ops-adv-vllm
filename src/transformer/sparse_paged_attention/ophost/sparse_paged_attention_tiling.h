@@ -9,7 +9,7 @@
  */
 
 /*!
- * \file incre_flash_attention_tiling.h
+ * \file sparse_paged_attention_tiling.h
  * \brief
  */
 #ifndef AIR_CXX_RUNTIME_V2_OP_IMPL_INCREFLASHATTENTIONSCORE_NEW_H_
@@ -36,18 +36,19 @@ const uint32_t MAX_SIZE_BATCH = 256U;
 #endif
 namespace optiling {
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionInitOutputParams)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionInitOutputParams)
 TILING_DATA_FIELD_DEF(uint32_t, isPerChnOut)
 TILING_DATA_FIELD_DEF(uint32_t, isOutQuantTypeBf16)
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionInitOutputParamsOp, IncreFlashAttentionInitOutputParams)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionInitOutputParamsOp, SparsePagedAttentionInitOutputParams)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionBaseParams)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionBaseParams)
 TILING_DATA_FIELD_DEF(uint32_t, batchSize)
 TILING_DATA_FIELD_DEF(uint32_t, seqSize)
 TILING_DATA_FIELD_DEF(uint32_t, headSize)
 TILING_DATA_FIELD_DEF(uint32_t, blockSize)
 TILING_DATA_FIELD_DEF(uint32_t, maxBlockNumPerBatch)
+TILING_DATA_FIELD_DEF(uint32_t, maxPositionNumPerBatch)
 TILING_DATA_FIELD_DEF(float, scaleValue)
 TILING_DATA_FIELD_DEF(uint32_t, kvHeadNum)
 TILING_DATA_FIELD_DEF(uint32_t, qHeadNum)
@@ -70,14 +71,14 @@ TILING_DATA_FIELD_DEF(uint32_t, softmaxLseFlag)
 TILING_DATA_FIELD_DEF(uint32_t, totalBlockNum)
 TILING_DATA_FIELD_DEF(uint32_t, antiqSeqSize)
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionBaseParamsOp, IncreFlashAttentionBaseParams)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionBaseParamsOp, SparsePagedAttentionBaseParams)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionCoreParams)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionCoreParams)
 TILING_DATA_FIELD_DEF_ARR(uint32_t, 50, coreSidxEnd); // 50:MAX_CORE_NUM  coreSidxEnd数组首地址要保证8字节对齐
 END_TILING_DATA_DEF;
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionCoreParamsOp, IncreFlashAttentionCoreParams);
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionCoreParamsOp, SparsePagedAttentionCoreParams);
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionSingleCoreParams)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionSingleCoreParams)
 TILING_DATA_FIELD_DEF(uint32_t, sInnerLoopTimes);
 TILING_DATA_FIELD_DEF(uint32_t, singleProcessSInnerSize);
 TILING_DATA_FIELD_DEF(uint32_t, singleProcessSInnerSizeTail);
@@ -86,37 +87,37 @@ TILING_DATA_FIELD_DEF(uint32_t, formerCoreNum);
 TILING_DATA_FIELD_DEF(uint32_t, blockSplitBn2Range);
 TILING_DATA_FIELD_DEF(uint32_t, tailSplitedBatchRange);
 END_TILING_DATA_DEF;
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSingleCoreParamsOp, IncreFlashAttentionSingleCoreParams)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionSingleCoreParamsOp, SparsePagedAttentionSingleCoreParams)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionSingleCoreTensorSize)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionSingleCoreTensorSize)
 TILING_DATA_FIELD_DEF(uint32_t, mmResUbSize);
 TILING_DATA_FIELD_DEF(uint32_t, bmm2ResUbSize);
 END_TILING_DATA_DEF;
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSingleCoreTensorSizeOp, IncreFlashAttentionSingleCoreTensorSize)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionSingleCoreTensorSizeOp, SparsePagedAttentionSingleCoreTensorSize)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionSplitKVParams)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionSplitKVParams)
 TILING_DATA_FIELD_DEF(uint32_t, s2)
 TILING_DATA_FIELD_DEF(uint32_t, sInnerLoopSize)
 TILING_DATA_FIELD_DEF(uint32_t, accumOutSize)
 TILING_DATA_FIELD_DEF(uint32_t, logSumExpSize)
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionSplitKVParamsOp, IncreFlashAttentionSplitKVParams)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionSplitKVParamsOp, SparsePagedAttentionSplitKVParams)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionTilingData)
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionTilingData)
 TILING_DATA_FIELD_DEF_STRUCT(TCubeTiling, bmm1TilingData);
 TILING_DATA_FIELD_DEF_STRUCT(TCubeTiling, bmm2TilingData);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionBaseParams, baseParams);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionSplitKVParams, splitKVParams);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionCoreParams, increFlashAttentionCoreParams);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionSingleCoreParams, increFlashAttentionSingleCoreParams);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionSingleCoreTensorSize, increFlashAttentionSingleCoreTensorSize);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionBaseParams, baseParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionSplitKVParams, splitKVParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionCoreParams, sparsePagedAttentionCoreParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionSingleCoreParams, sparsePagedAttentionSingleCoreParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionSingleCoreTensorSize, sparsePagedAttentionSingleCoreTensorSize);
 TILING_DATA_FIELD_DEF_STRUCT(SoftMaxTiling, softmaxFlashTilingData);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionInitOutputParams, outputParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionInitOutputParams, outputParams);
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionTilingDataOp, IncreFlashAttentionTilingData)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionTilingDataOp, SparsePagedAttentionTilingData)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionTilingDataPrefix)
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionTilingData, base);
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionTilingDataPrefix)
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionTilingData, base);
 TILING_DATA_FIELD_DEF(uint64_t, prefixAttenOutOffset); // 临时输出偏移
 TILING_DATA_FIELD_DEF(uint64_t, userPromptAttenOutOffset);
 TILING_DATA_FIELD_DEF(uint64_t, tmpLseOffset);
@@ -127,23 +128,23 @@ TILING_DATA_FIELD_DEF(uint32_t, tailSplitedBatchRange);
 TILING_DATA_FIELD_DEF(uint32_t, usedCoreNum);
 TILING_DATA_FIELD_DEF(uint32_t, batchSizeQ);
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttentionTilingDataPrefixOp, IncreFlashAttentionTilingDataPrefix)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttentionTilingDataPrefixOp, SparsePagedAttentionTilingDataPrefix)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionTilingDataV2)
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionTilingData, tilingBase);
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionTilingDataPrefix, tilingPrefix);
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionTilingDataV2)
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionTilingData, tilingBase);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionTilingDataPrefix, tilingPrefix);
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttention, IncreFlashAttentionTilingDataV2)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttention, SparsePagedAttentionTilingDataV2)
 
-BEGIN_TILING_DATA_DEF(IncreFlashAttentionEmptyInputTilingData)
-TILING_DATA_FIELD_DEF_STRUCT(IncreFlashAttentionInitOutputParams, outputParams);
+BEGIN_TILING_DATA_DEF(SparsePagedAttentionEmptyInputTilingData)
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedAttentionInitOutputParams, outputParams);
 END_TILING_DATA_DEF
-REGISTER_TILING_DATA_CLASS(IncreFlashAttention_13, IncreFlashAttentionEmptyInputTilingData)
-REGISTER_TILING_DATA_CLASS(IncreFlashAttention_14, IncreFlashAttentionEmptyInputTilingData)
-REGISTER_TILING_DATA_CLASS(IncreFlashAttention_27, IncreFlashAttentionEmptyInputTilingData)
-REGISTER_TILING_DATA_CLASS(IncreFlashAttention_30, IncreFlashAttentionEmptyInputTilingData)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttention_13, SparsePagedAttentionEmptyInputTilingData)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttention_14, SparsePagedAttentionEmptyInputTilingData)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttention_27, SparsePagedAttentionEmptyInputTilingData)
+REGISTER_TILING_DATA_CLASS(SparsePagedAttention_30, SparsePagedAttentionEmptyInputTilingData)
 
-struct IncreFlashAttentionCompileInfo {
+struct SparsePagedAttentionCompileInfo {
     int64_t core_num;
 };
 
@@ -157,7 +158,7 @@ struct OptionalParaInfo {
     const gert::Tensor *tensor;
 };
 
-struct IncreFlashAttentionContext {
+struct SparsePagedAttentionContext {
     const char *opName;
     fe::PlatFormInfos *platformInfo;
     RequiredParaInfo query;
@@ -185,7 +186,8 @@ struct IncreFlashAttentionContext {
     OptionalParaInfo queryRope;
     OptionalParaInfo keyRope;
     OptionalParaInfo keyRopeAntiquantScale;
-
+    OptionalParaInfo blockPosition; // 块位置张量
+    
     RequiredParaInfo attenOut;
     const uint32_t *numHeads;
     const float *scaleValue;
@@ -270,17 +272,17 @@ constexpr uint32_t PER_TOKEN_B = 1;
 constexpr uint32_t PER_TOKEN_S = 2;
 
 
-class IFATiling {
+class SparseIFATiling {
 public:
-    IFATiling() = default;
-    ~IFATiling() = default;
+    SparseIFATiling() = default;
+    ~SparseIFATiling() = default;
 
     ge::graphStatus DoTiling(gert::TilingContext &context);
-    ge::graphStatus RunBigKernelTiling(IncreFlashAttentionContext &context, IncreFlashAttentionTilingDataV2 &tilingData,
+    ge::graphStatus RunBigKernelTiling(SparsePagedAttentionContext &context, SparsePagedAttentionTilingDataV2 &tilingData,
                                        bool isWorkspace = false);
-    ge::graphStatus IncreFlashAttentionSetTilingData(gert::TilingContext &context,
-                                                     IncreFlashAttentionTilingDataV2 &tilingData);
-    static ge::graphStatus ConvertContext(gert::TilingContext &context, IncreFlashAttentionContext &ifaContext);
+    ge::graphStatus SparsePagedAttentionSetTilingData(gert::TilingContext &context,
+                                                     SparsePagedAttentionTilingDataV2 &tilingData);
+    static ge::graphStatus ConvertContext(gert::TilingContext &context, SparsePagedAttentionContext &ifaContext);
     bool NeedRollBack()
     {
         return passToOldTiling_;
@@ -474,6 +476,7 @@ private:
 
     bool pageAttentionFlag_ = false;
     uint32_t maxBlockNumPerBatch_ = 0;
+    uint32_t maxPositionNumPerBatch_ = 0;
     size_t kvPageResUbSize_ = 0;
     uint32_t totalBlockNum_ = 0;
 
@@ -514,9 +517,9 @@ private:
     uint32_t usedCoreNum_ = 0;
 
     uint32_t startIdxEachCore_[MAX_CORE_NUM] = {};
-    IncreFlashAttentionContext *context_ = nullptr;
-    IncreFlashAttentionTilingData *tilingData_ = nullptr;
-    IncreFlashAttentionTilingDataPrefix *tilingDataPrefix_ = nullptr;
+    SparsePagedAttentionContext *context_ = nullptr;
+    SparsePagedAttentionTilingData *tilingData_ = nullptr;
+    SparsePagedAttentionTilingDataPrefix *tilingDataPrefix_ = nullptr;
     bool isWorkspace_ = false;
 
     uint32_t formerCoreNum_ = 0;
@@ -543,13 +546,13 @@ private:
     uint32_t combinUsedCore_ = 0;
 };
 
-std::string DataTypeToSerialString(ge::DataType type);
+std::string SparseDataTypeToSerialString(ge::DataType type);
 
-ge::graphStatus TilingPrepareForIncreFlashAttention(gert::TilingParseContext *context);
-ge::graphStatus TilingIncreFlashAttentionAdapter(gert::TilingContext *context, IncreFlashAttentionContext &ifaContext,
-                                                 IncreFlashAttentionTilingDataV2 &ifaTilingData);
+ge::graphStatus TilingPrepareForSparsePagedAttention(gert::TilingParseContext *context);
+ge::graphStatus TilingSparsePagedAttentionAdapter(gert::TilingContext *context, SparsePagedAttentionContext &ifaContext,
+                                                 SparsePagedAttentionTilingDataV2 &ifaTilingData);
 
-IFA_EXTERN_C ge::graphStatus TilingIncreFlashAttention(gert::TilingContext *context);
+IFA_EXTERN_C ge::graphStatus TilingSparsePagedAttention(gert::TilingContext *context);
 
 } // namespace optiling
 #endif // AIR_CXX_RUNTIME_V2_OP_IMPL_INCREFLASHATTENTIONSCORE_H_

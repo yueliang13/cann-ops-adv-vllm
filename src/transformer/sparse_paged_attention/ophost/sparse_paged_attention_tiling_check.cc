@@ -9,12 +9,12 @@
  */
 
 /*!
- * \file incre_flash_attention_tiling_check.cc
+ * \file sparse_paged_attention_tiling_check.cc
  * \brief
  */
 
-#include "incre_flash_attention_tiling.h"
-#include "incre_flash_attention_tiling_base.h"
+#include "sparse_paged_attention_tiling.h"
+#include "sparse_paged_attention_tiling_base.h"
 #include <numeric>
 #include <algorithm>
 #include <graph/utils/type_utils.h>
@@ -25,7 +25,7 @@ using namespace ge;
 using namespace AscendC;
 namespace optiling {
 
-ge::graphStatus IFATiling::CheckPABlockSize()
+ge::graphStatus SparseIFATiling::CheckPABlockSize()
 {
     OPS_ERR_IF(
         blockSize_ == 0,
@@ -48,7 +48,7 @@ ge::graphStatus IFATiling::CheckPABlockSize()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckBaseInputsNull() {
+ge::graphStatus SparseIFATiling::CheckBaseInputsNull() {
     // Check base input tensors
     OPS_ERR_IF(context_->query.shape == nullptr, OPS_LOG_E(context_->opName, "Shape of tensor query is nullptr"),
                return ge::GRAPH_FAILED);
@@ -83,7 +83,7 @@ ge::graphStatus IFATiling::CheckBaseInputsNull() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckInputParameterFormat()
+ge::graphStatus SparseIFATiling::CheckInputParameterFormat()
 {
     auto qFormat = context_->query.desc->GetOriginFormat();
     auto kFormat = context_->key.desc->GetOriginFormat();
@@ -122,7 +122,7 @@ ge::graphStatus IFATiling::CheckInputParameterFormat()
   return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckInputAntiquantFormat() {
+ge::graphStatus SparseIFATiling::CheckInputAntiquantFormat() {
   if(context_->antiquantScale.desc != nullptr){
     auto aScaleFormat = context_->antiquantScale.desc->GetOriginFormat();
     OPS_ERR_IF((aScaleFormat != ge::FORMAT_ND && aScaleFormat != ge::FORMAT_NCHW && aScaleFormat != ge::FORMAT_NHWC),
@@ -162,7 +162,7 @@ ge::graphStatus IFATiling::CheckInputAntiquantFormat() {
   return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckInputFormatAndLimits() {  
+ge::graphStatus SparseIFATiling::CheckInputFormatAndLimits() {  
   if(CheckInputParameterFormat() != ge::GRAPH_SUCCESS || CheckInputAntiquantFormat() != ge::GRAPH_SUCCESS) {
       return ge::GRAPH_FAILED;
   }
@@ -224,7 +224,7 @@ ge::graphStatus IFATiling::CheckInputFormatAndLimits() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVHeadNum(const gert::StorageShape *inputShape)
+ge::graphStatus SparseIFATiling::CheckKVHeadNum(const gert::StorageShape *inputShape)
 {
     uint32_t tmpNumHeads = 0;
     std::string layOutStr = context_->layOut;
@@ -244,7 +244,7 @@ ge::graphStatus IFATiling::CheckKVHeadNum(const gert::StorageShape *inputShape)
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVShape(const size_t &size, const gert::StorageShape *keyTensorInList, const gert::StorageShape *valueTensorInList)
+ge::graphStatus SparseIFATiling::CheckKVShape(const size_t &size, const gert::StorageShape *keyTensorInList, const gert::StorageShape *valueTensorInList)
 {
     /* kv not continuous */
     std::string layOutStr = context_->layOut;
@@ -280,7 +280,7 @@ ge::graphStatus IFATiling::CheckKVShape(const size_t &size, const gert::StorageS
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckQKOutShape()
+ge::graphStatus SparseIFATiling::CheckQKOutShape()
 {
     if (pageAttentionFlag_) { // page_attention don't check this place
         return ge::GRAPH_SUCCESS;
@@ -329,7 +329,7 @@ ge::graphStatus IFATiling::CheckQKOutShape()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKeyShapeTensor(const gert::Shape &aShape)
+ge::graphStatus SparseIFATiling::CheckKeyShapeTensor(const gert::Shape &aShape)
 {
     auto firstKeyShape = context_->kCache[0];
     std::string layOutStr = context_->layOut;
@@ -349,7 +349,7 @@ ge::graphStatus IFATiling::CheckKeyShapeTensor(const gert::Shape &aShape)
     return ge::GRAPH_SUCCESS;
 }
 
-bool IFATiling::CheckIfRollBack()
+bool SparseIFATiling::CheckIfRollBack()
 {
     if (sMax_ == 0) {
         return false; // 空tensor由新模板处理
@@ -379,7 +379,7 @@ bool IFATiling::CheckIfRollBack()
     return true;
 }
 
-bool IFATiling::ShapeEqual(const gert::Shape &aShape, const gert::Shape &bShape)
+bool SparseIFATiling::ShapeEqual(const gert::Shape &aShape, const gert::Shape &bShape)
 {
     if (aShape.GetDimNum() != bShape.GetDimNum()) {
         return false;
@@ -394,7 +394,7 @@ bool IFATiling::ShapeEqual(const gert::Shape &aShape, const gert::Shape &bShape)
     return true;
 }
 
-bool IFATiling::CanChangeToNew()
+bool SparseIFATiling::CanChangeToNew()
 {
     if (inOutMode_ == TilingInOutMode::BF16_BF16) {
         return true;
@@ -409,7 +409,7 @@ bool IFATiling::CanChangeToNew()
     return false;
 }
 
-ge::graphStatus IFATiling::CheckQuant2Shape(const gert::Shape &inputParaShape)
+ge::graphStatus SparseIFATiling::CheckQuant2Shape(const gert::Shape &inputParaShape)
 {
     auto headsize = headDim_; // D
     auto headnum = numHeads_; // Q's N
@@ -463,7 +463,7 @@ ge::graphStatus IFATiling::CheckQuant2Shape(const gert::Shape &inputParaShape)
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantPerHead(const gert::Shape &inputParaShape)
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantPerHead(const gert::Shape &inputParaShape)
 {
     if (antiquantMode_ == PER_TOKEN_MODE) { // per-token head
         OPS_ERR_IF((inputParaShape.GetDimNum() != 3), // 3: Dim of BGS is 3
@@ -494,7 +494,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantPerHead(const gert::Shape &inputParaS
     }
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantPerChannel(const gert::Shape& inputParaShape) {
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantPerChannel(const gert::Shape& inputParaShape) {
   std::string layOutStr = context_->layOut;
   gert::Shape expectParamShapeBNSD = gert::Shape({antiquantNum_, numKvHeads_, 1, headDim_});
   gert::Shape expectParamShapeBSNDType1 = gert::Shape({antiquantNum_, 1, numKvHeads_, headDim_});
@@ -524,7 +524,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantPerChannel(const gert::Shape& inputPa
   return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckAntiQuantParam(const gert::Tensor *antiquantScaleTensor,
+ge::graphStatus SparseIFATiling::CheckAntiQuantParam(const gert::Tensor *antiquantScaleTensor,
                                                const gert::Tensor *antiquantOffsetTensor,
                                                const gert::CompileTimeTensorDesc *antiquantScaleDesc,
                                                const gert::CompileTimeTensorDesc *antiquantOffsetDesc)
@@ -581,7 +581,7 @@ ge::graphStatus IFATiling::CheckAntiQuantParam(const gert::Tensor *antiquantScal
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckSupportKVLeftPadding()
+ge::graphStatus SparseIFATiling::CheckSupportKVLeftPadding()
 {
     if (inputKvType_ == ge::DT_INT4) {
         OPS_LOG_E(context_->opName, "When input Kv Dtypes is INT4 or INT32, KvLeftPadding is not supported currently.");
@@ -598,7 +598,7 @@ ge::graphStatus IFATiling::CheckSupportKVLeftPadding()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SharedPrefixCheckBasic()
+ge::graphStatus SparseIFATiling::SharedPrefixCheckBasic()
 {
     OPS_ERR_IF(context_->keySharedPrefix.tensor == nullptr,
                OPS_LOG_E(context_->opName, "tensor  of key_shared_prefix is null."), return ge::GRAPH_FAILED);
@@ -627,16 +627,16 @@ ge::graphStatus IFATiling::SharedPrefixCheckBasic()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SharedPrefixCheckShapes(const gert::Shape &keyShape, const gert::Shape &valueShape)
+ge::graphStatus SparseIFATiling::SharedPrefixCheckShapes(const gert::Shape &keyShape, const gert::Shape &valueShape)
 {
     OPS_ERR_IF(!ShapeEqual(keyShape, valueShape),
                OPS_LOG_E(context_->opName, "tensor shape of key_shared_prefix and value_shared_prefix not equal."),
                return ge::GRAPH_FAILED);
 
-    OPS_ERR_IF(keyShape.GetDimNum() != context_->query.shape->GetStorageShape().GetDimNum(),
-               OPS_LOG_E(context_->opName, "tensor shape dim of key_shared_prefix[%lu] is not compatable with query",
-                         keyShape.GetDimNum()),
-               return ge::GRAPH_FAILED);
+    // OPS_ERR_IF(keyShape.GetDimNum() != context_->query.shape->GetStorageShape().GetDimNum(),
+    //            OPS_LOG_E(context_->opName, "tensor shape dim of key_shared_prefix[%lu] is not compatable with query",
+    //                      keyShape.GetDimNum()),
+    //            return ge::GRAPH_FAILED);
 
     OPS_ERR_IF(keyShape.GetDim(0) != 1,
                OPS_LOG_E(context_->opName, "batch of key_shared_prefix[%ld] must be 1", keyShape.GetDim(0)),
@@ -669,7 +669,7 @@ ge::graphStatus IFATiling::SharedPrefixCheckShapes(const gert::Shape &keyShape, 
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckUbSpace()
+ge::graphStatus SparseIFATiling::CheckUbSpace()
 {
     if (!CalcUbBmm() || !CalcUbSoftMax() || !CalcUbAttenMask()) {
         return false;
@@ -677,7 +677,7 @@ ge::graphStatus IFATiling::CheckUbSpace()
     return true;
 }
 
-bool IFATiling::IsFlashDecode() const
+bool SparseIFATiling::IsFlashDecode() const
 {
     if (pageAttentionFlag_ && socVersion_ == IfaSocVersion::SOC_ASCEND_910B) {
         return false;
@@ -701,27 +701,28 @@ bool IFATiling::IsFlashDecode() const
     return false;
 }
 
-bool IFATiling::EnableAllVec()
+bool SparseIFATiling::EnableAllVec()
 {
     if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
         return true;
     }
-    if (pageAttentionFlag_) {
-        return false;
-    }
-    if (sysPrefixFlag_) {
-        return false;
-    }
-    if (nNumOfQInOneGroup_ > 1) {
-        return false;
-    }
+    // // 暂时不考虑以下因素
+    // if (pageAttentionFlag_) {// 如果使用page attention，不开启全VEC
+    //     return false;
+    // }
+    // if (sysPrefixFlag_) {// 如果使用sys prefix，不开启全VEC
+    //     return false;
+    // }
+    // if (nNumOfQInOneGroup_ > 1) {// 如果N/Q不等于1，不开启全VEC
+    //     return false;
+    // }
     if (headDim_ > 512) { // 全VEC模板仅支持headDim_不大于512
         return false;
     }
     return (inputQType_ == ge::DT_FLOAT16) && (inputKvType_ == ge::DT_FLOAT16) && (outputType_ == ge::DT_FLOAT16);
 }
 
-bool IFATiling::EnableC1V1()
+bool SparseIFATiling::EnableC1V1()
 {
     if (splitKVFlag_) {
         return false;
@@ -733,7 +734,7 @@ bool IFATiling::EnableC1V1()
     return (perfMode_ == IfaPerfMode::NORMAL) && (batchSize_ * numKvHeads_ * 2 <= aivNum_);
 }
 
-ge::graphStatus IFATiling::ProcessPseShift()
+ge::graphStatus SparseIFATiling::ProcessPseShift()
 {
     // get pse shift data
     auto pseShiftInput = context_->pseShift.tensor;
@@ -746,7 +747,7 @@ ge::graphStatus IFATiling::ProcessPseShift()
     auto pseShiftDataType = context_->pseShift.desc->GetDataType();
     if (pseShiftDataType != ge::DT_FLOAT16 && pseShiftDataType != DT_BF16) {
         OPS_LOG_E(context_->opName, "Data type of pse shift is %s, which is not supported.",
-                  DataTypeToSerialString(pseShiftDataType).c_str());
+                  SparseDataTypeToSerialString(pseShiftDataType).c_str());
         return ge::GRAPH_FAILED;
     }
 
@@ -756,13 +757,13 @@ ge::graphStatus IFATiling::ProcessPseShift()
             OPS_ERR_IF((inputQType_ != ge::DT_INT8) && (inputQType_ != pseShiftDataType),
                        OPS_LOG_E(context_->opName,
                                  "Data type of pse is %s, which does not match data type of query: %s.",
-                                 DataTypeToSerialString(pseShiftDataType).c_str(),
-                                 DataTypeToSerialString(inputQType_).c_str()),
+                                 SparseDataTypeToSerialString(pseShiftDataType).c_str(),
+                                 SparseDataTypeToSerialString(inputQType_).c_str()),
                        return ge::GRAPH_FAILED);
             break;
         default:
             OPS_LOG_E(context_->opName, "Data type of pse %s is not currently supported.",
-                      DataTypeToSerialString(pseShiftDataType).c_str());
+                      SparseDataTypeToSerialString(pseShiftDataType).c_str());
             return ge::GRAPH_FAILED;
     }
 
@@ -801,7 +802,7 @@ ge::graphStatus IFATiling::ProcessPseShift()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessAttenMask()
+ge::graphStatus SparseIFATiling::ProcessAttenMask()
 {
     auto maskShape = context_->attenMask.tensor; // input shape = 4
     if (maskShape == nullptr) {

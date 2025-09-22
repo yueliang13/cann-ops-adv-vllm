@@ -9,12 +9,12 @@
  */
 
 /*!
- * \file incre_flash_attention_tiling.cc
+ * \file sparse_paged_attention_tiling.cc
  * \brief
  */
 
-#include "incre_flash_attention_tiling.h"
-#include "incre_flash_attention_tiling_base.h"
+#include "sparse_paged_attention_tiling.h"
+#include "sparse_paged_attention_tiling_base.h"
 #include <numeric>
 #include <algorithm>
 #include <graph/utils/type_utils.h>
@@ -63,7 +63,7 @@ template <typename... Args> constexpr uint64_t IFA_GET_TILINGKEY(Args... templat
     return RecursiveSum(templateIds...);
 }
 
-ge::graphStatus IFATiling::GetNpuInfo()
+ge::graphStatus SparseIFATiling::GetNpuInfo()
 {
     OPS_ERR_IF(context_->platformInfo == nullptr,
                OPS_REPORT_VECTOR_INNER_ERR(context_->opName, "GetPlatformInfo is nullptr."), return ge::GRAPH_FAILED);
@@ -93,7 +93,7 @@ ge::graphStatus IFATiling::GetNpuInfo()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::PreProcess()
+ge::graphStatus SparseIFATiling::PreProcess()
 {
     if (ProcessBaseInputs()) {
         return ge::GRAPH_FAILED;
@@ -113,7 +113,7 @@ ge::graphStatus IFATiling::PreProcess()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SetL2CacheFlag()
+ge::graphStatus SparseIFATiling::SetL2CacheFlag()
 {
     uint32_t kvTypeSize = NUM_BYTES_FLOAT16;
     auto kDType = context_->key.desc->GetDataType();
@@ -137,7 +137,7 @@ ge::graphStatus IFATiling::SetL2CacheFlag()
             break;
         default:
             OPS_LOG_E(context_->opName, "Data type %s is not currently supported.",
-                      DataTypeToSerialString(kDType).c_str());
+                      SparseDataTypeToSerialString(kDType).c_str());
             return ge::GRAPH_FAILED;
     }
 
@@ -169,7 +169,7 @@ ge::graphStatus IFATiling::SetL2CacheFlag()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::QKVPreProcess() {
+ge::graphStatus SparseIFATiling::QKVPreProcess() {
     OPS_ERR_IF(context_->key.desc->GetDataType() != context_->value.desc->GetDataType(),
                OPS_LOG_E(context_->opName, "datatype of k tensor and value tensor is different"), return ge::GRAPH_FAILED);
     batchSizeQ_ = batchSize_ = context_->query.shape->GetStorageShape().GetDim(0);
@@ -194,6 +194,7 @@ ge::graphStatus IFATiling::QKVPreProcess() {
 
     std::string layout(context_->layOut);
     uint32_t sOfQuery = 0;
+    uint32_t qDimNum = context_->query.shape->GetStorageShape().GetDimNum();
     if (layout == "BSH") {
         inputLayout_ = IfaLayout::BSH_BSND;
         OPS_ERR_IF(context_->query.shape->GetStorageShape().GetDim(2) % numHeads_ != 0,
@@ -203,12 +204,24 @@ ge::graphStatus IFATiling::QKVPreProcess() {
         headDim_ = context_->query.shape->GetStorageShape().GetDim(2) / numHeads_; // 2, dim of H
     } else if (layout == "BSND") {
         inputLayout_ = IfaLayout::BSH_BSND;
-        sOfQuery = context_->query.shape->GetStorageShape().GetDim(1);
-        headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        if (qDimNum == 3U) { // BND
+            // BND[bsz,head,head_dim] -> BNSD[bsz,head,1,head_dim] 适配Vllm框架调用
+            sOfQuery = 1;
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of D
+        } else { // BSND
+            sOfQuery = context_->query.shape->GetStorageShape().GetDim(1); // 2, dim of S
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        }
     } else if (layout == "BNSD") {
         inputLayout_ = IfaLayout::BNSD;
-        sOfQuery = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of S
-        headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        if (qDimNum == 3U) { // BND
+            // BND[bsz,head,head_dim] -> BNSD[bsz,head,1,head_dim] 适配Vllm框架调用
+            sOfQuery = 1; 
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(2); // 3, dim of D
+        } else { // BNSD
+            sOfQuery = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of S
+            headDim_ = context_->query.shape->GetStorageShape().GetDim(3); // 3, dim of D
+        }
     } else {
         OPS_LOG_E(context_->opName, "Only support input_layout(BSH, BNSD, BSND), actually is %s", layout.c_str());
         return ge::GRAPH_FAILED;
@@ -224,12 +237,12 @@ ge::graphStatus IFATiling::QKVPreProcess() {
         headDimAlign_ = Align(headDim_, BYTE_BLOCK); // 元素个数按照基本块大小对齐
     }
     
-    OPS_ERR_IF(sOfQuery != 1, OPS_LOG_E(context_->opName, " S of Query:%u is invalid, it should be 1", sOfQuery),
+    OPS_ERR_IF(sOfQuery != 1, OPS_LOG_E(context_->opName, "layout %s S of Query:%u is invalid, it should be 1", layout.c_str(), sOfQuery),
                return ge::GRAPH_FAILED);
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::InputAttrsPreProcess() {
+ge::graphStatus SparseIFATiling::InputAttrsPreProcess() {
     const uint32_t *innerPrecisePtr = context_->innerPrecise;
     innerPrecise_ = innerPrecisePtr ? *innerPrecisePtr : IFA_HIGH_PERFORMANCE; // 910B默认高性能
     OPS_ERR_IF(((innerPrecise_ != IFA_HIGH_PERFORMANCE) && (innerPrecise_ != IFA_HIGH_PRECISION)),
@@ -259,7 +272,7 @@ ge::graphStatus IFATiling::InputAttrsPreProcess() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SetQuantFlag() {
+ge::graphStatus SparseIFATiling::SetQuantFlag() {
     antiQuantFlag_ = (inputQType_ != inputKvType_) && (inputKvType_ == ge::DT_INT8 || inputKvType_ == ge::DT_INT4);
     if (antiQuantFlag_) {
         if (innerPrecise_ == IFA_HIGH_PRECISION) {
@@ -271,7 +284,7 @@ ge::graphStatus IFATiling::SetQuantFlag() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessBaseInputs()
+ge::graphStatus SparseIFATiling::ProcessBaseInputs()
 {
     if ((CheckBaseInputsNull() != ge::GRAPH_SUCCESS) || (QKVPreProcess() != ge::GRAPH_SUCCESS) ||
         (InputAttrsPreProcess() != ge::GRAPH_SUCCESS) || (KvShapePostProcess() != ge::GRAPH_SUCCESS) ||
@@ -283,7 +296,7 @@ ge::graphStatus IFATiling::ProcessBaseInputs()
     return ge::GRAPH_SUCCESS;
 }
 
-void IFATiling::SetupPerfMode()
+void SparseIFATiling::SetupPerfMode()
 {
     // 310P
     if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
@@ -295,23 +308,34 @@ void IFATiling::SetupPerfMode()
     }
 }
 
-void IFATiling::UpdatePerfMode()
+void SparseIFATiling::UpdatePerfMode()
 {
     if (EnableC1V1()) {
         perfMode_ = IfaPerfMode::C1_V1;
     }
 }
 
-ge::graphStatus IFATiling::ProcessPageAttentionFlag() {
+ge::graphStatus SparseIFATiling::ProcessPageAttentionFlag() {
     maxBlockNumPerBatch_ = context_->blockTable.tensor->GetStorageShape().GetDim(1);
+
+    if (context_->blockPosition.tensor != nullptr) {
+        maxPositionNumPerBatch_ = context_->blockPosition.tensor->GetStorageShape().GetDim(2);
+    } else {
+        maxPositionNumPerBatch_ = 0;
+    }
+
     sMax_ = maxBlockNumPerBatch_ * blockSize_;
     seqSize_ = sMax_;
     uint32_t kDimNum = context_->key.shape->GetStorageShape().GetDimNum();
-    if (kDimNum == 3U) { // BSH
-        inputLayout_ = IfaLayout::BSH_BSND;
-    } else { // BNSD
-        inputLayout_ = IfaLayout::BNSD;
-    }
+    
+    // if (kDimNum == 3U) { // BSH
+    //     inputLayout_ = IfaLayout::BSH_BSND;
+    // } else { // BNSD
+    //     inputLayout_ = IfaLayout::BNSD;
+    // }
+    
+    inputLayout_ = IfaLayout::BSH_BSND;// 适配Vllm框架调用 固定BSH_BSND
+
     const std::string inputLayoutStr = context_->layOut;
     OPS_ERR_IF((kDimNum == DIM_BNSD && inputLayoutStr != "BNSD"),
                OPS_LOG_E(context_->opName, "when Page Attention scene, kvcache is BNBD, query layout must be BNSD"),
@@ -319,7 +343,7 @@ ge::graphStatus IFATiling::ProcessPageAttentionFlag() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::KvShapePostProcess()
+ge::graphStatus SparseIFATiling::KvShapePostProcess()
 {
     if (pageAttentionFlag_) {
         return ProcessPageAttentionFlag();
@@ -369,7 +393,7 @@ ge::graphStatus IFATiling::KvShapePostProcess()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ZeroTensorProcess()
+ge::graphStatus SparseIFATiling::ZeroTensorProcess()
 {
     if (sMax_ == 0) {
         /*
@@ -382,7 +406,7 @@ ge::graphStatus IFATiling::ZeroTensorProcess()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::InitInOutMode()
+ge::graphStatus SparseIFATiling::InitInOutMode()
 {
     if (inputQType_ == ge::DT_INT8 && outputType_ == ge::DT_INT8) {
         inOutMode_ = TilingInOutMode::INT8_INT8;
@@ -413,7 +437,7 @@ ge::graphStatus IFATiling::InitInOutMode()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessOptionalTensors()
+ge::graphStatus SparseIFATiling::ProcessOptionalTensors()
 {
     if ((ProcessActualSeqLen() != ge::GRAPH_SUCCESS) || (ProcessPseShift() != ge::GRAPH_SUCCESS) ||
         (ProcessAttenMask() != ge::GRAPH_SUCCESS) || (ProcessQuant1() != ge::GRAPH_SUCCESS) ||
@@ -430,7 +454,7 @@ ge::graphStatus IFATiling::ProcessOptionalTensors()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessActualSeqLen()
+ge::graphStatus SparseIFATiling::ProcessActualSeqLen()
 {
     if (context_->actualSeqLengths.tensor == nullptr) {
         maxActualseq_ = sMax_;
@@ -500,7 +524,7 @@ ge::graphStatus IFATiling::ProcessActualSeqLen()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessQuant1()
+ge::graphStatus SparseIFATiling::ProcessQuant1()
 {
     auto dqtScale1 = context_->deqScale1.tensor;
     auto qtScale1 = context_->quantScale1.tensor;
@@ -541,7 +565,7 @@ ge::graphStatus IFATiling::ProcessQuant1()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessQuant2Dtype()
+ge::graphStatus SparseIFATiling::ProcessQuant2Dtype()
 {
     if (outputType_ == ge::DT_INT8) {
         OPS_ERR_IF(context_->quantScale2.tensor == nullptr,
@@ -580,7 +604,7 @@ ge::graphStatus IFATiling::ProcessQuant2Dtype()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessQuant2()
+ge::graphStatus SparseIFATiling::ProcessQuant2()
 {
     auto qtScale2 = context_->quantScale2.tensor;
     auto qtOffset2 = context_->quantOffset2.tensor;
@@ -624,7 +648,7 @@ ge::graphStatus IFATiling::ProcessQuant2()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessDequant1()
+ge::graphStatus SparseIFATiling::ProcessDequant1()
 {
     if (context_->deqScale1.tensor == nullptr) {
         return ge::GRAPH_SUCCESS;
@@ -632,7 +656,7 @@ ge::graphStatus IFATiling::ProcessDequant1()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessDequant2()
+ge::graphStatus SparseIFATiling::ProcessDequant2()
 {
     if (context_->deqScale2.tensor == nullptr) {
         return ge::GRAPH_SUCCESS;
@@ -640,7 +664,7 @@ ge::graphStatus IFATiling::ProcessDequant2()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantParamsShapeInPagedAttention(const gert::Shape &inputParaShape) {
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantParamsShapeInPagedAttention(const gert::Shape &inputParaShape) {
     if (antiquantPerHeadFlag_) { // per-token-head, [block_num, kv_head_num, block_size]
         OPS_ERR_IF((inputParaShape.GetDim(0) != totalBlockNum_),
                 OPS_LOG_E(context_->opName,
@@ -675,7 +699,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantParamsShapeInPagedAttention(const ger
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantParamsInPagedAttention() {
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantParamsInPagedAttention() {
     auto keyAntiquantScaleTensor = context_->keyAntiquantScale.tensor;
     auto KeyAntiquantScaleShape = keyAntiquantScaleTensor->GetStorageShape();
     if (CheckKVAntiQuantParamsShapeInPagedAttention(KeyAntiquantScaleShape) != ge::GRAPH_SUCCESS) {
@@ -691,7 +715,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantParamsInPagedAttention() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantMode() {
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantMode() {
     if ((antiquantMode_ != DEQUANT_PER_CHANNEL_MODE) &&
             (antiquantMode_ != DEQUANT_PER_TOKEN_MODE) &&
             (antiquantMode_ != DEQUANT_PER_TENSOR_HEAD_MODE) && 
@@ -705,7 +729,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantMode() {
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantPerToken(const gert::Shape &inputParaShape)
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantPerToken(const gert::Shape &inputParaShape)
 {
     if (inputParaShape.GetDimNum() == DIM_PER_TOKEN) {
         OPS_ERR_IF((inputParaShape.GetDim(PER_TOKEN_N) != antiquantNum_),
@@ -741,7 +765,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantPerToken(const gert::Shape &inputPara
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckKVAntiQuantParaShapeLegal(const gert::Shape &inputParaShape)
+ge::graphStatus SparseIFATiling::CheckKVAntiQuantParaShapeLegal(const gert::Shape &inputParaShape)
 {
     if (kvAntiParamSplitFlag_) {
         antiquantNum_ = 1;
@@ -778,7 +802,7 @@ ge::graphStatus IFATiling::CheckKVAntiQuantParaShapeLegal(const gert::Shape &inp
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckAntiQuantParamKeyType(const gert::Tensor *antiquantOffsetTensor,
+ge::graphStatus SparseIFATiling::CheckAntiQuantParamKeyType(const gert::Tensor *antiquantOffsetTensor,
                                                       const gert::CompileTimeTensorDesc *antiquantScaleDesc,
                                                       const gert::CompileTimeTensorDesc *antiquantOffsetDesc)
 {
@@ -799,7 +823,7 @@ ge::graphStatus IFATiling::CheckAntiQuantParamKeyType(const gert::Tensor *antiqu
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CheckAntiQuantParamValueType(const gert::Tensor *antiquantOffsetTensor,
+ge::graphStatus SparseIFATiling::CheckAntiQuantParamValueType(const gert::Tensor *antiquantOffsetTensor,
                                                         const gert::CompileTimeTensorDesc *antiquantScaleDesc,
                                                         const gert::CompileTimeTensorDesc *antiquantOffsetDesc)
 {
@@ -820,7 +844,7 @@ ge::graphStatus IFATiling::CheckAntiQuantParamValueType(const gert::Tensor *anti
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessAntiQuant()
+ge::graphStatus SparseIFATiling::ProcessAntiQuant()
 {
     auto antiquantScaleTensor = context_->antiquantScale.tensor;
     auto antiquantScaleDesc = context_->antiquantScale.desc;
@@ -967,7 +991,7 @@ ge::graphStatus IFATiling::ProcessAntiQuant()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessBlockTable()
+ge::graphStatus SparseIFATiling::ProcessBlockTable()
 {
     if (!pageAttentionFlag_) {
         return ge::GRAPH_SUCCESS;
@@ -1004,7 +1028,7 @@ ge::graphStatus IFATiling::ProcessBlockTable()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ProcessKVPaddingSize()
+ge::graphStatus SparseIFATiling::ProcessKVPaddingSize()
 {
     auto kvPaddingSize = context_->kvPaddingSize.tensor;
     if (kvPaddingSize == nullptr) {
@@ -1024,7 +1048,7 @@ ge::graphStatus IFATiling::ProcessKVPaddingSize()
     return ret;
 }
 
-ge::graphStatus IFATiling::ProcessSharedPrefix()
+ge::graphStatus SparseIFATiling::ProcessSharedPrefix()
 {
     if (context_->keySharedPrefix.tensor == nullptr && context_->valueSharedPrefix.tensor == nullptr) {
         sysPrefixFlag_ = false;
@@ -1056,7 +1080,7 @@ ge::graphStatus IFATiling::ProcessSharedPrefix()
     return ge::GRAPH_SUCCESS;
 }
 
-uint32_t IFATiling::GetAntiquantSeqLength()
+uint32_t SparseIFATiling::GetAntiquantSeqLength()
 {
     if (antiquantParamsInPagedAttentionFlag_) {
         return seqSize_;
@@ -1066,7 +1090,7 @@ uint32_t IFATiling::GetAntiquantSeqLength()
                                    context_->antiquantScale.tensor->GetStorageShape().GetDim(antiquantSIdx);
 }
 
-ge::graphStatus IFATiling::ProcessSharedPrefixLen()
+ge::graphStatus SparseIFATiling::ProcessSharedPrefixLen()
 {
     auto tensor = context_->actualSharedPrefixLen.tensor;
     if (tensor == nullptr || tensor->GetStorageShape().GetShapeSize() == 0 || !sysPrefixFlag_) {
@@ -1119,7 +1143,7 @@ ge::graphStatus IFATiling::ProcessSharedPrefixLen()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::Split()
+ge::graphStatus SparseIFATiling::Split()
 {
     if (IsFlashDecode()) {
         splitKVFlag_ = true;
@@ -1131,7 +1155,7 @@ ge::graphStatus IFATiling::Split()
     return SplitBN();
 }
 
-ge::graphStatus IFATiling::SplitBN()
+ge::graphStatus SparseIFATiling::SplitBN()
 {
     uint32_t bn = batchSize_ * numKvHeads_;
 
@@ -1161,7 +1185,7 @@ ge::graphStatus IFATiling::SplitBN()
     return ge::GRAPH_SUCCESS;
 }
 
-std::vector<int64_t> IFATiling::InitSparseValidArray(const int64_t *actualLens)
+std::vector<int64_t> SparseIFATiling::InitSparseValidArray(const int64_t *actualLens)
 {
     std::vector<int64_t> res((batchSize_ * numKvHeads_));
     for (uint32_t b = 0; b < batchSize_; b++) {
@@ -1182,7 +1206,7 @@ std::vector<int64_t> IFATiling::InitSparseValidArray(const int64_t *actualLens)
     return res;
 }
 // code copy from flash_attention_score_tiling
-bool IFATiling::BalanceLoad(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
+bool SparseIFATiling::BalanceLoad(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
                             std::vector<int64_t> &localValue, std::vector<int64_t> &sparseStartIdx)
 {
     // to avoid buffer overflow, or maybe sometimes we want to only verify single
@@ -1229,7 +1253,7 @@ bool IFATiling::BalanceLoad(const std::vector<int64_t> &sparseValidArray, int64_
     return (tmpMaxVal >= maxVal) ? false : true;
 }
 
-void IFATiling::InitLoadValue(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
+void SparseIFATiling::InitLoadValue(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
                               const std::vector<int64_t> &sparseStartIdx, std::vector<int64_t> &localValue)
 {
     for (int64_t idx = 0; idx < validAivNum; ++idx) {
@@ -1243,7 +1267,7 @@ void IFATiling::InitLoadValue(const std::vector<int64_t> &sparseValidArray, int6
     }
 }
 
-void IFATiling::SetSparseStartIdx(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
+void SparseIFATiling::SetSparseStartIdx(const std::vector<int64_t> &sparseValidArray, int64_t totalSize, int64_t validAivNum,
                                   uint32_t *sparseStartIdx, int64_t splitFactorSize)
 {
     // initLoad: 使用均分策略, 保证后续不会比均分差
@@ -1299,7 +1323,7 @@ void IFATiling::SetSparseStartIdx(const std::vector<int64_t> &sparseValidArray, 
     }
 }
 
-ge::graphStatus IFATiling::SplitBN_V0()
+ge::graphStatus SparseIFATiling::SplitBN_V0()
 {
     uint32_t bn = batchSize_ * numKvHeads_;
     formerCoreNum_ = bn % coreNum_;
@@ -1324,7 +1348,7 @@ ge::graphStatus IFATiling::SplitBN_V0()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SplitBNS()
+ge::graphStatus SparseIFATiling::SplitBNS()
 {
     formerCoreNum_ = 0;
     blockSplitBn2Range_ = 1;
@@ -1345,7 +1369,7 @@ ge::graphStatus IFATiling::SplitBNS()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CalcInnerSize(uint32_t seqSize)
+ge::graphStatus SparseIFATiling::CalcInnerSize(uint32_t seqSize)
 {
     /**
      * sInnerSize：s2的切分大小，直接决定了MM的singleN/K和vector的切块大小，但当前切分也并非适用所有case。
@@ -1396,7 +1420,7 @@ ge::graphStatus IFATiling::CalcInnerSize(uint32_t seqSize)
     return ge::GRAPH_SUCCESS;
 }
 
-bool IFATiling::CalcUbBmm()
+bool SparseIFATiling::CalcUbBmm()
 {
     mmResUbSize_ = msdIterNum_ * nNumOfQInOneGroup_ * sInnerSizeAlign_;
     bmm2ResUbSize_ = msdIterNum_ * nNumOfQInOneGroup_ * headDimAlign_;
@@ -1408,14 +1432,14 @@ bool IFATiling::CalcUbBmm()
     return true;
 }
 
-bool IFATiling::CalcUbSoftMax()
+bool SparseIFATiling::CalcUbSoftMax()
 {
     auto tmpShape = Shape({nNumOfQInOneGroup_, Align(sInnerSize_, BYTE_BLOCK / blockTypeSize_)});
     softmaxFlashTmpSize_ = GetSoftMaxFlashV2MinTmpSize(tmpShape, blockTypeSize_, blockTypeSize_, true, false);
     return true;
 }
 
-bool IFATiling::CalcUbAttenMask()
+bool SparseIFATiling::CalcUbAttenMask()
 {
     if (!attenMaskFlag_) {
         selectWithByteMaskTmpMinSize_ = 0;
@@ -1431,14 +1455,14 @@ bool IFATiling::CalcUbAttenMask()
     return true;
 }
 
-ge::graphStatus IFATiling::CalcWorkSpace()
+ge::graphStatus SparseIFATiling::CalcWorkSpace()
 {
     uint32_t mmResElemSize = 4;         // 4:fp32
     uint32_t vec1ResElemSize = 2;       // 2:fp16/bf16
     uint32_t bmm2ResElemSize = 4;       // 4:fp32
     uint32_t vec2ResElemSize = 4;       // 4:fp32
     uint32_t qPreProcResElemSize = 0;   // 普通场景不涉及Q预处理
-    uint32_t mmPACallBackDataSize = 64; // 64: matmul回调信息需要7个uint32值，dcci cacheline需要64B对齐
+    uint32_t mmPACallBackDataSize = 64; // 64: matmul回调信息需要7个uint32值，dcci cacheline需要64B对齐 (传入的blockpositionPtr需要9个uint32值 应该不影响)
     float kvDtypeRatio = 1.0;
     if (antiQuantFlag_) {
         mmResElemSize = 4;       // 4:int32
@@ -1489,7 +1513,7 @@ ge::graphStatus IFATiling::CalcWorkSpace()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::FillTiling()
+ge::graphStatus SparseIFATiling::FillTiling()
 {
     FillTilingBaseParams();
     FillTilingSplitKV();
@@ -1501,13 +1525,14 @@ ge::graphStatus IFATiling::FillTiling()
     return FillTilingBmm() ? ge::GRAPH_SUCCESS : ge::GRAPH_FAILED;
 }
 
-void IFATiling::FillTilingBaseParams()
+void SparseIFATiling::FillTilingBaseParams()
 {
     tilingData_->baseParams.set_batchSize(batchSize_);
     tilingData_->baseParams.set_seqSize(sMax_);
     tilingData_->baseParams.set_headSize(headDim_);
     tilingData_->baseParams.set_blockSize(blockSize_);
     tilingData_->baseParams.set_maxBlockNumPerBatch(maxBlockNumPerBatch_);
+    tilingData_->baseParams.set_maxPositionNumPerBatch(maxPositionNumPerBatch_);
     tilingData_->baseParams.set_scaleValue(scaleValue_);
     tilingData_->baseParams.set_kvHeadNum(numKvHeads_);
     tilingData_->baseParams.set_qHeadNum(numHeads_);
@@ -1533,7 +1558,7 @@ void IFATiling::FillTilingBaseParams()
 }
 
 // for flash decode
-void IFATiling::FillTilingSplitKV()
+void SparseIFATiling::FillTilingSplitKV()
 {
     tilingData_->splitKVParams.set_s2(kvSplitPart_);
     uint32_t sInnerLoopSize_ = (maxActualseq_ + (kvSplitPart_ - 1)) / kvSplitPart_;
@@ -1549,30 +1574,30 @@ void IFATiling::FillTilingSplitKV()
     }
 }
 
-void IFATiling::FillTilingCoreParams()
+void SparseIFATiling::FillTilingCoreParams()
 {
-    uint32_t *coreStartIdx = tilingData_->increFlashAttentionCoreParams.get_coreSidxEnd();
+    uint32_t *coreStartIdx = tilingData_->sparsePagedAttentionCoreParams.get_coreSidxEnd();
     memcpy_s(coreStartIdx, MAX_CORE_NUM * sizeof(uint32_t), startIdxEachCore_, MAX_CORE_NUM * sizeof(uint32_t));
 }
 
-void IFATiling::FillTilingSingleCoreParams()
+void SparseIFATiling::FillTilingSingleCoreParams()
 {
-    tilingData_->increFlashAttentionSingleCoreParams.set_sInnerLoopTimes(sInnerLoopTimes_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_singleProcessSInnerSize(sInnerSize_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_singleProcessSInnerSizeTail(sInnerSizeTail_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_usedCoreNum(usedCoreNum_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_formerCoreNum(formerCoreNum_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_blockSplitBn2Range(blockSplitBn2Range_);
-    tilingData_->increFlashAttentionSingleCoreParams.set_tailSplitedBatchRange(tailSplitedBatchRange_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_sInnerLoopTimes(sInnerLoopTimes_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_singleProcessSInnerSize(sInnerSize_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_singleProcessSInnerSizeTail(sInnerSizeTail_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_usedCoreNum(usedCoreNum_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_formerCoreNum(formerCoreNum_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_blockSplitBn2Range(blockSplitBn2Range_);
+    tilingData_->sparsePagedAttentionSingleCoreParams.set_tailSplitedBatchRange(tailSplitedBatchRange_);
 }
 
-void IFATiling::FillTilingSingleCoreTensorSize()
+void SparseIFATiling::FillTilingSingleCoreTensorSize()
 {
-    tilingData_->increFlashAttentionSingleCoreTensorSize.set_mmResUbSize(mmResUbSize_);
-    tilingData_->increFlashAttentionSingleCoreTensorSize.set_bmm2ResUbSize(bmm2ResUbSize_);
+    tilingData_->sparsePagedAttentionSingleCoreTensorSize.set_mmResUbSize(mmResUbSize_);
+    tilingData_->sparsePagedAttentionSingleCoreTensorSize.set_bmm2ResUbSize(bmm2ResUbSize_);
 }
 
-void IFATiling::FillTilingSoftmax()
+void SparseIFATiling::FillTilingSoftmax()
 {
     auto softmaxShape = Shape({1, Align(sInnerSize_, BYTE_BLOCK / blockTypeSize_)});
     SoftMaxFlashV2TilingFunc(softmaxShape, blockTypeSize_, blockTypeSize_, softmaxFlashTmpSize_,
@@ -1580,13 +1605,13 @@ void IFATiling::FillTilingSoftmax()
 }
 
 // for zero output
-void IFATiling::FillTilingOutputParams()
+void SparseIFATiling::FillTilingOutputParams()
 {
     tilingData_->outputParams.set_isOutQuantTypeBf16(isOutQuantTypeBf16_);
     tilingData_->outputParams.set_isPerChnOut(isOutQuantPerChnOut_);
 }
 
-void IFATiling::AdjustPABmm1Tiling(uint32_t &bmm1BaseN)
+void SparseIFATiling::AdjustPABmm1Tiling(uint32_t &bmm1BaseN)
 {
     if (bmm1BaseN < blockSize_) {
         while (blockSize_ % bmm1BaseN != 0) {
@@ -1601,7 +1626,7 @@ void IFATiling::AdjustPABmm1Tiling(uint32_t &bmm1BaseN)
     OPS_LOG_D(context_->opName, "PA is enabled, blockSize is %u, bmm1 baseN is adjusted to %u", blockSize_, bmm1BaseN);
 }
 
-void IFATiling::AdjustPABmm2Tiling() const
+void SparseIFATiling::AdjustPABmm2Tiling() const
 {
     uint32_t targetBaseK = 128;
     if (targetBaseK < blockSize_) {
@@ -1623,7 +1648,7 @@ void IFATiling::AdjustPABmm2Tiling() const
               targetBaseK);
 }
 
-bool IFATiling::GetBmm1Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
+bool SparseIFATiling::GetBmm1Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
                               const uint32_t M)
 {
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context_->platformInfo);
@@ -1677,7 +1702,7 @@ bool IFATiling::GetBmm1Tiling(const matmul_tiling::DataType &qType, const matmul
     return true;
 }
 
-bool IFATiling::GetBmm2Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
+bool SparseIFATiling::GetBmm2Tiling(const matmul_tiling::DataType &qType, const matmul_tiling::DataType &kvType,
                               const uint32_t M)
 {
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context_->platformInfo);
@@ -1713,7 +1738,7 @@ bool IFATiling::GetBmm2Tiling(const matmul_tiling::DataType &qType, const matmul
     return true;
 }
 
-bool IFATiling::FillTilingBmm()
+bool SparseIFATiling::FillTilingBmm()
 {
     matmul_tiling::DataType qType;
     matmul_tiling::DataType kvType;
@@ -1729,7 +1754,7 @@ bool IFATiling::FillTilingBmm()
     return GetBmm1Tiling(qType, kvType, M) && GetBmm2Tiling(qType, kvType, M);
 }
 
-bool IFATiling::GetMatmulType(ge::DataType getype, matmul_tiling::DataType *mmType)
+bool SparseIFATiling::GetMatmulType(ge::DataType getype, matmul_tiling::DataType *mmType)
 {
     static struct {
         ge::DataType a;
@@ -1749,7 +1774,7 @@ bool IFATiling::GetMatmulType(ge::DataType getype, matmul_tiling::DataType *mmTy
     return false;
 }
 
-ge::graphStatus IFATiling::GenTilingKey()
+ge::graphStatus SparseIFATiling::GenTilingKey()
 {
     uint8_t layoutVal{0}, inputQVal{0}, inputKvVal{0}, outputVal{0}, originVal{0};
     uint8_t splitKvVal = kvSplit_ > 0 ? 1 : 0;
@@ -1817,7 +1842,7 @@ ge::graphStatus IFATiling::GenTilingKey()
     }
 
     originVal = inputQVal;
-
+    // TillingKey[16:0]  15位 perfMode_:core 运行模式 0: C1_V2 (CV配比1:2); 1：全V； 2 C1_V1（CV配比1:1）
     uint64_t baseOffset =
         modeVal * IFA_TILINGKEYOFFSET + (static_cast<uint64_t>(perfMode_)) * IFA_PERF_MODE_TILINGKEYOFFSET;
     if (antiquantMode_ == PER_TOKEN_MODE || antiquantMode_ == PER_CHANNEL_MODE){
@@ -1832,7 +1857,7 @@ ge::graphStatus IFATiling::GenTilingKey()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CalcBlockDim()
+ge::graphStatus SparseIFATiling::CalcBlockDim()
 {
     auto ascendcPlatform = platform_ascendc::PlatformAscendC(context_->platformInfo);
     auto aicNum = aicNum_;
@@ -1856,7 +1881,7 @@ ge::graphStatus IFATiling::CalcBlockDim()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SharedPrefixTiling()
+ge::graphStatus SparseIFATiling::SharedPrefixTiling()
 {
     // 重新配置长度
     isSysPrefixTiling_ = true;
@@ -1877,7 +1902,7 @@ ge::graphStatus IFATiling::SharedPrefixTiling()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::FillSysPrefixTiling()
+ge::graphStatus SparseIFATiling::FillSysPrefixTiling()
 {
     tilingDataPrefix_->set_prefixAttenOutOffset(prefixAttenOutOffset_);
     tilingDataPrefix_->set_userPromptAttenOutOffset(userPromptAttenOutOffset_);
@@ -1892,7 +1917,7 @@ ge::graphStatus IFATiling::FillSysPrefixTiling()
     return FillTiling();
 }
 
-ge::graphStatus IFATiling::CalcSysPrefixWorkSpace()
+ge::graphStatus SparseIFATiling::CalcSysPrefixWorkSpace()
 {
     size_t size0 = workspaceSize_;
     size_t outSize = batchSizeQ_ * numHeads_ * headDimAlign_ * blockTypeSize_;
@@ -1917,7 +1942,7 @@ ge::graphStatus IFATiling::CalcSysPrefixWorkSpace()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::CalcSysPrefixBlockDim()
+ge::graphStatus SparseIFATiling::CalcSysPrefixBlockDim()
 {
     uint32_t blockDim0 = context_->blockDim;
     CalcBlockDim();
@@ -1926,7 +1951,7 @@ ge::graphStatus IFATiling::CalcSysPrefixBlockDim()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::SplitForLseCombine()
+ge::graphStatus SparseIFATiling::SplitForLseCombine()
 {
     uint32_t coreNum = usedCoreNum_;
 
@@ -1943,10 +1968,10 @@ ge::graphStatus IFATiling::SplitForLseCombine()
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::ConvertContext(gert::TilingContext &context, IncreFlashAttentionContext &ifaContext)
+ge::graphStatus SparseIFATiling::ConvertContext(gert::TilingContext &context, SparsePagedAttentionContext &ifaContext)
 {
     if (context.GetNodeName() == nullptr) {
-        OPS_LOG_E("IncreFlashAttention", "opName got from TilingContext is nullptr");
+        OPS_LOG_E("SparsePagedAttention", "opName got from TilingContext is nullptr");
         return ge::GRAPH_FAILED;
     }
     ifaContext.opName = context.GetNodeName();
@@ -2001,7 +2026,11 @@ ge::graphStatus IFATiling::ConvertContext(gert::TilingContext &context, IncreFla
     ifaContext.antiquantOffset.desc = context.GetOptionalInputDesc(ANTIQUANT_OFFSET_INPUT_INDEX);
     ifaContext.blockTable.tensor = context.GetOptionalInputTensor(BLOCK_TABLE_INPUT_INDEX);
     ifaContext.kvPaddingSize.tensor = context.GetOptionalInputTensor(KV_PADDING_SIZE_INPUT_INDEX);
-  ifaContext.kvPaddingSize.desc = context.GetOptionalInputDesc(KV_PADDING_SIZE_INPUT_INDEX);
+    ifaContext.kvPaddingSize.desc = context.GetOptionalInputDesc(KV_PADDING_SIZE_INPUT_INDEX);
+    
+    ifaContext.blockPosition.tensor = context.GetOptionalInputTensor(BLOCK_POSITION_INPUT_INDEX);
+    ifaContext.blockPosition.desc = context.GetOptionalInputDesc(BLOCK_POSITION_INPUT_INDEX);
+
 
     auto attrs = context.GetAttrs();
     OPS_ERR_IF(attrs == nullptr, OPS_LOG_E(context.GetNodeName(), "attrs got from ge is nullptr"),
@@ -2021,8 +2050,8 @@ ge::graphStatus IFATiling::ConvertContext(gert::TilingContext &context, IncreFla
     return ge::GRAPH_SUCCESS;
 }
 
-ge::graphStatus IFATiling::RunBigKernelTiling(IncreFlashAttentionContext &context,
-                                              IncreFlashAttentionTilingDataV2 &tilingData, bool isWorkspace)
+ge::graphStatus SparseIFATiling::RunBigKernelTiling(SparsePagedAttentionContext &context,
+                                              SparsePagedAttentionTilingDataV2 &tilingData, bool isWorkspace)
 {
     this->context_ = &context;
     this->tilingData_ = &tilingData.tilingBase;
@@ -2047,8 +2076,8 @@ ge::graphStatus IFATiling::RunBigKernelTiling(IncreFlashAttentionContext &contex
     return GenTilingKey();
 }
 
-ge::graphStatus IFATiling::IncreFlashAttentionSetTilingData(gert::TilingContext &context,
-                                                            IncreFlashAttentionTilingDataV2 &tilingData)
+ge::graphStatus SparseIFATiling::SparsePagedAttentionSetTilingData(gert::TilingContext &context,
+                                                            SparsePagedAttentionTilingDataV2 &tilingData)
 {
     OPS_ERR_IF(context.GetRawTilingData() == nullptr,
                OPS_REPORT_VECTOR_INNER_ERR(context.GetNodeName(), "RawTilingData got from ge context is nullptr."),
@@ -2059,37 +2088,37 @@ ge::graphStatus IFATiling::IncreFlashAttentionSetTilingData(gert::TilingContext 
     return ge::GRAPH_SUCCESS;
 }
 
-std::string DataTypeToSerialString(ge::DataType type)
+std::string SparseDataTypeToSerialString(ge::DataType type)
 {
     const auto it = DATATYPE_TO_STRING_MAP.find(type);
     if (it != DATATYPE_TO_STRING_MAP.end()) {
         return it->second;
     } else {
-        OPS_LOG_E("IncreFlashAttention", "datatype %d not support", type);
+        OPS_LOG_E("SparsePagedAttention", "datatype %d not support", type);
         return "UNDEFINED";
     }
 }
 
-ge::graphStatus TilingIncreFlashAttentionAdapter(gert::TilingContext *context, IncreFlashAttentionContext &ifaContext,
-                                                 IncreFlashAttentionTilingDataV2 &ifaTilingData)
+ge::graphStatus TilingSparsePagedAttentionAdapter(gert::TilingContext *context, SparsePagedAttentionContext &ifaContext,
+                                                 SparsePagedAttentionTilingDataV2 &ifaTilingData)
 {
-    IFATiling ifaTilingNew;
+    SparseIFATiling ifaTilingNew;
     if (ifaTilingNew.RunBigKernelTiling(ifaContext, ifaTilingData) == ge::SUCCESS) {
         context->SetTilingKey(ifaContext.tilingKey);
         context->SetBlockDim(ifaContext.blockDim);
-        ifaTilingNew.IncreFlashAttentionSetTilingData(*context, ifaTilingData);
+        ifaTilingNew.SparsePagedAttentionSetTilingData(*context, ifaTilingData);
         return ge::GRAPH_SUCCESS;
     }
 
     return ge::GRAPH_FAILED;
 }
 
-IFA_EXTERN_C ge::graphStatus TilingIncreFlashAttention(gert::TilingContext *context)
+IFA_EXTERN_C ge::graphStatus TilingSparsePagedAttention(gert::TilingContext *context)
 {
-    OPS_ERR_IF(context == nullptr, OPS_REPORT_VECTOR_INNER_ERR("IncreFlashAttention", "Context is nullptr."),
+    OPS_ERR_IF(context == nullptr, OPS_REPORT_VECTOR_INNER_ERR("SparsePagedAttention", "Context is nullptr."),
                return ge::GRAPH_FAILED);
-    IncreFlashAttentionTilingDataV2 tilingData;
-    IncreFlashAttentionContext ifaContext{.opName = nullptr,
+    SparsePagedAttentionTilingDataV2 tilingData;
+    SparsePagedAttentionContext ifaContext{.opName = nullptr,
         .platformInfo = nullptr,
         .query = {nullptr, nullptr},
         .key = {nullptr, nullptr},
@@ -2116,6 +2145,7 @@ IFA_EXTERN_C ge::graphStatus TilingIncreFlashAttention(gert::TilingContext *cont
         .queryRope = {nullptr, nullptr},
         .keyRope = {nullptr, nullptr},
         .keyRopeAntiquantScale = {nullptr, nullptr},
+        .blockPosition = {nullptr, nullptr},
         .attenOut = {nullptr, nullptr},
         .numHeads = nullptr,
         .scaleValue = nullptr,
@@ -2133,10 +2163,10 @@ IFA_EXTERN_C ge::graphStatus TilingIncreFlashAttention(gert::TilingContext *cont
         .vCache = {nullptr},
         .tilingKey = 0,
         .blockDim = 0};
-if (IFATiling::ConvertContext(*context, ifaContext) != ge::GRAPH_SUCCESS) {
+if (SparseIFATiling::ConvertContext(*context, ifaContext) != ge::GRAPH_SUCCESS) {
         OPS_LOG_E(context->GetNodeName(), "Error occurred while converting tilingContext to ifa context");
         return ge::GRAPH_FAILED;
     }
-    return TilingIncreFlashAttentionAdapter(context, ifaContext, tilingData);
+    return TilingSparsePagedAttentionAdapter(context, ifaContext, tilingData);
 }
 } // namespace optiling

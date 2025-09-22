@@ -35,8 +35,15 @@ data-dump/
 *.0
 *.csv
 *.txt
+*.done
+*.slice_0*
+*.db
+*_info
+*.complete
+*.log
 !CMakeLists.txt
 
+/src/**/*.json
 # python cache
 *.pyc
 __pycache__

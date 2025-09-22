@@ -64,11 +64,11 @@ def sparse_paged_attention(query: torch.Tensor,
     封装 sparse_paged_attention 算子的 Python 接口
     """
 
-    key_list = [key]
-    value_list = [value]
+    # key_list = [key]
+    # value_list = [value]
 
     return custom_ops_lib.sparse_paged_attention(
-        query, key_list, value_list, pse_shift, attention_mask, actual_seq_lengths,
+        query, [key], [value], pse_shift, attention_mask, actual_seq_lengths,
         dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2,
         antiquant_scale, antiquant_offset, blocktable, kv_padding_size,
         blockposition,num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise

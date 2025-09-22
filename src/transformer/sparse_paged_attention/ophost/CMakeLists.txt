@@ -8,40 +8,36 @@
 # ======================================================================================================================
 
 add_ops_compile_options(
-        OP_NAME IncreFlashAttention
+        OP_NAME SparsePagedAttention
         OPTIONS --cce-auto-sync=off
                 -Wno-deprecated-declarations
                 -Werror
 )
 add_ops_compile_options(
-        OP_NAME IncreFlashAttention
+        OP_NAME SparsePagedAttention
         COMPUTE_UNIT ascend310p1
         OPTIONS -mllvm
                 -cce-aicore-jump-expand=true
 )
 target_sources(op_host_aclnnInner PRIVATE
-        incre_flash_attention_def.cpp
+        sparse_paged_attention_def.cpp
 )
 
 target_sources(opapi PRIVATE
-        aclnn_incre_flash_attention.cpp
-        aclnn_incre_flash_attention_v2.cpp
-        aclnn_incre_flash_attention_v3.cpp
-        aclnn_incre_flash_attention_v4.cpp
-        aclnn_incre_flash_attention_v5.cpp
+        aclnn_sparse_paged_attention.cpp
 )
 
 target_sources(optiling PRIVATE
-        incre_flash_attention_tiling.cc
-        incre_flash_attention_tiling_check.cc
-        incre_flash_attention_tiling_register.cc
-        fallback_incre_flash_attention.cpp
+        sparse_paged_attention_tiling.cc
+        sparse_paged_attention_tiling_check.cc
+        sparse_paged_attention_tiling_register.cc
+        fallback_sparse_paged_attention.cpp
 )
 
 if (NOT BUILD_OPEN_PROJECT)
     target_sources(opmaster_ct PRIVATE
-        incre_flash_attention_tiling.cc
-        incre_flash_attention_tiling_check.cc
+        sparse_paged_attention_tiling.cc
+        sparse_paged_attention_tiling_check.cc
     )
 endif ()
 
@@ -49,10 +45,7 @@ target_include_directories(optiling PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention.h
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v2.h
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v3.h
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v4.h
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_incre_flash_attention_v5.h
+install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/aclnn_sparse_paged_attention.h
         DESTINATION ${ACLNN_INC_INSTALL_DIR} OPTIONAL
 )

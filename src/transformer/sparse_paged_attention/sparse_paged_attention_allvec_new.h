@@ -9,11 +9,11 @@
  */
 
 /*!
- * \file incre_flash_attention_allvec_new.h
+ * \file sparse_paged_attention_allvec_new.h
  * \brief
  */
-#ifndef INCRE_FLASH_ATTENTION_ALLVEC_NEW
-#define INCRE_FLASH_ATTENTION_ALLVEC_NEW
+#ifndef SPARCE_PAGED_ATTENTION_ALLVEC_NEW
+#define SPARCE_PAGED_ATTENTION_ALLVEC_NEW
 
 #include "kernel_operator.h"
 #include "kernel_operator_list_tensor_intf.h"
@@ -24,6 +24,17 @@
 
 using namespace AscendC;
 using AscendC::MulAddDst;
+
+#define V5_SPARSE_DEBUG_ENABLE 0 // 设置为1启用调试，设置为0关闭所有调试输出
+
+#if V5_SPARSE_DEBUG_ENABLE
+#define V5_DEBUG_PRINTF(...) AscendC::printf(__VA_ARGS__)
+#else
+#define V5_DEBUG_PRINTF(...)                                                                                           \
+    do {                                                                                                               \
+    } while (0)
+#endif
+
 
 // 默认srcGm上有效数据是连续的,srcStride为0
 template <typename DATA_T>
@@ -58,14 +69,14 @@ __aicore__ inline void CopyIn(LocalTensor<DATA_T> &dstLocal, GlobalTensor<DATA_T
     }
 }
 
-template <typename IFAT> class IncreFlashAttentionAttenAllVecNew {
+template <typename IFAT> class SparsePagedAttentionAttenAllVecNew {
 public:
-    __aicore__ inline IncreFlashAttentionAttenAllVecNew(){};
+    __aicore__ inline SparsePagedAttentionAttenAllVecNew(){};
     __aicore__ inline void Init(__gm__ uint8_t *query, __gm__ uint8_t *key, __gm__ uint8_t *value,
                                 __gm__ uint8_t *pseShift, __gm__ uint8_t *attenMask, __gm__ uint8_t *actualSeqLengths,
-                                __gm__ uint8_t *blockTable, __gm__ uint8_t *kvPaddingSize, __gm__ uint8_t *attentionOut,
+                                __gm__ uint8_t *blockTable, __gm__ uint8_t *kvPaddingSize, __gm__ uint8_t *blockPosition, __gm__ uint8_t *attentionOut,
                                 __gm__ uint8_t *softmaxLse, __gm__ uint8_t *workspace,
-                                const IncreFlashAttentionTilingData *__restrict tiling, TPipe *tPipe);
+                                const SparsePagedAttentionTilingData *__restrict tiling, TPipe *tPipe);
     __aicore__ inline void InitQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1, __gm__ uint8_t *deqScale2,
                                      __gm__ uint8_t *quantScale2, __gm__ uint8_t *quantOffset2,
                                      __gm__ uint8_t *antiquantScale, __gm__ uint8_t *antiquantOffset,
@@ -97,7 +108,7 @@ public:
     using pseShiftType = typename AscendC::Conditional<AscendC::IsSameType<Q_T, int8_t>::value, half, Q_T>::type;
 
 protected:
-    const IncreFlashAttentionTilingData *__restrict tilingData = nullptr;
+    const SparsePagedAttentionTilingData *__restrict tilingData = nullptr;
     TPipe *pipe = nullptr;
 
     GlobalTensor<Q_T> queryGm;
@@ -106,6 +117,7 @@ protected:
     GlobalTensor<OUT_T> attentionOutGm;
     GlobalTensor<float> softmaxLseGm;
     GlobalTensor<int32_t> blockTableGm;
+    GlobalTensor<int32_t> blockPositionGm;
     // atten mask
     GlobalTensor<bool> attenMaskBoolGm;
     GlobalTensor<half> attenMaskHalfGm;
@@ -209,6 +221,7 @@ protected:
     uint64_t headDimAlign = 0U;
     bool useDataCopyPad = false;
     bool padForBankConflict = false;
+    bool useBlockPosition = true; // 是否使用BlockPosition
 
     // attention mask
     bool attenMaskFlag = false;
@@ -266,6 +279,9 @@ protected:
     uint64_t s2BatchOffset = 0;
     uint64_t s2BatchBaseOffset = 0;
     uint64_t blockTableBaseOffset = 0;
+    // pageAttention add 
+    uint32_t maxPositionNumPerBatch = 0;
+    uint64_t blockPositionBaseOffset = 0;
 
     // softmaxlse
     bool softmaxLseFlag = false;
@@ -301,6 +317,7 @@ protected:
     __aicore__ inline void InitDataCopyParams(DataCopyParams &intriParams, uint32_t rowCnt);
     __aicore__ inline void CopyKV(LocalTensor<KV_T> dstLocal, GlobalTensor<KV_T> &srcGm, uint64_t offset,
                                   uint32_t rowCnt);
+    __aicore__ inline void CopyZero(LocalTensor<KV_T> dstLocal, uint32_t rowCnt);
 
     __aicore__ inline void AttenMaskCopyIn(uint64_t offset, uint32_t dealRowCount, uint32_t actualColumnCount);
 
@@ -323,6 +340,7 @@ protected:
     __aicore__ inline void ProcessVec1(const uint32_t sInnerLoopIdx);
     __aicore__ inline void ProcessVec2(const uint32_t sInnerLoopIdx);
     __aicore__ inline void SInnerLoopFunc(const uint32_t sInnerLoopIdx);
+    template <typename T_UB> __aicore__ inline void SampleAndPrintUbData(const __gm__ char* tensorName, LocalTensor<T_UB>& ubTensor, uint32_t rows, uint32_t cols,uint32_t headIdx);
 
     __aicore__ inline void SoftmaxFlashV2Compute(LocalTensor<T> &mmResUb, LocalTensor<uint8_t> &softmaxTmpUb,
                                                  uint32_t startRow, uint32_t dealRowCount, uint32_t columnCount,
@@ -347,15 +365,15 @@ protected:
     __aicore__ inline uint64_t SeqLenFromTensorList(uint32_t bIdx);
 };
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitTilingData()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitTilingData()
 {
-    singleProcessSInnerSize = tilingData->increFlashAttentionSingleCoreParams.singleProcessSInnerSize;
-    sInnerLoopTimes = tilingData->increFlashAttentionSingleCoreParams.sInnerLoopTimes;
-    singleProcessSInnerSizeTail = tilingData->increFlashAttentionSingleCoreParams.singleProcessSInnerSizeTail;
-    usedCoreNum = tilingData->increFlashAttentionSingleCoreParams.usedCoreNum;
-    formerCoreNum = tilingData->increFlashAttentionSingleCoreParams.formerCoreNum;
-    blockSplitBn2Range = tilingData->increFlashAttentionSingleCoreParams.blockSplitBn2Range;
-    tailBlockSplitBn2Range = tilingData->increFlashAttentionSingleCoreParams.tailSplitedBatchRange;
+    singleProcessSInnerSize = tilingData->sparsePagedAttentionSingleCoreParams.singleProcessSInnerSize;
+    sInnerLoopTimes = tilingData->sparsePagedAttentionSingleCoreParams.sInnerLoopTimes;
+    singleProcessSInnerSizeTail = tilingData->sparsePagedAttentionSingleCoreParams.singleProcessSInnerSizeTail;
+    usedCoreNum = tilingData->sparsePagedAttentionSingleCoreParams.usedCoreNum;
+    formerCoreNum = tilingData->sparsePagedAttentionSingleCoreParams.formerCoreNum;
+    blockSplitBn2Range = tilingData->sparsePagedAttentionSingleCoreParams.blockSplitBn2Range;
+    tailBlockSplitBn2Range = tilingData->sparsePagedAttentionSingleCoreParams.tailSplitedBatchRange;
     splitKVNum = tilingData->splitKVParams.s2;
     sInnerLoopSize = tilingData->splitKVParams.sInnerLoopSize;
 
@@ -391,14 +409,15 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 
     maxBlockNumPerBatch = tilingData->baseParams.maxBlockNumPerBatch;
     kvCacheBlockSize = tilingData->baseParams.blockSize;
+    maxPositionNumPerBatch = tilingData->baseParams.maxPositionNumPerBatch;
 
-    coreStartIdx = tilingData->increFlashAttentionCoreParams.coreSidxEnd;
+    coreStartIdx = tilingData->sparsePagedAttentionCoreParams.coreSidxEnd;
     // out quant
     isPerChnU8Out = tilingData->outputParams.isPerChnOut == 0 ? false : true;
     isOutQuantTypeBf16 = tilingData->outputParams.isOutQuantTypeBf16 == 0 ? false : true;
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitBuffers()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitBuffers()
 {
     // 0-32K
     pipe->InitBuffer(bmm1ResBuff, BUFFER_SIZE_BYTE_32K);
@@ -445,7 +464,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     softmaxExpUb = softmaxExpBuff.Get<T>();
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculateCopyKvSplitS()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalculateCopyKvSplitS()
 {
     // 1、非量化场景：KV_T=Q_T
     // 2、伪量化场景：需要CAST到Q_T，queue的大小与CAST后的buff均为32K
@@ -459,7 +478,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     copyValueSplitS = (splitS / BLOCK_ELEMENT_NUM) * BLOCK_ELEMENT_NUM; // SplitS作为bmm1ResUb的偏移，需要32Byte对齐
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::UpdateCopyKvParam()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::UpdateCopyKvParam()
 {
     // copy key param
     copyKeyActSplitS = copyKeySplitS;
@@ -481,7 +500,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitActualSeqLen(__gm__ uint8_t *actualSeqLengths)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitActualSeqLen(__gm__ uint8_t *actualSeqLengths)
 {
     actualLenDims = tilingData->baseParams.actualLenDims;
     if (actualLenDims != 0) {
@@ -490,7 +509,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitActualSeqLen
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitAllZeroOutput(uint32_t bIdx)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitAllZeroOutput(uint32_t bIdx)
 {
     uint32_t copySize = gSize * headDim;
     matmul::InitOutput<OUT_T>(attentionOutGm[(bIdx * kvHeadNum + n2Idx) * copySize], copySize, 0);
@@ -513,7 +532,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitAllZeroOutpu
 #endif
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetActualSeqLen()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::GetActualSeqLen()
 {
     if (actualLenDims == 0) {
         curActualSeqLen = kvSeqSize;
@@ -527,7 +546,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetBN2id(const uint32_t bn2Idx)
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::GetBN2id(const uint32_t bn2Idx)
 {
     if constexpr (FLASH_DECODE) {
         bIdx = tmpBlockIdx / (kvHeadNum * splitKVNum);
@@ -539,7 +558,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::UpdateInnerLoopCond()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::UpdateInnerLoopCond()
 {
     if (curActualSeqLen == 0) {
         InitAllZeroOutput(bIdx);
@@ -572,7 +591,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline uint64_t IncreFlashAttentionAttenAllVecNew<IFAT>::SeqLenFromTensorList(uint32_t bIndex)
+__aicore__ inline uint64_t SparsePagedAttentionAttenAllVecNew<IFAT>::SeqLenFromTensorList(uint32_t bIndex)
 {
     uint64_t dimInfo[4]; // this mem is used to set shapeinfo, BSH(3) or BNSD(4)
     AscendC::TensorDesc<__gm__ uint8_t> keyTensorDesc;
@@ -586,7 +605,7 @@ __aicore__ inline uint64_t IncreFlashAttentionAttenAllVecNew<IFAT>::SeqLenFromTe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculateSUnitSize()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalculateSUnitSize()
 {
     if constexpr (LAYOUT_T == LAYOUT::BSH || LAYOUT_T == LAYOUT::BSND) {
         sUnitSize = headDim * kvHeadNum;
@@ -597,7 +616,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculatekvPaddingSPadDataNum(int64_t &startPosition)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalculatekvPaddingSPadDataNum(int64_t &startPosition)
 {
     if (!attenMaskFlag || startPosition <= 0) {
         return;
@@ -637,7 +656,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalculatekvPaddi
     return;
 }
 
-template <typename IFAT> __aicore__ inline bool IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeKVPaddingBeginOffset()
+template <typename IFAT> __aicore__ inline bool SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeKVPaddingBeginOffset()
 {
     if (kvPaddingFlag != 1) {
         return true;
@@ -662,11 +681,11 @@ template <typename IFAT> __aicore__ inline bool IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Init(
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::Init(
     __gm__ uint8_t *query, __gm__ uint8_t *key, __gm__ uint8_t *value, __gm__ uint8_t *pseShift,
     __gm__ uint8_t *attenMask, __gm__ uint8_t *actualSeqLengths, __gm__ uint8_t *blockTable,
-    __gm__ uint8_t *kvPaddingSize, __gm__ uint8_t *attentionOut, __gm__ uint8_t *softmaxLse, __gm__ uint8_t *workspace,
-    const IncreFlashAttentionTilingData *__restrict tiling, TPipe *tPipe)
+    __gm__ uint8_t *kvPaddingSize, __gm__ uint8_t *blockPosition, __gm__ uint8_t *attentionOut, __gm__ uint8_t *softmaxLse, __gm__ uint8_t *workspace,
+    const SparsePagedAttentionTilingData *__restrict tiling, TPipe *tPipe)
 {
     tmpBlockIdx = GetBlockIdx();
 
@@ -717,6 +736,8 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Init(
 
     if constexpr (PAGE_ATTENTION) {
         blockTableGm.SetGlobalBuffer((__gm__ int32_t *)blockTable);
+        blockPositionGm.SetGlobalBuffer((__gm__ int32_t *)blockPosition);
+        useBlockPosition = (blockPosition != nullptr);
     }
 
     InitBuffers();
@@ -739,7 +760,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Init(
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::InitQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1,
+SparsePagedAttentionAttenAllVecNew<IFAT>::InitQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1,
                                                    __gm__ uint8_t *deqScale2, __gm__ uint8_t *quantScale2,
                                                    __gm__ uint8_t *quantOffset2, __gm__ uint8_t *antiquantScale,
                                                    __gm__ uint8_t *antiquantOffset, __gm__ uint8_t *workspace)
@@ -758,7 +779,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::InitQuant(__gm__ uint8_t *deqScale1, __
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitCalcParams()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitCalcParams()
 {
     bn2LoopTimes = blockSplitBn2Range;
     beforeBlockSplitBn2Nums = tmpBlockIdx * blockSplitBn2Range;
@@ -770,13 +791,13 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitCalcParamsEach()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitCalcParamsEach()
 {
     bn2LoopTimes = coreStartIdx[tmpBlockIdx + 1] - coreStartIdx[tmpBlockIdx];
     beforeBlockSplitBn2Nums = coreStartIdx[tmpBlockIdx];
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalcBN2Offset()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalcBN2Offset()
 {
     if constexpr (LAYOUT_T == LAYOUT::BSND || LAYOUT_T == LAYOUT::BSH) {
         // B,1,N2,G,D
@@ -810,9 +831,10 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalcBN2Params()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalcBN2Params()
 {
     blockTableBaseOffset = bIdx * maxBlockNumPerBatch;
+    blockPositionBaseOffset = bIdx * kvHeadNum * maxPositionNumPerBatch;
     s2BatchBaseOffset = kvPaddingBeginOffset;
     attenMaskCoreOffset = bIdx * attentMaskSize + kvPaddingBeginOffset;
     if constexpr (FLASH_DECODE) {
@@ -867,7 +889,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalcSInnerOffsetAndParams(const uint32_t sInnerLoopIdx)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CalcSInnerOffsetAndParams(const uint32_t sInnerLoopIdx)
 {
     uint64_t sInnerOffsetDataSize = sInnerLoopIdx * singleProcessSInnerSize;
     if constexpr (LAYOUT_T == LAYOUT::BSH || LAYOUT_T == LAYOUT::BSND) {
@@ -895,7 +917,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CalcSInnerOffset
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::UpdateIsUseDataCopyPad()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::UpdateIsUseDataCopyPad()
 {
     uint32_t blockSize = ONE_BLK_SIZE / sizeof(KV_T);
     bool isHeadDimAlign = (headDim % blockSize == 0);
@@ -911,7 +933,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitDataCopyExtParams(DataCopyExtParams &intriParams,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitDataCopyExtParams(DataCopyExtParams &intriParams,
                                                                                       DataCopyPadExtParams<KV_T> &padParams,
                                                                                       uint32_t rowCnt)
 {
@@ -935,7 +957,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitDataCopyExtP
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitDataCopyParams(DataCopyParams &intriParams,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::InitDataCopyParams(DataCopyParams &intriParams,
                                                                                    uint32_t rowCnt)
 {
     uint32_t typeElementSize = ONE_BLK_SIZE / sizeof(KV_T);
@@ -953,7 +975,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::InitDataCopyPara
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyKV(LocalTensor<KV_T> dstLocal,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CopyKV(LocalTensor<KV_T> dstLocal,
                                                                        GlobalTensor<KV_T> &srcGm, uint64_t offset,
                                                                        uint32_t rowCnt)
 {
@@ -972,7 +994,25 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyKV(LocalTens
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::AttenMaskCopyIn(uint64_t offset, uint32_t dealRowCount,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CopyZero(LocalTensor<KV_T> dstLocal, uint32_t rowCnt)
+{
+    
+    DataCopyParams intriParams;
+    InitDataCopyParams(intriParams, rowCnt);
+    intriParams.srcStride = 0;
+
+    LocalTensor<KV_T> zeroBuffer = inputQue2.AllocTensor<KV_T>();
+    zeroBuffer.SetSize(rowCnt * headDimAlign);
+    Duplicate(zeroBuffer, static_cast<KV_T>(0), rowCnt * headDimAlign);
+
+    DataCopy(dstLocal, zeroBuffer, intriParams);
+
+    inputQue2.FreeTensor(zeroBuffer);
+}
+
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::AttenMaskCopyIn(uint64_t offset, uint32_t dealRowCount,
                                                                                 uint32_t actualColumnCount)
 {
     LocalTensor<bool> maskUb = inputQue2.AllocTensor<bool>();
@@ -1001,7 +1041,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::AttenMaskCopyIn(
     inputQue2.template EnQue(maskUb);
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::QueryPreProcess()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::QueryPreProcess()
 {
     LocalTensor<Q_T> inputUb = inputQue1.template AllocTensor<Q_T>();
     CopyIn<Q_T>(inputUb, queryGm, tensorACoreOffset, 1, headDimAlign, headDim);
@@ -1023,7 +1063,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseMaxUb, LocalTensor<T> &lseSumUb,
+SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseMaxUb, LocalTensor<T> &lseSumUb,
                                                            LocalTensor<T> &lseExpUb, LocalTensor<T> &lseLocal)
 {
     Duplicate(lseMaxUb, -FLOAT_MAX, gSize * FP32_ONE_BLOCK_SIZE);
@@ -1073,7 +1113,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseMa
     pipe_barrier(PIPE_V);
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CombineSplitKVRes()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CombineSplitKVRes()
 {
     if (curActualSeqLen == 0) {
         // 待补充，置0操作
@@ -1126,7 +1166,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::FlashDecodeCompute()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::FlashDecodeCompute()
 {
     bIdx = tmpBlockIdx / kvHeadNum;
     n2Idx = tmpBlockIdx % kvHeadNum;
@@ -1153,7 +1193,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SoftmaxLseCopyOut(LocalTensor<T> &softmaxSumUb,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::SoftmaxLseCopyOut(LocalTensor<T> &softmaxSumUb,
                                                                                   LocalTensor<T> &softmaxMaxUb)
 {
 #if (__CCE_AICORE__ > 200)
@@ -1176,7 +1216,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SoftmaxLseCopyOu
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeLogSumExpAndCopyToGm(LocalTensor<T> &softmaxSumUb,
+SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeLogSumExpAndCopyToGm(LocalTensor<T> &softmaxSumUb,
                                                                      LocalTensor<T> &softmaxMaxUb)
 {
     // 非GQA走全V,gSize为1
@@ -1194,7 +1234,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeLogSumExpAndCopyToGm(LocalTensor
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeMm1ByVmla(LocalTensor<T> &mmResUb, LocalTensor<Q_T> &aUb,
+SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeMm1ByVmla(LocalTensor<T> &mmResUb, LocalTensor<Q_T> &aUb,
                                                           LocalTensor<Q_T> &bUb, uint32_t dealRowCount,
                                                           uint32_t columnCount, uint32_t actualColumnCount)
 {
@@ -1273,40 +1313,83 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeMm1ByVmla(LocalTensor<T> &mmResU
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1(uint32_t startRow,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1(uint32_t startRow,
                                                                                  uint32_t dealRowCount)
 {
     uint64_t step;
-    if constexpr (!PAGE_ATTENTION) {
-        if constexpr (LAYOUT_T == LAYOUT::BNSD) {
-            step = headDim;
-        } else {
-            step = kvHeadNum * headDim;
-        }
-    } else {
-        step = kvHeadNum * headDim;
-    }
+    // if constexpr (!PAGE_ATTENTION) {
+    //     if constexpr (LAYOUT_T == LAYOUT::BNSD) {
+    //         step = headDim;
+    //     } else {
+    //         step = kvHeadNum * headDim;
+    //     }
+    // } else {
+    //     step = kvHeadNum * headDim;
+    // }
+    
+    // 当前场景的vllm 输入的KV都是BSH的，所以step可以固定为kvHeadNum * headDim
+    step = kvHeadNum * headDim;
+
     LocalTensor<KV_T> keyUb = inputQue2.template AllocTensor<KV_T>();
     if constexpr (PAGE_ATTENTION) {
-        uint32_t curSeqIdx = s2BatchOffset + startRow;
+        uint32_t curSeqIdx = s2BatchOffset + startRow; // 当前需要处理的Seq的起点
         uint32_t copyFinishRowCnt = 0;
         while (copyFinishRowCnt < dealRowCount) {
-            uint64_t blockIdOffset = curSeqIdx / kvCacheBlockSize; // 获取blcok table上的索引
+            uint64_t logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
             uint64_t reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
-            uint64_t idInBlockTable =
-                blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+
             // 计算可以拷贝行数
-            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt;
+            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
             if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
                 copyRowCnt = dealRowCount - copyFinishRowCnt;
-            }
-            uint64_t keyOffset =
-                (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
-            CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset, copyRowCnt);
+            } // 防止拷多了
 
-            // 更新循环变量
-            copyFinishRowCnt += copyRowCnt;
-            curSeqIdx += copyRowCnt;
+            // uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
+
+            // if (useBlockPosition) {
+            //     // // 在初始化阶段打印这些值
+            //     // V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
+            //     //                 maxPositionNumPerBatch, blockPositionBaseOffset);
+            //     uint64_t positionOffset =
+            //         blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            //     blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+            // }
+
+            // vllm 场景下默认输入useBlockPosition
+            uint64_t positionOffset = blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            uint64_t blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+
+            if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
+                // 在actualSeqLengths的基础上长度对应的blockIdOffset之后 再搬固定长度30的Token用来计算
+                // 正常来讲 碰见结尾的时候，就搬一个Page的0值，但是现在有搬30个Token的需求 所以拆解成两个部分进行数据搬运
+                uint64_t fix_length = 30;
+                uint64_t final_blockIdOffset = curActualSeqLen / kvCacheBlockSize;// 实际计算量curActualSeqLen对应的最后一个blockIdOffset
+                uint64_t final_reaminRowCnt = curActualSeqLen % kvCacheBlockSize;
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + final_blockIdOffset); // 从block table上的获取编号
+                uint64_t keyOffset =
+                    (idInBlockTable * kvCacheBlockSize + final_reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
+                    + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
+
+                CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset, fix_length);
+                // CopyZero(keyUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+                 // 更新循环变量
+                copyFinishRowCnt += fix_length;
+                curSeqIdx += fix_length;
+                break;//终止
+            } else {
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                uint64_t keyOffset =
+                    (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
+                    + (uint64_t)(n2Idx * headDim);                            // 头偏移 在块内的哪个头上
+
+                CopyKV(keyUb[copyFinishRowCnt * headDimAlign], keyGm, keyOffset,
+                       copyRowCnt); // 输出数据排布还是按照Head_dim去堆 所以不影响Q[BNSD]
+                // 更新循环变量
+                copyFinishRowCnt += copyRowCnt;
+                curSeqIdx += copyRowCnt;
+            }
         }
     } else {
         uint64_t keyOffset = tensorBOffset + (uint64_t)startRow * step;
@@ -1327,7 +1410,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm1
     }
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm1Compute()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::Bmm1Compute()
 {
     for (uint32_t i = 0; i < copyKeyLoopCount; i++) {
         ComputeSingleMm1(i * copyKeyActSplitS, copyKeyActSplitS);
@@ -1336,7 +1419,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeMm2ByVmla(
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeMm2ByVmla(
     LocalTensor<T> &vmlaResUb, LocalTensor<Q_T> &aUb, LocalTensor<Q_T> &bUb, uint32_t dealRowCount,
     uint32_t singleDealRowCnt, uint32_t columnCount, uint32_t actualColumnCount)
 {
@@ -1370,7 +1453,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeMm2ByVmla
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::AccumulateByRow(LocalTensor<T> &srcUb,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::AccumulateByRow(LocalTensor<T> &srcUb,
                                                                                 uint32_t rowCount, uint32_t columnCount)
 {
     for (uint32_t i = rowCount; i > 1;) {
@@ -1382,40 +1465,77 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::AccumulateByRow(
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(uint32_t startRow, uint32_t dealRowCount)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::CopyValueToUb(uint32_t startRow, uint32_t dealRowCount)
 {
     uint64_t step;
-    if constexpr (!PAGE_ATTENTION) {
-        if constexpr (LAYOUT_T == LAYOUT::BNSD) {
-            step = headDim;
-        } else {
-            step = kvHeadNum * headDim;
-        }
-    } else {
-        step = kvHeadNum * headDim;
-    }
+    // if constexpr (!PAGE_ATTENTION) {
+    //     if constexpr (LAYOUT_T == LAYOUT::BNSD) {
+    //         step = headDim;
+    //     } else {
+    //         step = kvHeadNum * headDim;
+    //     }
+    // } else {
+    //     step = kvHeadNum * headDim;
+    // }
+    
+    // vllm 场景下 只支持BSH的kv
+    step = kvHeadNum * headDim;
 
     LocalTensor<KV_T> valueUb = inputQue2.template AllocTensor<KV_T>();
     if constexpr (PAGE_ATTENTION) {
         uint32_t curSeqIdx = s2BatchOffset + startRow;
         uint32_t copyFinishRowCnt = 0;
         while (copyFinishRowCnt < dealRowCount) {
-            uint64_t blockIdOffset = curSeqIdx / kvCacheBlockSize; // 获取blcok table上的索引
+            uint64_t logicalOffset = curSeqIdx / kvCacheBlockSize; // 获取逻辑块上的偏移
             uint64_t reaminRowCnt = curSeqIdx % kvCacheBlockSize;  // 获取在单个块上超出的行数
-            uint64_t idInBlockTable =
-                blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+
             // 计算可以拷贝行数
-            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt;
+            uint32_t copyRowCnt = kvCacheBlockSize - reaminRowCnt; // 在当前Block 还剩多少Token要拷贝
             if (copyFinishRowCnt + copyRowCnt > dealRowCount) {
                 copyRowCnt = dealRowCount - copyFinishRowCnt;
-            }
-            uint64_t curOffset =
-                (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
-            CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
+            } // 防止拷多了
 
-            // 更新循环变量
-            copyFinishRowCnt += copyRowCnt;
-            curSeqIdx += copyRowCnt;
+            // uint64_t blockIdOffset = logicalOffset; // 获取blcok table上的索引
+
+            // if (useBlockPosition) {
+            //     uint64_t positionOffset =
+            //         blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            //     blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+            // }
+            uint64_t positionOffset =
+                blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
+            uint64_t blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
+
+            if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
+                // V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
+                //                 copyRowCnt);
+                // CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
+                uint64_t fix_length = 30;
+                uint64_t final_blockIdOffset = curActualSeqLen / kvCacheBlockSize; // 实际计算量curActualSeqLen对应的最后一个blockIdOffset
+                uint64_t final_reaminRowCnt = curActualSeqLen % kvCacheBlockSize;
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + final_blockIdOffset); // 从block table上的获取编号
+                uint64_t curOffset =
+                    (idInBlockTable * kvCacheBlockSize + final_reaminRowCnt) * step // 块偏移 表示在Block的那个Token块上
+                    + (uint64_t)(n2Idx * headDim); 
+                CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, fix_length);
+                // CopyZero(valueUb[(copyFinishRowCnt + fix_length) * headDimAlign], copyRowCnt - fix_length);
+                 // 更新循环变量
+                copyFinishRowCnt += fix_length;
+                curSeqIdx += fix_length;
+                break;//终止
+            } else {
+                uint64_t idInBlockTable =
+                    blockTableGm.GetValue(blockTableBaseOffset + blockIdOffset); // 从block table上的获取编号
+                
+                uint64_t curOffset =
+                    (idInBlockTable * kvCacheBlockSize + reaminRowCnt) * step + (uint64_t)(n2Idx * headDim);
+                CopyKV(valueUb[copyFinishRowCnt * headDimAlign], valueGm, curOffset, copyRowCnt);
+                // 更新循环变量
+                copyFinishRowCnt += copyRowCnt;
+                curSeqIdx += copyRowCnt;
+            }
+            
         }
     } else {
         uint64_t curOffset = valueOffset + (uint64_t)startRow * step;
@@ -1426,7 +1546,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::CopyValueToUb(ui
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm2(LocalTensor<T> vmlaResUb, uint32_t startRow,
+SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeSingleMm2(LocalTensor<T> vmlaResUb, uint32_t startRow,
                                                           uint32_t dealRowCount, uint32_t singleComputeRowCnt)
 {
     LocalTensor<T> mmResUb = bmm1ResUb[startRow];
@@ -1472,7 +1592,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeSingleMm2(LocalTensor<T> vmlaRes
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetConfusionTransposeTiling(
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::GetConfusionTransposeTiling(
     int64_t numR, int64_t numC, const uint32_t stackBufferSize, const uint32_t typeSize,
     ConfusionTransposeTiling &tiling)
 {
@@ -1492,7 +1612,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetConfusionTran
     tiling.param5 = repeat;
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2Compute()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::Bmm2Compute()
 {
     // 单次处理行数
     LocalTensor<T> vmlaResUb = tmpBuff1.Get<T>();
@@ -1518,7 +1638,7 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ElewiseCompute(LocalTensor<T> &mmResUb, TBuf<> &tmpBuf,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ElewiseCompute(LocalTensor<T> &mmResUb, TBuf<> &tmpBuf,
                                                                                uint32_t startRow, uint32_t dealRowCount,
                                                                                uint32_t columnCount,
                                                                                uint32_t actualColumnCount)
@@ -1566,7 +1686,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ElewiseCompute(L
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SoftmaxFlashV2Compute(
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::SoftmaxFlashV2Compute(
     LocalTensor<T> &mmResUb, LocalTensor<uint8_t> &softmaxTmpUb, uint32_t startRow, uint32_t dealRowCount,
     uint32_t columnCount, uint32_t actualColumnCount)
 {
@@ -1581,7 +1701,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SoftmaxFlashV2Co
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2FDDataCopyOut(LocalTensor<T> &attenOutUb, uint32_t startRow,
+SparsePagedAttentionAttenAllVecNew<IFAT>::Bmm2FDDataCopyOut(LocalTensor<T> &attenOutUb, uint32_t startRow,
                                                            uint32_t dealRowCount, uint32_t columnCount,
                                                            uint32_t actualColumnCount)
 {
@@ -1610,7 +1730,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2FDDataCopyOut(LocalTensor<T> &atten
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2DataCopyOut(LocalTensor<OUT_T> &attenOutUb, uint32_t startRow,
+SparsePagedAttentionAttenAllVecNew<IFAT>::Bmm2DataCopyOut(LocalTensor<OUT_T> &attenOutUb, uint32_t startRow,
                                                          uint32_t dealRowCount, uint32_t columnCount,
                                                          uint32_t actualColumnCount)
 {
@@ -1636,7 +1756,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2DataCopyOut(LocalTensor<OUT_T> &att
 
 template <typename IFAT>
 __aicore__ inline void
-IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2CastAndCopyOut(LocalTensor<T> &bmm2ResUb, uint32_t startRow,
+SparsePagedAttentionAttenAllVecNew<IFAT>::Bmm2CastAndCopyOut(LocalTensor<T> &bmm2ResUb, uint32_t startRow,
                                                             uint32_t dealRowCount, uint32_t columnCount,
                                                             uint32_t actualColumnCount)
 {
@@ -1662,7 +1782,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2CastAndCopyOut(LocalTensor<T> &bmm2
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::PseShiftCopyIn(uint32_t startRow, uint32_t rowCount,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::PseShiftCopyIn(uint32_t startRow, uint32_t rowCount,
                                                                                uint32_t actualColumnCount)
 {
     LocalTensor<pseShiftType> pseShiftUb = inputQue2.AllocTensor<pseShiftType>();
@@ -1702,7 +1822,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::PseShiftCopyIn(u
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ColumnSum(LocalTensor<T> srcUb, uint32_t dealRowCount,
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ColumnSum(LocalTensor<T> srcUb, uint32_t dealRowCount,
                                                                           uint32_t columnCount)
 {
     // 将srcUb的dealRowCount行累加到第一行,每行columnCount各元素
@@ -1719,7 +1839,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ColumnSum(LocalT
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ProcessVec1(const uint32_t sInnerLoopIdx)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ProcessVec1(const uint32_t sInnerLoopIdx)
 {
     pipe_barrier(PIPE_V);
     ElewiseCompute(bmm1ResUb, tmpBuff2, 0, 1, actualSingleProcessSInnerSizeAlign, actualSingleProcessSInnerSize);
@@ -1754,7 +1874,7 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ProcessVec1(cons
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ProcessVec2(const uint32_t sInnerLoopIdx)
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ProcessVec2(const uint32_t sInnerLoopIdx)
 {
     // 最后一次输出计算结果
     if (sInnerLoopIdx + 1 == sInnerLoopTimes) {
@@ -1792,22 +1912,82 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::ProcessVec2(cons
 }
 
 template <typename IFAT>
-__aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SInnerLoopFunc(const uint32_t sInnerLoopIdx)
+template <typename T_UB>
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::SampleAndPrintUbData(
+    const __gm__ char* tensorName, 
+    LocalTensor<T_UB>& ubTensor, 
+    uint32_t rows, 
+    uint32_t cols,
+    uint32_t headIdx)
+{
+#if V5_SPARSE_DEBUG_ENABLE
+    // 只在特定的头或条件下打印，避免日志泛滥
+    if (headIdx == 0 || headIdx == 15 || headIdx == 31) {
+        V5_DEBUG_PRINTF("--- Sampling UB Data for [%s], Head: %u, Shape: (%u, %u) ---\n", tensorName, headIdx, rows, cols);
+        
+        // 定义采样点
+        const uint32_t sample_points = 4; // 每个采样区域打印的点数
+        
+        // 打印头部数据
+        V5_DEBUG_PRINTF("  Head data:\n");
+        for (uint32_t r = 0; r < min(rows, 2u); ++r) {
+            for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
+                float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
+                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+            }
+        }
+
+        // 打印中间数据
+        if (rows > 4) {
+            V5_DEBUG_PRINTF("  Middle data:\n");
+            uint32_t mid_row = rows / 2;
+            for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
+                float val = static_cast<float>(ubTensor.GetValue(mid_row * cols + c));
+                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", mid_row, c, val);
+            }
+        }
+
+        // 打印尾部数据
+        if (rows > 2) {
+            V5_DEBUG_PRINTF("  Tail data:\n");
+            for (uint32_t r = rows - min(rows, 2u); r < rows; ++r) {
+                for (uint32_t c = cols - min(cols, sample_points); c < cols; ++c) {
+                    float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
+                    V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+                }
+            }
+        }
+        V5_DEBUG_PRINTF("--- End Sampling [%s] ---\n", tensorName);
+    }
+#endif
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::SInnerLoopFunc(const uint32_t sInnerLoopIdx)
 {
     // mm1
     Bmm1Compute();
+    // 采样 Bmm1 的结果 (Q @ K.T)
+    // SampleAndPrintUbData("Bmm1Res (Scores)", bmm1ResUb, 1, actualSingleProcessSInnerSizeAlign, n2Idx);
 
     // v1
     ProcessVec1(sInnerLoopIdx);
+    // 采样 Softmax 后的结果 (Probabilities)
+    // 注意：Softmax的结果通常会写回bmm1ResUb，所以我们再次采样它
+    // SampleAndPrintUbData("SoftmaxRes (Probs)", bmm1ResUb, 1, actualSingleProcessSInnerSizeAlign, n2Idx);
 
     // mm2
     Bmm2Compute();
-
+    // 采样 Bmm2 的结果 (Probs @ V)
+    // SampleAndPrintUbData("Bmm2Res (Weighted V)", bmm2ResUb, 1, headDimAlign, n2Idx);
+    
     // v2
     ProcessVec2(sInnerLoopIdx);
+    // 如果需要，可以在ProcessVec2之后再次采样bmm2ResUb，观察最终的输出
+    // SampleAndPrintUbData("Final Output", bmm2ResUb, 1, headDimAlign, n2Idx);
 }
 
-template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+template <typename IFAT> __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::Process()
 {
     if (g_coreType == AIV && tmpBlockIdx >= usedCoreNum) {
         // skip cores
@@ -1823,10 +2003,12 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
             GetBN2id(bn2Idx);
             GetActualSeqLen();
             CalculateSUnitSize();
-            // ComputeKVPaddingBeginOffset return false means this loop skip calculation
-            if (!ComputeKVPaddingBeginOffset()) {
-                continue;
-            }
+            
+            // 不考虑KVpadding <暂时在vllm中没开这个特性>
+            // // ComputeKVPaddingBeginOffset return false means this loop skip calculation
+            // if (!ComputeKVPaddingBeginOffset()) {
+            //     continue;
+            // }
 
             // 计算BN2方向的offset
             CalcBN2Offset();
@@ -1866,4 +2048,4 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
         FlashDecodeCompute();
     }
 }
-#endif // INCRE_FLASH_ATTENTION_ALLVEC_NEW
+#endif // SPARCE_PAGED_ATTENTION_ALLVEC_NEW
