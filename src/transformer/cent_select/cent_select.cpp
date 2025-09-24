@@ -215,7 +215,7 @@ private:
         seqLen = seqLenGlobal.GetValue(bIdx);
         // importance_ = importanceGlobal.GetValue(bIdx * kvHeadNum + n2Idx);
         pageLen = (seqLen + PAGESIZE - 1) / PAGESIZE; 
-        workLoadThreshold = pageLen / 8;;
+        workLoadThreshold = pageLen / 32;;
         gatherMaskLen = pageLen / 8; // page num of one batch
         gatherMaskU32Len = pageLen / 32;
     }   
