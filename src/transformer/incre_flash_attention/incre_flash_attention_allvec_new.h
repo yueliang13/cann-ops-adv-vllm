@@ -1854,6 +1854,8 @@ template <typename IFAT> __aicore__ inline void IncreFlashAttentionAttenAllVecNe
         }
     }
 
+    printf("usedCoreNum: %d\n", usedCoreNum);
+
     if constexpr (FLASH_DECODE) {
         // 多核同步
 #if (__CCE_AICORE__ > 200)

@@ -60,13 +60,14 @@ class TestCustomAdd(TestCase):
         print("block_table_npu shape:", block_table_npu.shape)
         print("seq_len_npu shape:", seq_len_npu.shape)
 
-        page_position, max_page_position_length = custom_ops.cent_select(q_npu, l1_npu, block_ids_npu, block_table_npu, seq_len_npu)
+        page_position, page_position_length, max_page_position_length = custom_ops.cent_select(q_npu, l1_npu, block_ids_npu, block_table_npu, seq_len_npu)
 
         torch_indices = torch_compute_cent(q_npu, l1_npu)
         torch_page_position, torch_page_position_length, torch_indices_full = torch_select_position(block_ids_npu, block_table_npu, seq_len_npu, torch_indices, block_size=blockSize)
 
         print(f"max_page_position_length: {max_page_position_length}, shape: {max_page_position_length.shape}, dtype: {max_page_position_length.dtype}")
         print("max_page_position_length[:,0]:", max_page_position_length[:,0])
+        print("page_position_length[:,0]:", page_position_length[:,0])
         max_page_position_length = max_page_position_length[:,0]
         torch_page_position_length = torch_page_position_length.to(torch.int64).max(dim=1)[0] * blockSize
 
