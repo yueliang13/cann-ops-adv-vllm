@@ -7,13 +7,13 @@ import math
 batch_size = 1
 num_heads = 32
 head_dims = 128
-num_key_value_heads = 32      # MHA 场景, 与 num_heads 相同
+num_key_value_heads = 8      # MHA 场景, 与 num_heads 相同
 block_size = 128              # Page Attention 的块大小
 seq_len_q = 1                 # 解码场景，Query 长度为 1
-actual_seq_len_kv = 10 * 1024 # KV 缓存中的实际序列长度
+actual_seq_len_kv = 4 * 1024 # KV 缓存中的实际序列长度
 
 # 为 block_table 计算最大所需块数，这里基于一个理论最大长度
-max_supported_len = 10 * 1024 # 假设模型最大支持34K
+max_supported_len = 32 * 1024 # 假设模型最大支持34K
 max_blocks_per_seq = (max_supported_len + block_size - 1) // block_size
 
 # 定义 KV Cache 内存池的总大小（总块数）
@@ -52,22 +52,22 @@ actual_seq_lengths = torch.full((batch_size,), actual_seq_len_kv, dtype=torch.in
 scale = 1.0 / math.sqrt(head_dims)
 
 
-# --- 3. 调用 npu_incre_flash_attention 并启用 Page Attention ---
-for i in range(10):
-    out = torch_npu.npu_incre_flash_attention(
-        q,
-        key_cache,
-        value_cache,
-        # --- 启用 Page Attention 的关键参数 ---
-        block_table=block_table,
-        actual_seq_lengths=actual_seq_lengths,
-        block_size=block_size,
-        # --- 其他必要参数 ---
-        num_heads=num_heads,
-        scale_value=scale,
-        input_layout="BNSD", # 必须设为 BNSD
-        num_key_value_heads=num_key_value_heads
-    )
+# # --- 3. 调用 npu_incre_flash_attention 并启用 Page Attention ---
+# for i in range(10):
+#     out = torch_npu.npu_incre_flash_attention(
+#         q,
+#         key_cache,
+#         value_cache,
+#         # --- 启用 Page Attention 的关键参数 ---
+#         block_table=block_table,
+#         actual_seq_lengths=actual_seq_lengths,
+#         block_size=block_size,
+#         # --- 其他必要参数 ---
+#         num_heads=num_heads,
+#         scale_value=scale,
+#         input_layout="BNSD", # 必须设为 BNSD
+#         num_key_value_heads=num_key_value_heads
+#     )
 
 
 torch_npu.npu.synchronize()     
@@ -105,6 +105,37 @@ print(f"Input block_table shape: {block_table.shape}")
 print(f"Input actual_seq_lengths: {actual_seq_lengths.shape}, value: {actual_seq_lengths[0].item()}")
 print(f"Output out shape: {out.shape}")
 print("--------------------")
+
+
+# 将NPU结果转到CPU
+out_cpu = out.cpu()
+
+non_zero_heads = 0
+for h in range(num_heads):
+    # 提取当前头的所有数据
+    head_output = out_cpu[:, h, :, :]
+    
+    # 检查这个头的所有值是否都接近于0。
+    # 我们使用 torch.any 来判断是否存在任何非零元素。
+    is_non_zero = torch.any(head_output != 0)
+
+    if is_non_zero:
+        status = "✅ 非零 (Not Zero)"
+        non_zero_heads += 1
+    else:
+        status = "❌ 全零 (ALL ZERO)"
+
+    # 打印每个头所属的GQA分组信息和状态
+    kv_group_head = h // (num_heads // num_key_value_heads)
+    print(f"Query Head {h:02d} (KV Group {kv_group_head}): {status}")
+
+print("---------------------------------------")
+if non_zero_heads == num_heads:
+    print(f"\n🎉 全部 {num_heads} 个头都产生了非零输出！")
+else:
+    print(f"\n🚨 注意: 有 {num_heads - non_zero_heads} 个头的结果为全零，可能在计算中被错误地跳过了。")
+
+
 
 # 输出的 shape 应该和 query 的 shape 一致
 assert out.shape == q.shape

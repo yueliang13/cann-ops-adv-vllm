@@ -226,6 +226,14 @@ public:
         uint64_t bmm1BlockPositionAddr =
             (static_cast<uint64_t>(bmm1BlockPositionAddrHigh) << 32) | static_cast<uint64_t>(bmm1BlockPositionAddrLow);
 
+        uint32_t curActualSeqLenHigh = bmm1LocalInfo.GetValue(9);
+        uint32_t curActualSeqLenLow = bmm1LocalInfo.GetValue(10);
+        uint64_t curActualSeqLen =
+            (static_cast<uint64_t>(curActualSeqLenHigh) << 32) | static_cast<uint64_t>(curActualSeqLenLow);
+
+
+
+
         // 添加调试日志：打印blockPosition地址信息
         V5_DEBUG_PRINTF("bmm1CopyB1: BlockPositionAddr=%llu (High=%u, Low=%u)\n", 
                         bmm1BlockPositionAddr, bmm1BlockPositionAddrHigh, bmm1BlockPositionAddrLow);
@@ -283,29 +291,64 @@ public:
 
                 // 如果newBlockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == 0x7FFFFFFF) {
+                    uint64_t fix_length = 30; // 旧逻辑中固定的拷贝长度
+                    // 1. 计算实际序列末尾 (curActualSeqLen) 所在的逻辑块和块内偏移
+                    uint64_t final_logical_block_idx = curActualSeqLen / kvCacheBlockSize;
+                    uint64_t final_row_offset_in_block = curActualSeqLen % kvCacheBlockSize;
+
+                    // // 2. 两次间接寻址，找到末尾Token所在的物理块ID
+                    // uint64_t final_positionOffset = blockPositionBaseOffset + 
+                    //                                 (uint64_t)(bmm1N2Idx * maxPositionNumPerBatch) + 
+                    //                                 final_logical_block_idx;
+                    // uint32_t final_block_id_for_table = 
+                    //     *(reinterpret_cast<__gm__ int32_t *>(bmm1BlockPositionAddr) + final_positionOffset);
+                    
+                     // 假设 final_block_id_for_table 是有效的
+                    uint32_t final_physical_block_id = 
+                        *(reinterpret_cast<__gm__ int32_t *>(bmm1BlockTableAddr) + blockIdBaseOffset + final_logical_block_idx);
+
+                    // 3. 计算源地址的基地址
+                    uint64_t final_src_base_offset =
+                        (uint64_t)final_physical_block_id * kvCacheBlockSize * kvHeadNum * headSize +
+                        bmm1N2Offset;
+                    
+                    // 4. 执行拷贝，同时保持新代码的K维度分块和CopyND2NZ格式
+                    uint32_t alignedUseN = ((useN - 1 + ALIGN_BLOCK_SIZE) / ALIGN_BLOCK_SIZE) * ALIGN_BLOCK_SIZE;
+
+
                     // 根据不同分支进行零值填充
                     if (bmm1BaseN == kvCacheBlockSize) {
                         // 分支1的零值填充
-                        CopyZero(dst[copyFinishRowCnt * blockElementCnt], currentCopyRowCnt, useK);
+                       CopyND2NZ(dst[copyFinishRowCnt * blockElementCnt], 
+                          src[final_src_base_offset + row * bmm1BaseK],
+                          final_row_offset_in_block, // 源矩阵的行偏移
+                          0,                         // 源矩阵的列偏移
+                          fix_length,                // 需要复制的实际行数
+                          useK,                      // 要复制的列数
+                          bmm1Kb,                    // 源矩阵的列步长
+                          1, 0, alignedUseN); 
                     } else {
-                        // 分支2的零值填充，需要考虑K方向多Step
-                        uint32_t alignedUseN = ((useN - 1 + ALIGN_BLOCK_SIZE) / ALIGN_BLOCK_SIZE) * ALIGN_BLOCK_SIZE;
-
-                        for (int i = 0; i < bmm1StepKb; i++) {
+                         for (int i = 0; i < bmm1StepKb; i++) {
                             uint32_t remainColCnt = headSize - row * bmm1BaseK - i * bmm1BaseK;
                             uint32_t currentCopyColCnt = remainColCnt < bmm1BaseK ? remainColCnt : bmm1BaseK;
                             uint32_t dstOffset = copyFinishRowCnt * blockElementCnt;
                             dstOffset += i * bmm1BaseK * alignedUseN;
 
-                            // 为每个Step填充零值
-                            CopyZero(dst[dstOffset], currentCopyRowCnt, currentCopyColCnt);
+                            CopyND2NZ(dst[dstOffset], 
+                                    src[final_src_base_offset + row * bmm1BaseK + i * bmm1BaseK], 
+                                    final_row_offset_in_block, // 源矩阵的行偏移
+                                    0,
+                                    fix_length,                // 需要复制的实际行数
+                                    currentCopyColCnt,
+                                    bmm1Kb, 
+                                    1, 0, 0, alignedUseN);
                         }
                     }
 
                     // 更新循环变量
-                    copyFinishRowCnt += currentCopyRowCnt;
-                    curSeqIdx += currentCopyRowCnt;
-                    continue;
+                    copyFinishRowCnt += fix_length;
+                    curSeqIdx += fix_length;
+                    break;
                 } 
                 else {
                     // 修改：正确转换类型
@@ -414,6 +457,12 @@ public:
         uint64_t bmm2BlockPositionAddr = // 新增：合并blockPosition地址
             (static_cast<uint64_t>(bmm2BlockPositionAddrHigh) << 32) | static_cast<uint64_t>(bmm2BlockPositionAddrLow);
 
+        uint32_t curActualSeqLenHigh = bmm2LocalInfo.GetValue(9);
+        uint32_t curActualSeqLenLow = bmm2LocalInfo.GetValue(10);
+        uint64_t curActualSeqLen =
+            (static_cast<uint64_t>(curActualSeqLenHigh) << 32) | static_cast<uint64_t>(curActualSeqLenLow);
+
+
         // 添加调试日志：打印blockPosition地址信息
         V5_DEBUG_PRINTF("bmm2CopyB1: BlockTableAddr=%llu (High=%u, Low=%u)\n", bmm2BlockTableAddr,
                         bmm2BlockTableAddrHigh, bmm2BlockTableAddrLow);
@@ -479,15 +528,50 @@ public:
                 // 如果blockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == (uint64_t)(0x7FFFFFFF)) {
                     // MDL下，每次回调拷贝一组step*base，每次都是从头开始拷贝，只需要关注copyFinishRowCnt
+                    uint64_t fix_length = 30; // 旧逻辑中固定的拷贝长度
+
+                    // 1. 计算实际序列末尾 (curActualSeqLen) 所在的逻辑块和块内偏移
+                    uint64_t final_logical_block_idx = curActualSeqLen / kvCacheBlockSize;
+                    uint64_t final_row_offset_in_block = curActualSeqLen % kvCacheBlockSize;
+                    
+                    // // 2. 两次间接寻址，找到末尾Token所在的物理块ID (使用bmm2的变量)
+                    // uint64_t final_positionOffset = blockPositionBaseOffset + 
+                    //                                 (uint64_t)(bmm2N2Idx * maxPositionNumPerBatch) + 
+                    //                                 final_logical_block_idx;
+                    // uint32_t final_block_id_for_table = 
+                    //     *(reinterpret_cast<__gm__ int32_t *>(bmm2BlockPositionAddr) + final_positionOffset);
+                    
+                    // 假设 final_block_id_for_table 是有效的
+                    uint32_t final_physical_block_id = 
+                        *(reinterpret_cast<__gm__ int32_t *>(bmm2BlockTableAddr) + blockIdBaseOffset + final_logical_block_idx);
+
+                    // 3. 计算源地址的基地址 (使用bmm2的变量)
+                    uint64_t final_src_base_offset =
+                        (uint64_t)final_physical_block_id * kvCacheBlockSize * kvHeadNum * headSize +
+                        bmm2N2Offset;
+                    // 同样考虑D方向(col)的偏移
+                    if (useN < headSize) {
+                        final_src_base_offset += col * bmm2BaseN * bmm2StepN;
+                    }
+
+                    // 4. 执行拷贝，使用本函数（bmm2）的CopyND2NZ格式
                     uint32_t dstOffset = copyFinishRowCnt * blockElementCnt;
+                    CopyND2NZ(dst[dstOffset], 
+                            src[final_src_base_offset], 
+                            final_row_offset_in_block, // 源矩阵的行偏移
+                            0, 
+                            fix_length,                // 需要复制的实际行数
+                            useN,                      // 要复制的列数
+                            bmm2N, 
+                            1, 0, 0,
+                            alignedUseK);
                     
-                    // 填充零值
-                    CopyZero(dst[dstOffset], currentCopyRowCnt, useN);
-                    
-                    // 更新循环变量
-                    copyFinishRowCnt += currentCopyRowCnt;
-                    curSeqIdx += currentCopyRowCnt;
-                    continue;
+                    // 5. 更新循环变量
+                    copyFinishRowCnt += fix_length;
+                    curSeqIdx += fix_length;
+
+                    // 6. 按照旧版逻辑，直接终止整个while循环
+                    break; 
                 }else{
                     blockIdOffset = static_cast<uint64_t>(newBlockIdOffset);
                     
@@ -2617,6 +2701,12 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Bmm1
                         (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
                         (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
         
+        // 传入 uint64_t curActualSeqLen 
+        bmm1PageAttentionDataUb.SetValue(
+            9, (uint32_t)((reinterpret_cast<uint64_t>(curActualSeqLen) >> 32) & 0x00000000ffffffff));
+        bmm1PageAttentionDataUb.SetValue(10, (uint32_t)(reinterpret_cast<uint64_t>(curActualSeqLen)));
+
+
         event_t eventIDSToMTE3 = static_cast<event_t>(GetTPipePtr()->FetchEventID(HardEvent::S_MTE3));
         SetFlag<HardEvent::S_MTE3>(eventIDSToMTE3);
         WaitFlag<HardEvent::S_MTE3>(eventIDSToMTE3);
@@ -2701,6 +2791,12 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Bmm2
                         blockpositionPtr, 
                         (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
                         (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
+
+        // 传入 uint64_t curActualSeqLen 
+        bmm2PageAttentionDataUb.SetValue(
+            9, (uint32_t)((reinterpret_cast<uint64_t>(curActualSeqLen) >> 32) & 0x00000000ffffffff));
+        bmm2PageAttentionDataUb.SetValue(10, (uint32_t)(reinterpret_cast<uint64_t>(curActualSeqLen)));
+
 
         event_t eventIDSToMTE3 = static_cast<event_t>(GetTPipePtr()->FetchEventID(HardEvent::S_MTE3));
         SetFlag<HardEvent::S_MTE3>(eventIDSToMTE3);

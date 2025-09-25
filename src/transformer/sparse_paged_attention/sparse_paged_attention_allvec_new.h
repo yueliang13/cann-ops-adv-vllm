@@ -1317,18 +1317,18 @@ __aicore__ inline void SparsePagedAttentionAttenAllVecNew<IFAT>::ComputeSingleMm
                                                                                  uint32_t dealRowCount)
 {
     uint64_t step;
-    // if constexpr (!PAGE_ATTENTION) {
-    //     if constexpr (LAYOUT_T == LAYOUT::BNSD) {
-    //         step = headDim;
-    //     } else {
-    //         step = kvHeadNum * headDim;
-    //     }
-    // } else {
-    //     step = kvHeadNum * headDim;
-    // }
+    if constexpr (!PAGE_ATTENTION) {
+        if constexpr (LAYOUT_T == LAYOUT::BNSD) {
+            step = headDim;
+        } else {
+            step = kvHeadNum * headDim;
+        }
+    } else {
+        step = kvHeadNum * headDim;
+    }
     
     // 当前场景的vllm 输入的KV都是BSH的，所以step可以固定为kvHeadNum * headDim
-    step = kvHeadNum * headDim;
+    // step = kvHeadNum * headDim;
 
     LocalTensor<KV_T> keyUb = inputQue2.template AllocTensor<KV_T>();
     if constexpr (PAGE_ATTENTION) {

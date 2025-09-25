@@ -681,7 +681,7 @@ bool SparseIFATiling::IsFlashDecode() const
 {
     // if (pageAttentionFlag_ && socVersion_ == IfaSocVersion::SOC_ASCEND_910B) {
     //     return false;
-    // }
+    // } // TODO: 为什么910B不支持？ 目前测试可以正常运行 但是msprof op跑不动 <开FlashDecode性能特别好 暂时融合之前先不开 后面看情况>
 
     float flashDecodeBNRatio = static_cast<float>(0.4); // 0.4, 经验值
     if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
@@ -706,16 +706,16 @@ bool SparseIFATiling::EnableAllVec()
     if (socVersion_ == IfaSocVersion::SOC_ASCEND_310P) {
         return true;
     }
-    // // 暂时不考虑以下因素
-    // if (pageAttentionFlag_) {// 如果使用page attention，不开启全VEC
-    //     return false;
-    // }
-    // if (sysPrefixFlag_) {// 如果使用sys prefix，不开启全VEC
-    //     return false;
-    // }
-    // if (nNumOfQInOneGroup_ > 1) {// 如果N/Q不等于1，不开启全VEC
-    //     return false;
-    // }
+    // 暂时不考虑以下因素
+    if (pageAttentionFlag_) {// 如果使用page attention，不开启全VEC
+        return false;
+    }
+    if (sysPrefixFlag_) {// 如果使用sys prefix，不开启全VEC
+        return false;
+    }
+    if (nNumOfQInOneGroup_ > 1) {// 如果N/Q不等于1，不开启全VEC
+        return false;
+    }
     if (headDim_ > 512) { // 全VEC模板仅支持headDim_不大于512
         return false;
     }

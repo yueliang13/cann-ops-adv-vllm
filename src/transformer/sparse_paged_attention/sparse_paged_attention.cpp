@@ -174,70 +174,60 @@ extern "C" __global__ __aicore__ void sparse_paged_attention_FIAS(
                                    LAYOUT::BSH);
     } else if (TILING_KEY_IS(11000000000100001)) {
         INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, false, true, LAYOUT::BSH);
-    // // 暂时把下面的TillingKey放在这里，后续需要调整
-    // } else if (TILING_KEY_IS(11000000000200000)) {
-    //     INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, false,
-    //                                LAYOUT::BNSD);
-    // } else if (TILING_KEY_IS(11000000000300000)) {
-    //     INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BNSD);
-    // } else if (TILING_KEY_IS(11000000000200001)) {
-    //     INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, false, LAYOUT::BSH);
-    // } else if (TILING_KEY_IS(11000000000300001)) {
-    //     INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, true, LAYOUT::BSH);
-// #if (__CCE_AICORE__ > 200)
-//     } else if (TILING_KEY_IS(10000000000000000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(12000000000000000)) {
-//         KERNEL_TASK_TYPE(12000000000000000, KERNEL_TYPE_MIX_AIC_1_1);
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(10000000000200000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(12000000000200000)) {
-//         KERNEL_TASK_TYPE(12000000000200000, KERNEL_TYPE_MIX_AIC_1_1);
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(10000000000100000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(10000000000300000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
-//                                    LAYOUT::BNSD);
-//     } else if (TILING_KEY_IS(10000000000000001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(12000000000000001)) {
-//         KERNEL_TASK_TYPE(12000000000000001, KERNEL_TYPE_MIX_AIC_1_1);
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(10000000000200001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(12000000000200001)) {
-//         KERNEL_TASK_TYPE(12000000000200001, KERNEL_TYPE_MIX_AIC_1_1);
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(10000000000100001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(10000000000300001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
-//                                    LAYOUT::BSH);
-//     } else if (TILING_KEY_IS(20000000000000000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BNSD, 0, true);
-//     } else if (TILING_KEY_IS(20000000000100000)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
-//                                    LAYOUT::BNSD, 0, true);
-//     } else if (TILING_KEY_IS(20000000000000001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
-//                                    LAYOUT::BSH, 0, true);
-//     } else if (TILING_KEY_IS(20000000000100001)) {
-//         INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
-//                                    LAYOUT::BSH, 0, true);
-// #else
+#if (__CCE_AICORE__ > 200)
+    } else if (TILING_KEY_IS(10000000000000000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(12000000000000000)) {
+        KERNEL_TASK_TYPE(12000000000000000, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(10000000000200000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(12000000000200000)) {
+        KERNEL_TASK_TYPE(12000000000200000, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(10000000000100000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(10000000000300000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
+                                   LAYOUT::BNSD);
+    } else if (TILING_KEY_IS(10000000000000001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(12000000000000001)) {
+        KERNEL_TASK_TYPE(12000000000000001, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(10000000000200001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(12000000000200001)) {
+        KERNEL_TASK_TYPE(12000000000200001, KERNEL_TYPE_MIX_AIC_1_1);
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, false,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(10000000000100001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(10000000000300001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, true, true,
+                                   LAYOUT::BSH);
+    } else if (TILING_KEY_IS(20000000000000000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BNSD, 0, true);
+    } else if (TILING_KEY_IS(20000000000100000)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BNSD, 0, true);
+    } else if (TILING_KEY_IS(20000000000000001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, false,
+                                   LAYOUT::BSH, 0, true);
+    } else if (TILING_KEY_IS(20000000000100001)) {
+        INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(SparsePagedAttentionAttenSplitBbn2s2Us2, half, half, half, half, false, true,
+                                   LAYOUT::BSH, 0, true);
+#else
     } else if (TILING_KEY_IS(11000000000200000)) {
         INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, false,
                                    LAYOUT::BNSD);
@@ -250,7 +240,7 @@ extern "C" __global__ __aicore__ void sparse_paged_attention_FIAS(
     } else if (TILING_KEY_IS(11000000000300001)) {
         INVOKE_IFA_ALL_VEC_OP_IMPL(SparsePagedAttentionAttenAllVecNew, half, half, half, half, true, true,
                                    LAYOUT::BSH);
-// #endif
+#endif
     }
 #endif
 

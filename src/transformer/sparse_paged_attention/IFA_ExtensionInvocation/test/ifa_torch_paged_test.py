@@ -14,6 +14,7 @@ head_size_v = 128
 block_size = 128
 
 max_seq_len = 32 * 1024
+actual_seq_len = 4 * 1024
 
 num_blocks = max_seq_len // block_size
 
@@ -26,7 +27,7 @@ query = torch.randn(num_tokens, num_heads, head_size, dtype=torch.float16).npu()
 key_cache = torch.randn(num_blocks, block_size, num_kv_heads, head_size, dtype=torch.float16).npu()
 value_cache = torch.randn(num_blocks, block_size, num_kv_heads, head_size_v, dtype=torch.float16).npu()
 block_table = torch.randint(0, num_blocks, (num_tokens, max_blocks_per_seq), dtype=torch.int32).npu()
-context_lens = torch.full((num_tokens,), max_seq_len, dtype=torch.int32)
+context_lens = torch.full((num_tokens,), actual_seq_len, dtype=torch.int32)
 output = torch.zeros(num_tokens, num_heads, head_size_v, dtype=torch.float16).npu()
 
 # import ipdb;ipdb.set_trace()

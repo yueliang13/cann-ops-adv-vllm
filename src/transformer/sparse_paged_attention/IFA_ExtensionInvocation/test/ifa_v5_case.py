@@ -590,14 +590,14 @@ class Test_aclnnSparsePagedAttention(TestCase):
         batch_size = 1 # set to 8
         num_heads = 32 
         head_dims = 128
-        key_num_heads = 32
+        key_num_heads = 8
         block_size = 128 # set to 128
         seq_len_q = 1
         total_seq_len_kv = 32 * 1024
         block_num = total_seq_len_kv // block_size
 
         # 设置基准块数和最大差异
-        base_block_num = (10 * 1024) // block_size
+        base_block_num = (16 * 1024) // block_size
         max_actual_block_num_per_seq = base_block_num
 
         print(f"批次大小: {batch_size}, 头数: {num_heads}, 键头数: {key_num_heads}")
