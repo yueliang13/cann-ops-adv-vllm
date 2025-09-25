@@ -1,0 +1,3241 @@
+{
+  "torch_npu.contrib.ChannelShuffle": {
+    "signature": "(in_channels, groups=2, split_shuffle=True)"
+  },
+  "torch_npu.contrib.ChannelShuffle.check_self": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.ChannelShuffle.forward": {
+    "signature": "(self, x1, x2)"
+  },
+  "torch_npu.contrib.Focus": {
+    "signature": "(c1, c2, k=1, s=1, p=None, g=1, act=True)"
+  },
+  "torch_npu.contrib.Focus.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.LabelSmoothingCrossEntropy": {
+    "signature": "(num_classes=1000, smooth_factor=0.0)"
+  },
+  "torch_npu.contrib.LabelSmoothingCrossEntropy.forward": {
+    "signature": "(self, pred, target)"
+  },
+  "torch_npu.contrib.LinearA8W8Quant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.LinearA8W8Quant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.LinearQuant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.LinearQuant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.LinearWeightQuant": {
+    "signature": "(in_features, out_features, bias: bool = True, device=None, dtype=None, antiquant_offset: bool = False, quant_scale: bool = False, quant_offset: bool = False, antiquant_group_size: int = 0) -> None"
+  },
+  "torch_npu.contrib.LinearWeightQuant.forward": {
+    "signature": "(self, x: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.ModulatedDeformConv": {
+    "signature": "(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, deformable_groups=1, bias=True, pack=True)"
+  },
+  "torch_npu.contrib.ModulatedDeformConv.init_param": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.ModulatedDeformConv.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.MultiheadAttention": {
+    "signature": "(embed_dim, num_heads, kdim=None, vdim=None, dropout=0.0, bias=True, add_bias_kv=False, add_zero_attn=False, self_attention=False, encoder_decoder_attention=False, q_noise=0.0, qn_block_size=8)"
+  },
+  "torch_npu.contrib.MultiheadAttention.prepare_for_onnx_export_": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.MultiheadAttention.prepare_for_tpu_": {
+    "signature": "(self, **kwargs)"
+  },
+  "torch_npu.contrib.MultiheadAttention.reset_parameters": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.MultiheadAttention.transpose_for_scores": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.MultiheadAttention.forward": {
+    "signature": "(self, query, key: Optional[torch.Tensor], value: Optional[torch.Tensor], bsz, tgt_len, s_len, key_padding_mask: Optional[torch.Tensor] = None, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]] = None, need_weights: bool = True, static_kv: bool = False, attn_mask: Optional[torch.Tensor] = None, before_softmax: bool = False, need_head_weights: bool = False) -> Tuple[torch.Tensor, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.MultiheadAttention.multi_attn": {
+    "signature": "(self, query, key, value, key_padding_mask, bsz, tgt_len)"
+  },
+  "torch_npu.contrib.MultiheadAttention._append_prev_key_padding_mask": {
+    "signature": "(key_padding_mask: Optional[torch.Tensor], prev_key_padding_mask: Optional[torch.Tensor], batch_size: int, src_len: int, static_kv: bool) -> Optional[torch.Tensor]"
+  },
+  "torch_npu.contrib.MultiheadAttention._get_input_buffer": {
+    "signature": "(self, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]]) -> Dict[str, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.MultiheadAttention._set_input_buffer": {
+    "signature": "(self, incremental_state: Dict[str, Dict[str, Optional[torch.Tensor]]], buffer: Dict[str, Optional[torch.Tensor]])"
+  },
+  "torch_npu.contrib.MultiheadAttention.apply_sparse_mask": {
+    "signature": "(self, attn_weights, tgt_len: int, src_len: int, bsz: int)"
+  },
+  "torch_npu.contrib.MultiheadAttention.upgrade_state_dict_named": {
+    "signature": "(self, state_dict, name)"
+  },
+  "torch_npu.contrib.NpuCachedDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.NpuCachedDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.NpuCachedDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.NpuDropPath": {
+    "signature": "(drop_prob=None)"
+  },
+  "torch_npu.contrib.NpuDropPath.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.NpuDropPath.enable_droppath_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.NpuFairseqDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.NpuFairseqDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.NpuFairseqDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.PSROIPool": {
+    "signature": "(pooled_height=7, pooled_width=7, spatial_scale=0.0625, group_size=7, output_dim=22)"
+  },
+  "torch_npu.contrib.PSROIPool.forward": {
+    "signature": "(self, features, rois)"
+  },
+  "torch_npu.contrib.Prefetcher": {
+    "signature": "(loader, stream=None)"
+  },
+  "torch_npu.contrib.Prefetcher.preload": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.Prefetcher.next": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.ROIAlign": {
+    "signature": "(output_size, spatial_scale, sampling_ratio, aligned=True)"
+  },
+  "torch_npu.contrib.ROIAlign.forward": {
+    "signature": "(self, input_tensor, rois)"
+  },
+  "torch_npu.contrib.matmul_transpose": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.npu_batched_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.npu_bbox_coder_decode_xywh2xyxy": {
+    "signature": "(bboxes, pred_bboxes, means=None, stds=None, max_shape=None, wh_ratio_clip=0.016)"
+  },
+  "torch_npu.contrib.npu_bbox_coder_encode_xyxy2xywh": {
+    "signature": "(bboxes, gt_bboxes, means=None, stds=None, is_normalized=False, normalized_scale=10000.0)"
+  },
+  "torch_npu.contrib.npu_bbox_coder_encode_yolo": {
+    "signature": "(bboxes, gt_bboxes, stride)"
+  },
+  "torch_npu.contrib.npu_fast_condition_index_put": {
+    "signature": "(x, condition, value)"
+  },
+  "torch_npu.contrib.npu_fused_attention": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.npu_fused_attention_with_layernorm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.npu_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.npu_single_level_responsible_flags": {
+    "signature": "(featmap_size, gt_bboxes, stride, num_base_anchors)"
+  },
+  "torch_npu.contrib.roll": {
+    "signature": "(x, shifts, dims)"
+  },
+  "torch_npu.contrib.function.dropout_with_byte_mask": {
+    "signature": "(input1, p=0.5, training=True, inplace=False)"
+  },
+  "torch_npu.contrib.function.fuse_add_softmax_dropout": {
+    "signature": "(training, dropout, attn_mask, attn_scores, attn_head_size, p=0.5, dim=-1)"
+  },
+  "torch_npu.contrib.function.matmul_transpose": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.npu_batched_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.function.npu_bbox_coder_decode_xywh2xyxy": {
+    "signature": "(bboxes, pred_bboxes, means=None, stds=None, max_shape=None, wh_ratio_clip=0.016)"
+  },
+  "torch_npu.contrib.function.npu_bbox_coder_encode_xyxy2xywh": {
+    "signature": "(bboxes, gt_bboxes, means=None, stds=None, is_normalized=False, normalized_scale=10000.0)"
+  },
+  "torch_npu.contrib.function.npu_bbox_coder_encode_yolo": {
+    "signature": "(bboxes, gt_bboxes, stride)"
+  },
+  "torch_npu.contrib.function.npu_fast_condition_index_put": {
+    "signature": "(x, condition, value)"
+  },
+  "torch_npu.contrib.function.npu_fused_attention": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.npu_fused_attention_with_layernorm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.npu_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.function.npu_single_level_responsible_flags": {
+    "signature": "(featmap_size, gt_bboxes, stride, num_base_anchors)"
+  },
+  "torch_npu.contrib.function.roll": {
+    "signature": "(x, shifts, dims)"
+  },
+  "torch_npu.contrib.function.anchor_generator.box_dtype_check": {
+    "signature": "(box)"
+  },
+  "torch_npu.contrib.function.anchor_generator.npu_single_level_responsible_flags": {
+    "signature": "(featmap_size, gt_bboxes, stride, num_base_anchors)"
+  },
+  "torch_npu.contrib.function.bbox_coder.npu_bbox_coder_decode_xywh2xyxy": {
+    "signature": "(bboxes, pred_bboxes, means=None, stds=None, max_shape=None, wh_ratio_clip=0.016)"
+  },
+  "torch_npu.contrib.function.bbox_coder.npu_bbox_coder_encode_xyxy2xywh": {
+    "signature": "(bboxes, gt_bboxes, means=None, stds=None, is_normalized=False, normalized_scale=10000.0)"
+  },
+  "torch_npu.contrib.function.bbox_coder.npu_bbox_coder_encode_yolo": {
+    "signature": "(bboxes, gt_bboxes, stride)"
+  },
+  "torch_npu.contrib.function.fuse_add_softmax_dropout.fuse_add_softmax_dropout": {
+    "signature": "(training, dropout, attn_mask, attn_scores, attn_head_size, p=0.5, dim=-1)"
+  },
+  "torch_npu.contrib.function.fused_attention.npu_fused_attention": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.fused_attention.npu_fused_attention_with_layernorm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.index_op.npu_fast_condition_index_put": {
+    "signature": "(x, condition, value)"
+  },
+  "torch_npu.contrib.function.matmul_transpose.matmul_transpose": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.function.nms.npu_batched_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.function.nms.npu_multiclass_nms": {
+    "signature": "(multi_bboxes, multi_scores, score_thr=0.05, nms_thr=0.45, max_num=50, score_factors=None)"
+  },
+  "torch_npu.contrib.function.npu_functional.dropout_with_byte_mask": {
+    "signature": "(input1, p=0.5, training=True, inplace=False)"
+  },
+  "torch_npu.contrib.function.roll.roll": {
+    "signature": "(x, shifts, dims)"
+  },
+  "torch_npu.contrib.module.ChannelShuffle": {
+    "signature": "(in_channels, groups=2, split_shuffle=True)"
+  },
+  "torch_npu.contrib.module.ChannelShuffle.check_self": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.ChannelShuffle.forward": {
+    "signature": "(self, x1, x2)"
+  },
+  "torch_npu.contrib.module.DropoutWithByteMask": {
+    "signature": "(p=0.5, inplace=False, max_seed=1023)"
+  },
+  "torch_npu.contrib.module.DropoutWithByteMask.forward": {
+    "signature": "(self, input1)"
+  },
+  "torch_npu.contrib.module.Focus": {
+    "signature": "(c1, c2, k=1, s=1, p=None, g=1, act=True)"
+  },
+  "torch_npu.contrib.module.Focus.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.LabelSmoothingCrossEntropy": {
+    "signature": "(num_classes=1000, smooth_factor=0.0)"
+  },
+  "torch_npu.contrib.module.LabelSmoothingCrossEntropy.forward": {
+    "signature": "(self, pred, target)"
+  },
+  "torch_npu.contrib.module.LinearA8W8Quant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.module.LinearA8W8Quant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.LinearQuant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.module.LinearQuant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.LinearWeightQuant": {
+    "signature": "(in_features, out_features, bias: bool = True, device=None, dtype=None, antiquant_offset: bool = False, quant_scale: bool = False, quant_offset: bool = False, antiquant_group_size: int = 0) -> None"
+  },
+  "torch_npu.contrib.module.LinearWeightQuant.forward": {
+    "signature": "(self, x: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.ModulatedDeformConv": {
+    "signature": "(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, deformable_groups=1, bias=True, pack=True)"
+  },
+  "torch_npu.contrib.module.ModulatedDeformConv.init_param": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.ModulatedDeformConv.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention": {
+    "signature": "(embed_dim, num_heads, kdim=None, vdim=None, dropout=0.0, bias=True, add_bias_kv=False, add_zero_attn=False, self_attention=False, encoder_decoder_attention=False, q_noise=0.0, qn_block_size=8)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.prepare_for_onnx_export_": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.prepare_for_tpu_": {
+    "signature": "(self, **kwargs)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.reset_parameters": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.transpose_for_scores": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.forward": {
+    "signature": "(self, query, key: Optional[torch.Tensor], value: Optional[torch.Tensor], bsz, tgt_len, s_len, key_padding_mask: Optional[torch.Tensor] = None, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]] = None, need_weights: bool = True, static_kv: bool = False, attn_mask: Optional[torch.Tensor] = None, before_softmax: bool = False, need_head_weights: bool = False) -> Tuple[torch.Tensor, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.multi_attn": {
+    "signature": "(self, query, key, value, key_padding_mask, bsz, tgt_len)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention._append_prev_key_padding_mask": {
+    "signature": "(key_padding_mask: Optional[torch.Tensor], prev_key_padding_mask: Optional[torch.Tensor], batch_size: int, src_len: int, static_kv: bool) -> Optional[torch.Tensor]"
+  },
+  "torch_npu.contrib.module.MultiheadAttention._get_input_buffer": {
+    "signature": "(self, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]]) -> Dict[str, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.module.MultiheadAttention._set_input_buffer": {
+    "signature": "(self, incremental_state: Dict[str, Dict[str, Optional[torch.Tensor]]], buffer: Dict[str, Optional[torch.Tensor]])"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.apply_sparse_mask": {
+    "signature": "(self, attn_weights, tgt_len: int, src_len: int, bsz: int)"
+  },
+  "torch_npu.contrib.module.MultiheadAttention.upgrade_state_dict_named": {
+    "signature": "(self, state_dict, name)"
+  },
+  "torch_npu.contrib.module.NpuCachedDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.module.NpuCachedDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.NpuCachedDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.NpuDropPath": {
+    "signature": "(drop_prob=None)"
+  },
+  "torch_npu.contrib.module.NpuDropPath.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.NpuDropPath.enable_droppath_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.NpuFairseqDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.module.NpuFairseqDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.NpuFairseqDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.PSROIPool": {
+    "signature": "(pooled_height=7, pooled_width=7, spatial_scale=0.0625, group_size=7, output_dim=22)"
+  },
+  "torch_npu.contrib.module.PSROIPool.forward": {
+    "signature": "(self, features, rois)"
+  },
+  "torch_npu.contrib.module.Prefetcher": {
+    "signature": "(loader, stream=None)"
+  },
+  "torch_npu.contrib.module.Prefetcher.preload": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.Prefetcher.next": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.ROIAlign": {
+    "signature": "(output_size, spatial_scale, sampling_ratio, aligned=True)"
+  },
+  "torch_npu.contrib.module.ROIAlign.forward": {
+    "signature": "(self, input_tensor, rois)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.ChannelShuffle": {
+    "signature": "(in_channels, groups=2, split_shuffle=True)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.ChannelShuffle.check_self": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.ChannelShuffle.forward": {
+    "signature": "(self, x1, x2)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectFullImplementation": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectFullImplementation.forward": {
+    "signature": "(ctx, x1, x2, fp_index, bp_index1, bp_index2)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectFullImplementation.backward": {
+    "signature": "(ctx, grad_output)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectHalfImplementation": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectHalfImplementation.forward": {
+    "signature": "(ctx, x1, x2, fp_index1, fp_index2, bp_index1, bp_index2)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.IndexSelectHalfImplementation.backward": {
+    "signature": "(ctx, grad_output1, grad_output2)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.indexselect_full_implementation_forward": {
+    "signature": "(x1, x2, fp_index)"
+  },
+  "torch_npu.contrib.module.channel_shuffle.indexselect_half_implementation_forward": {
+    "signature": "(x1, x2, fp_index1, fp_index2)"
+  },
+  "torch_npu.contrib.module.crossentropy.LabelSmoothingCrossEntropy": {
+    "signature": "(num_classes=1000, smooth_factor=0.0)"
+  },
+  "torch_npu.contrib.module.crossentropy.LabelSmoothingCrossEntropy.forward": {
+    "signature": "(self, pred, target)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv": {
+    "signature": "(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, deformable_groups=1, bias=True, pack=True)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv.init_param": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv2dFunction": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv2dFunction.forward": {
+    "signature": "(ctx, input_tensor, offset_ori, mask, weight, bias=None, with_bias=False, stride=1, padding=0, dilation=1, groups=1, deformable_groups=1, sort_index_for_npu_fp=None, sort_index_for_npu_bp=None)"
+  },
+  "torch_npu.contrib.module.deform_conv.ModulatedDeformConv2dFunction.backward": {
+    "signature": "(ctx, grad_output)"
+  },
+  "torch_npu.contrib.module.drop_path.NpuDropPath": {
+    "signature": "(drop_prob=None)"
+  },
+  "torch_npu.contrib.module.drop_path.NpuDropPath.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.drop_path.NpuDropPath.enable_droppath_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuCachedDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuCachedDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuCachedDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuFairseqDropout": {
+    "signature": "(p, module_name=None)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuFairseqDropout.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.ensemble_dropout.NpuFairseqDropout.enable_dropout_ensemble": {
+    "signature": "(model)"
+  },
+  "torch_npu.contrib.module.focus.Conv": {
+    "signature": "(c1, c2, k=1, s=1, p=None, g=1, act=True)"
+  },
+  "torch_npu.contrib.module.focus.Conv.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.focus.Conv.fuseforward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.focus.Focus": {
+    "signature": "(c1, c2, k=1, s=1, p=None, g=1, act=True)"
+  },
+  "torch_npu.contrib.module.focus.Focus.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.focus.autopad": {
+    "signature": "(k, p=None)"
+  },
+  "torch_npu.contrib.module.focus.fast_slice": {
+    "signature": "(x)"
+  },
+  "torch_npu.contrib.module.linear_a8w8_quant.LinearA8W8Quant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.module.linear_a8w8_quant.LinearA8W8Quant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.linear_quant.LinearQuant": {
+    "signature": "(in_features: int, out_features: int, *, bias: bool = True, offset: bool = False, pertoken_scale: bool = False, device=None, dtype=None, output_dtype=None) -> None"
+  },
+  "torch_npu.contrib.module.linear_quant.LinearQuant.forward": {
+    "signature": "(self, linear_quant_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.linear_weight_quant.LinearWeightQuant": {
+    "signature": "(in_features, out_features, bias: bool = True, device=None, dtype=None, antiquant_offset: bool = False, quant_scale: bool = False, quant_offset: bool = False, antiquant_group_size: int = 0) -> None"
+  },
+  "torch_npu.contrib.module.linear_weight_quant.LinearWeightQuant.forward": {
+    "signature": "(self, x: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.multihead_attention.Matmul_transpose": {
+    "signature": "(tensor1, tensor2)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention": {
+    "signature": "(embed_dim, num_heads, kdim=None, vdim=None, dropout=0.0, bias=True, add_bias_kv=False, add_zero_attn=False, self_attention=False, encoder_decoder_attention=False, q_noise=0.0, qn_block_size=8)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.prepare_for_onnx_export_": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.prepare_for_tpu_": {
+    "signature": "(self, **kwargs)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.reset_parameters": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.transpose_for_scores": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.forward": {
+    "signature": "(self, query, key: Optional[torch.Tensor], value: Optional[torch.Tensor], bsz, tgt_len, s_len, key_padding_mask: Optional[torch.Tensor] = None, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]] = None, need_weights: bool = True, static_kv: bool = False, attn_mask: Optional[torch.Tensor] = None, before_softmax: bool = False, need_head_weights: bool = False) -> Tuple[torch.Tensor, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.multi_attn": {
+    "signature": "(self, query, key, value, key_padding_mask, bsz, tgt_len)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention._append_prev_key_padding_mask": {
+    "signature": "(key_padding_mask: Optional[torch.Tensor], prev_key_padding_mask: Optional[torch.Tensor], batch_size: int, src_len: int, static_kv: bool) -> Optional[torch.Tensor]"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention._get_input_buffer": {
+    "signature": "(self, incremental_state: Optional[Dict[str, Dict[str, Optional[torch.Tensor]]]]) -> Dict[str, Optional[torch.Tensor]]"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention._set_input_buffer": {
+    "signature": "(self, incremental_state: Dict[str, Dict[str, Optional[torch.Tensor]]], buffer: Dict[str, Optional[torch.Tensor]])"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.apply_sparse_mask": {
+    "signature": "(self, attn_weights, tgt_len: int, src_len: int, bsz: int)"
+  },
+  "torch_npu.contrib.module.multihead_attention.MultiheadAttention.upgrade_state_dict_named": {
+    "signature": "(self, state_dict, name)"
+  },
+  "torch_npu.contrib.module.npu_modules.DropoutWithByteMask": {
+    "signature": "(p=0.5, inplace=False, max_seed=1023)"
+  },
+  "torch_npu.contrib.module.npu_modules.DropoutWithByteMask.forward": {
+    "signature": "(self, input1)"
+  },
+  "torch_npu.contrib.module.prefetcher.Prefetcher": {
+    "signature": "(loader, stream=None)"
+  },
+  "torch_npu.contrib.module.prefetcher.Prefetcher.preload": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.prefetcher.Prefetcher.next": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.ps_roi_pooling.PSROIPool": {
+    "signature": "(pooled_height=7, pooled_width=7, spatial_scale=0.0625, group_size=7, output_dim=22)"
+  },
+  "torch_npu.contrib.module.ps_roi_pooling.PSROIPool.forward": {
+    "signature": "(self, features, rois)"
+  },
+  "torch_npu.contrib.module.quant_conv2d.QuantConv2d": {
+    "signature": "(in_channels: int, out_channels: int, kernel_size: Union[int, Tuple[int, int]], output_dtype: torch.dtype, stride: Union[int, Tuple[int, int]] = 1, padding: Union[int, Tuple[int, int]] = 0, dilation: Union[int, Tuple[int, int]] = 1, groups: int = 1, bias: bool = True, offset: bool = False, offset_x: int = 0, round_mode: str = 'rint', device=None, dtype=None) -> None"
+  },
+  "torch_npu.contrib.module.quant_conv2d.QuantConv2d.forward": {
+    "signature": "(self, quant_conv2d_input: torch.Tensor) -> torch.Tensor"
+  },
+  "torch_npu.contrib.module.roi_align.ROIAlign": {
+    "signature": "(output_size, spatial_scale, sampling_ratio, aligned=True)"
+  },
+  "torch_npu.contrib.module.roi_align.ROIAlign.forward": {
+    "signature": "(self, input_tensor, rois)"
+  },
+  "torch_npu.distributed.is_available": {
+    "signature": "()"
+  },
+  "torch_npu.distributed.is_hccl_available": {
+    "signature": "()"
+  },
+  "torch_npu.distributed.distributed_c10d.is_hccl_available": {
+    "signature": "()"
+  },
+  "torch_npu.distributed.distributed_c10d.reinit_process_group": {
+    "signature": "(group=None, rebuild_link=True)"
+  },
+  "torch_npu.distributed.reinit_process_group": {
+    "signature": "(group=None, rebuild_link=True)"
+  },
+  "torch_npu.distributed.rpc.options.NPUTensorPipeRpcBackendOptions": {
+    "signature": "(*, num_worker_threads: int = 16, rpc_timeout: float = 60.0, init_method: str = 'env://', device_maps: Optional[Dict[str, Dict[Union[int, str, torch.device], Union[int, str, torch.device]]]] = None, devices: Optional[List[Union[int, str, torch.device]]] = None, _transports: Optional[List] = None, _channels: Optional[List] = None)"
+  },
+  "torch_npu.distributed.rpc.options.NPUTensorPipeRpcBackendOptions.set_device_map": {
+    "signature": "(self, to: str, device_map: Dict[Union[int, str, torch.device], Union[int, str, torch.device]])"
+  },
+  "torch_npu.distributed.rpc.options.NPUTensorPipeRpcBackendOptions.set_devices": {
+    "signature": "(self, devices: List[Union[int, str, torch.device]])"
+  },
+  "torch_npu.dynamo.torchair.CompilerConfig": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.dynamo_export": {
+    "signature": "(*args, model: torch.nn.modules.module.Module, export_path: str = 'export_file', export_name: str = 'export', dynamic: bool = False, config=<torchair.configs.compiler_config.CompilerConfig object>, **kwargs)"
+  },
+  "torch_npu.dynamo.torchair.get_compiler": {
+    "signature": "(compiler_config: torchair.configs.compiler_config.CompilerConfig = None)"
+  },
+  "torch_npu.dynamo.torchair.get_npu_backend": {
+    "signature": "(*, compiler_config: torchair.configs.compiler_config.CompilerConfig = None, custom_decompositions: Dict = {})"
+  },
+  "torch_npu.dynamo.torchair.ops.npu_print": {
+    "signature": "(*args, summarize_size=3)"
+  },
+  "torch_npu.dynamo.torchair.patch_for_hcom": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.register_fx_node_ge_converter": {
+    "signature": "(aten_op)"
+  },
+  "torch_npu.dynamo.torchair.use_internal_format_weight": {
+    "signature": "(model: torch.nn.modules.module.Module)"
+  },
+  "torch_npu.dynamo.torchair.configs.compiler_config.CompilerConfig": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.experimental.inference.use_internal_format_weight": {
+    "signature": "(model: torch.nn.modules.module.Module)"
+  },
+  "torch_npu.dynamo.torchair.ge.Cast": {
+    "signature": "(x: torchair.ge.TensorBase, *, dst_type: int, dependencies=[], node_name=None)"
+  },
+  "torch_npu.dynamo.torchair.ge.Const": {
+    "signature": "(v, dtype: int = None, node_name=None, readable=True)"
+  },
+  "torch_npu.dynamo.torchair.ge.DataType": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.ge.Format": {
+    "signature": "(value, names=None, *, module=None, qualname=None, type=None, start=1)"
+  },
+  "torch_npu.dynamo.torchair.ge.Format._generate_next_value_": {
+    "signature": "(name, start, count, last_values)"
+  },
+  "torch_npu.dynamo.torchair.ge.Format._member_type_": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.ge.Tensor": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.ge.Tensor.index": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.Tensor.dtype": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.Tensor.rank": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.TensorSpec": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.ge.TensorSpec.dtype": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.TensorSpec.rank": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.TensorSpec.size": {
+    "signature": "(self)"
+  },
+  "torch_npu.dynamo.torchair.ge.custom_op": {
+    "signature": "(op_type: str, *, inputs: Optional[Dict[str, Union[ForwardRef('Tensor'), List[ForwardRef('Tensor')], NoneType]]], outputs: Optional[List[Union[str, Tuple[str, int]]]], attrs: Optional[Dict[str, ForwardRef('_Attr')]] = None, node_name: Optional[str] = None)"
+  },
+  "torch_npu.dynamo.torchair.ge.ge_custom.custom_op": {
+    "signature": "(op_type: str, *, inputs: Optional[Dict[str, Union[ForwardRef('Tensor'), List[ForwardRef('Tensor')], NoneType]]], outputs: Optional[List[Union[str, Tuple[str, int]]]], attrs: Optional[Dict[str, ForwardRef('_Attr')]] = None, node_name: Optional[str] = None)"
+  },
+  "torch_npu.dynamo.torchair.inference.cache_compile": {
+    "signature": "(func, *, config: Optional[torchair.configs.compiler_config.CompilerConfig] = None, dynamic: bool = True, cache_dir: Optional[str] = None, global_rank: Optional[int] = None, tp_rank: Optional[int] = None, pp_rank: Optional[int] = None, **kwargs) -> Callable"
+  },
+  "torch_npu.dynamo.torchair.inference.readable_cache": {
+    "signature": "(cache_bin, print_output=True, file=None)"
+  },
+  "torch_npu.dynamo.torchair.inference.set_dim_gears": {
+    "signature": "(t: torch.Tensor, dim_gears: Dict[int, List[int]])"
+  },
+  "torch_npu.dynamo.torchair.llm_datadist.create_npu_tensors": {
+    "signature": "(shape: List[int], dtype: torch.dtype, addresses: List[int]) -> List[torch.Tensor]"
+  },
+  "torch_npu.dynamo.torchair.npu_export.dynamo_export": {
+    "signature": "(*args, model: torch.nn.modules.module.Module, export_path: str = 'export_file', export_name: str = 'export', dynamic: bool = False, config=<torchair.configs.compiler_config.CompilerConfig object>, **kwargs)"
+  },
+  "torch_npu.dynamo.torchair.npu_fx_compiler.get_compiler": {
+    "signature": "(compiler_config: torchair.configs.compiler_config.CompilerConfig = None)"
+  },
+  "torch_npu.dynamo.torchair.npu_fx_compiler.get_npu_backend": {
+    "signature": "(*, compiler_config: torchair.configs.compiler_config.CompilerConfig = None, custom_decompositions: Dict = {})"
+  },
+  "torch_npu.jit.optimize": {
+    "signature": "(jit_mod)"
+  },
+  "torch_npu.jit.fusion_pass.fast_gelu.fast_gelu_pass": {
+    "signature": "(jit_mod)"
+  },
+  "torch_npu.jit.register_fusion_pattern.optimize": {
+    "signature": "(jit_mod)"
+  },
+  "torch_npu.npu.BFloat16Storage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.BoolStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.ByteStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.CharStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.DoubleStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.MemPoolContext.active_pool": {
+    "signature": "() -> Optional[torch_npu._C._MemPool]"
+  },
+  "torch_npu.npu.memory.MemPoolContext.active_pool": {
+    "signature": "() -> Optional[torch_npu._C._MemPool]"
+  },
+  "torch_npu.npu.graphs.graph_task_group_begin": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.graphs.NPUGraph": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config._ExperimentalConfig._conver_export_type_to_list": {
+    "signature": "(self, export_type: Union[str, list]) -> list"
+  },
+  "torch_npu.npu.utils.get_cann_version": {
+    "signature": "(module='CANN')"
+  },
+  "torch_npu.contrib.module.activations.Mish": {
+    "signature": "()"
+  },
+  "torch_npu.npu.graphs.graph": {
+    "signature": "(npu_graph, pool=None, stream=None, capture_error_mode: str = 'global')"
+  },
+  "torch_npu.npu.graphs.graph_task_update_end": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.graph_pool_handle": {
+    "signature": "()"
+  },
+  "torch_npu.contrib.module.bidirectional_lstm.BiLSTM.forward": {
+    "signature": "(self, inputs)"
+  },
+  "torch_npu.npu.graphs.is_current_stream_capturing": {
+    "signature": "()"
+  },
+  "torch_npu.npu_diou": {
+    "signature": "(self, gtboxes, trans=False, is_cross=False, mode=0)"
+  },
+  "torch_npu.npu.graphs.NPUGraph.capture_begin": {
+    "signature": "(self, pool=None, capture_error_mode='global')"
+  },
+  "torch_npu.npu_giou": {
+    "signature": "(self, gtboxes, trans=False, is_cross=False, mode=0)"
+  },
+  "torch_npu.npu.memory.MemPoolContext": {
+    "signature": "(pool: torch_npu.npu.memory.MemPool)"
+  },
+  "torch_npu.npu_iou": {
+    "signature": "(bboxes, gtboxes, mode=0)"
+  },
+  "torch_npu.contrib.module.activations.Mish.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.npu.graphs.graph_pool_handle": {
+    "signature": "()"
+  },
+  "torch_npu.npu.NPUGraph.capture_end": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_mla_prolog": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.MemPoolContext": {
+    "signature": "(pool: torch_npu.npu.memory.MemPool)"
+  },
+  "torch_npu.profiler._ExperimentalConfig._conver_export_type_to_list": {
+    "signature": "(self, export_type: Union[str, list]) -> list"
+  },
+  "torch_npu.npu.memory.MemPool": {
+    "signature": "(allocator: Optional[torch_npu._C._npu_NPUAllocator] = None)"
+  },
+  "torch_npu.npu.graphs.graph_task_group_end": {
+    "signature": "(stream)"
+  },
+  "torch_npu.contrib.module.bidirectional_lstm.BiLSTM": {
+    "signature": "(input_size, hidden_size)"
+  },
+  "torch_npu.npu.graphs.NPUGraph.reset": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_cross_entropy_loss": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.memory.use_mem_pool": {
+    "signature": "(pool: torch_npu.npu.memory.MemPool, device=None)"
+  },
+  "torch_npu.npu.streams.ExternalEvent.reset": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.graphs.graph_task_update_begin": {
+    "signature": "(stream, handle)"
+  },
+  "torch_npu.npu_grouped_matmul_finalize_routing": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.streams.ExternalEvent.record": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu_advance_step_flashattn": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.contrib.module.activations.Swish.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.npu.NPUGraph.reset": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.use_mem_pool": {
+    "signature": "(pool: torch_npu.npu.memory.MemPool, device=None)"
+  },
+  "torch_npu.npu.MemPool": {
+    "signature": "(allocator: Optional[torch_npu._C._npu_NPUAllocator] = None)"
+  },
+  "torch_npu.npu.streams.ExternalEvent.wait": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.NPUGraph": {
+    "signature": "()"
+  },
+  "torch_npu.npu.graphs.make_graphed_callables": {
+    "signature": "(callables, sample_args, num_warmup_iters=3, allow_unused_input=False, pool=None)"
+  },
+  "torch_npu.npu.streams.ExternalEvent": {
+    "signature": "()"
+  },
+  "torch_npu.npu.NPUGraph.pool": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.activations.SiLU.forward": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.empty_with_swapped_memory": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_gmm_alltoallv": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.streams.Event.recorded_time": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.make_graphed_callables": {
+    "signature": "(callables, sample_args, num_warmup_iters=3, allow_unused_input=False, pool=None)"
+  },
+  "torch_npu.npu.NPUGraph.capture_begin": {
+    "signature": "(self, pool=None, capture_error_mode='global')"
+  },
+  "torch_npu.npu.graph": {
+    "signature": "(npu_graph, pool=None, stream=None, capture_error_mode: str = 'global')"
+  },
+  "torch_npu.npu.Event.recorded_time": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_alltoallv_gmm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.graphs.NPUGraph.replay": {
+    "signature": "(self)"
+  },
+  "torch_npu.contrib.module.activations.Swish": {
+    "signature": "()"
+  },
+  "torch_npu.npu.NPUGraph.replay": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_group_norm_swish": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu.graphs.NPUGraph.capture_end": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.is_current_stream_capturing": {
+    "signature": "()"
+  },
+  "torch_npu.npu.graphs.NPUGraph.pool": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_ciou": {
+    "signature": "(self, gtboxes, trans=False, is_cross=True, mode=0, atan_sub_flag=False)"
+  },
+  "torch_npu.contrib.module.activations.SiLU": {
+    "signature": "()"
+  },
+  "torch_npu.npu.Event": {
+    "signature": "(enable_timing=False, blocking=False, interprocess=False)"
+  },
+  "torch_npu.npu.Event.record": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.Event.wait": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.Event.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.Event.elapsed_time": {
+    "signature": "(self, end_event)"
+  },
+  "torch_npu.npu.Event.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.ExternalEvent": {
+    "signature": "()"
+  },
+  "torch_npu.npu.ExternalEvent.record": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.ExternalEvent.wait": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.ExternalEvent.reset": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.graph_task_group_begin": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.graph_task_group_end": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.graph_task_update_begin": {
+    "signature": "(stream, handle)"
+  },
+  "torch_npu.npu.graph_task_update_end": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.FloatStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.HalfStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.IntStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.LongStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.NPUPluggableAllocator": {
+    "signature": "(path_to_so_file: str, alloc_fn_name: str, free_fn_name: str)"
+  },
+  "torch_npu.npu.ShortStorage": {
+    "signature": "(*args, wrap_storage=None, dtype=None, device=None, _internal=False)"
+  },
+  "torch_npu.npu.Stream": {
+    "signature": "(device=None, priority=0, **kwargs)"
+  },
+  "torch_npu.npu.Stream.wait_event": {
+    "signature": "(self, event)"
+  },
+  "torch_npu.npu.Stream.wait_stream": {
+    "signature": "(self, stream)"
+  },
+  "torch_npu.npu.Stream.record_event": {
+    "signature": "(self, event=None)"
+  },
+  "torch_npu.npu.Stream.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.Stream.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.Stream.set_data_preprocess_stream": {
+    "signature": "(self, is_data_preprocess_stream=False)"
+  },
+  "torch_npu.npu.SyncLaunchStream": {
+    "signature": "(device=None, priority=0, **kwargs)"
+  },
+  "torch_npu.npu.SyncLaunchStream.wait_event": {
+    "signature": "(self, event)"
+  },
+  "torch_npu.npu.SyncLaunchStream.wait_stream": {
+    "signature": "(self, stream)"
+  },
+  "torch_npu.npu.SyncLaunchStream.record_event": {
+    "signature": "(self, event=None)"
+  },
+  "torch_npu.npu.SyncLaunchStream.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.SyncLaunchStream.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.SyncLaunchStream.set_data_preprocess_stream": {
+    "signature": "(self, is_data_preprocess_stream=False)"
+  },
+  "torch_npu.npu.caching_allocator_alloc": {
+    "signature": "(size, device=None, stream=None)"
+  },
+  "torch_npu.npu.caching_allocator_delete": {
+    "signature": "(mem_ptr)"
+  },
+  "torch_npu.npu.can_device_access_peer": {
+    "signature": "(device_id, peer_device_id)"
+  },
+  "torch_npu.npu.change_current_allocator": {
+    "signature": "(allocator: torch_npu.npu.memory._NPUAllocator) -> None"
+  },
+  "torch_npu.npu.check_uce_in_memory": {
+    "signature": "(device_id)"
+  },
+  "torch_npu.npu.clear_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.current_blas_handle": {
+    "signature": "()"
+  },
+  "torch_npu.npu.current_device": {
+    "signature": "()"
+  },
+  "torch_npu.npu.current_stream": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.default_stream": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.device": {
+    "signature": "(device)"
+  },
+  "torch_npu.npu.device_count": {
+    "signature": "() -> int"
+  },
+  "torch_npu.npu.device_of": {
+    "signature": "(obj)"
+  },
+  "torch_npu.npu.StreamContext": {
+    "signature": "(stream_ctx: Optional[ForwardRef('torch_npu.npu.Stream')])"
+  },
+  "torch_npu.npu.disable_deterministic_with_backward": {
+    "signature": "(tensor: torch.Tensor)"
+  },
+  "torch_npu.npu.empty_cache": {
+    "signature": "()"
+  },
+  "torch_npu.npu.enable_deterministic_with_backward": {
+    "signature": "(tensor: torch.Tensor)"
+  },
+  "torch_npu.npu.finalize_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_allocator_backend": {
+    "signature": "() -> str"
+  },
+  "torch_npu.npu.get_amp_supported_dtype": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_autocast_dtype": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_device_capability": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.get_device_name": {
+    "signature": "(device_name=None)"
+  },
+  "torch_npu.npu.get_device_properties": {
+    "signature": "(device_name=None)"
+  },
+  "torch_npu.npu.get_mm_bmm_format_nd": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_rng_state": {
+    "signature": "(device: Union[int, str, torch.device] = 'npu') -> torch.Tensor"
+  },
+  "torch_npu.npu.get_rng_state_all": {
+    "signature": "()"
+  },
+  "torch_npu.npu.get_sync_debug_mode": {
+    "signature": "()"
+  },
+  "torch_npu.npu.init": {
+    "signature": "()"
+  },
+  "torch_npu.npu.init_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.initial_seed": {
+    "signature": "()"
+  },
+  "torch_npu.npu.is_autocast_enabled": {
+    "signature": "()"
+  },
+  "torch_npu.npu.is_available": {
+    "signature": "()"
+  },
+  "torch_npu.npu.is_bf16_supported": {
+    "signature": "()"
+  },
+  "torch_npu.npu.is_initialized": {
+    "signature": "()"
+  },
+  "torch_npu.npu.is_jit_compile_false": {
+    "signature": "() -> bool"
+  },
+  "torch_npu.npu.manual_seed": {
+    "signature": "(seed)"
+  },
+  "torch_npu.npu.manual_seed_all": {
+    "signature": "(seed)"
+  },
+  "torch_npu.npu.max_memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.max_memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.max_memory_reserved": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.mem_get_info": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_reserved": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_snapshot": {
+    "signature": "()"
+  },
+  "torch_npu.npu.memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_stats_as_nested_dict": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory_summary": {
+    "signature": "(device=None, abbreviated=False)"
+  },
+  "torch_npu.npu.mstx": {
+    "signature": "()"
+  },
+  "torch_npu.npu.mstx.mark": {
+    "signature": "(message: str, stream=None, domain: str = 'default')"
+  },
+  "torch_npu.npu.mstx.range_start": {
+    "signature": "(message: str, stream=None, domain: str = 'default') -> int"
+  },
+  "torch_npu.npu.mstx.range_end": {
+    "signature": "(range_id: int, domain: str = 'default')"
+  },
+  "torch_npu.npu.mstx.mstx_range": {
+    "signature": "(message: str, stream=None, domain: str = 'default')"
+  },
+  "torch_npu.npu.reset_accumulated_memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.reset_max_memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.reset_max_memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.reset_peak_memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.restart_device": {
+    "signature": "(device_id: int, rebuild_all_resources: int = False)"
+  },
+  "torch_npu.npu.stop_device": {
+    "signature": "(device_id)"
+  },
+  "torch_npu.npu.stress_detect": {
+    "signature": "()"
+  },
+  "torch_npu.npu.seed": {
+    "signature": "()"
+  },
+  "torch_npu.npu.seed_all": {
+    "signature": "()"
+  },
+  "torch_npu.npu.set_aoe": {
+    "signature": "(dump_path)"
+  },
+  "torch_npu.npu.set_autocast_dtype": {
+    "signature": "(dtype)"
+  },
+  "torch_npu.npu.set_autocast_enabled": {
+    "signature": "(enable)"
+  },
+  "torch_npu.npu.set_compile_mode": {
+    "signature": "(jit_compile=False)"
+  },
+  "torch_npu.npu.set_device": {
+    "signature": "(device)"
+  },
+  "torch_npu.npu.set_dump": {
+    "signature": "(cfg_file)"
+  },
+  "torch_npu.npu.set_mm_bmm_format_nd": {
+    "signature": "(is_nd=True)"
+  },
+  "torch_npu.npu.set_option": {
+    "signature": "(option)"
+  },
+  "torch_npu.npu.set_per_process_memory_fraction": {
+    "signature": "(fraction, device=None) -> None"
+  },
+  "torch_npu.npu.set_rng_state": {
+    "signature": "(new_state: torch.Tensor, device: Union[int, str, torch.device] = 'npu') -> None"
+  },
+  "torch_npu.npu.set_rng_state_all": {
+    "signature": "(new_states)"
+  },
+  "torch_npu.npu.set_stream": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.set_sync_debug_mode": {
+    "signature": "(debug_mode)"
+  },
+  "torch_npu.npu.stream": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.synchronize": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utilization": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.aclnn.backends.version": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.GradScaler": {
+    "signature": "(init_scale=65536.0, growth_factor=2.0, backoff_factor=0.5, growth_interval=2000, dynamic=True, enabled=True)"
+  },
+  "torch_npu.npu.amp.GradScaler._lazy_init_scale_growth_tracker": {
+    "signature": "(self, dev)"
+  },
+  "torch_npu.npu.amp.GradScaler._lazy_init_dist_flag_and_dist_overflow_count": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.GradScaler.scale": {
+    "signature": "(self, outputs)"
+  },
+  "torch_npu.npu.amp.GradScaler._unscale_grads_": {
+    "signature": "(self, optimizer, inv_scale, found_inf, allow_fp16)"
+  },
+  "torch_npu.npu.amp.GradScaler.unscale_": {
+    "signature": "(self, optimizer)"
+  },
+  "torch_npu.npu.amp.GradScaler._maybe_opt_step": {
+    "signature": "(self, optimizer, optimizer_state, *args, **kwargs)"
+  },
+  "torch_npu.npu.amp.GradScaler.step": {
+    "signature": "(self, optimizer, *args, **kwargs)"
+  },
+  "torch_npu.npu.amp.GradScaler.update": {
+    "signature": "(self, new_scale=None)"
+  },
+  "torch_npu.npu.amp.GradScaler.state_dict": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.GradScaler.load_state_dict": {
+    "signature": "(self, state_dict)"
+  },
+  "torch_npu.npu.amp.GradScaler.get_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.GradScaler.clear_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.GradScaler._sync_dist_overflow_count": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.GradScaler._npu_update_scale": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.autocast": {
+    "signature": "(enabled: bool = True, dtype: torch.dtype = torch.float16, cache_enabled: bool = True)"
+  },
+  "torch_npu.npu.amp.custom_bwd": {
+    "signature": "(bwd)"
+  },
+  "torch_npu.npu.amp.custom_fwd": {
+    "signature": "(fwd=None, **kwargs)"
+  },
+  "torch_npu.npu.amp.autocast_mode.autocast": {
+    "signature": "(enabled: bool = True, dtype: torch.dtype = torch.float16, cache_enabled: bool = True)"
+  },
+  "torch_npu.npu.amp.autocast_mode.custom_bwd": {
+    "signature": "(bwd)"
+  },
+  "torch_npu.npu.amp.autocast_mode.custom_fwd": {
+    "signature": "(fwd=None, **kwargs)"
+  },
+  "torch_npu.npu.amp.common.amp_definitely_not_available": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler": {
+    "signature": "(init_scale=65536.0, growth_factor=2.0, backoff_factor=0.5, growth_interval=2000, dynamic=True, enabled=True)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._lazy_init_scale_growth_tracker": {
+    "signature": "(self, dev)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._lazy_init_dist_flag_and_dist_overflow_count": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.scale": {
+    "signature": "(self, outputs)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._unscale_grads_": {
+    "signature": "(self, optimizer, inv_scale, found_inf, allow_fp16)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.unscale_": {
+    "signature": "(self, optimizer)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._maybe_opt_step": {
+    "signature": "(self, optimizer, optimizer_state, *args, **kwargs)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.step": {
+    "signature": "(self, optimizer, *args, **kwargs)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.update": {
+    "signature": "(self, new_scale=None)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.state_dict": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.load_state_dict": {
+    "signature": "(self, state_dict)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.get_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler.clear_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._sync_dist_overflow_count": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.amp.grad_scaler.GradScaler._npu_update_scale": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.autocast_utils.get_amp_supported_dtype": {
+    "signature": "()"
+  },
+  "torch_npu.npu.autocast_utils.get_autocast_dtype": {
+    "signature": "()"
+  },
+  "torch_npu.npu.autocast_utils.is_autocast_enabled": {
+    "signature": "()"
+  },
+  "torch_npu.npu.autocast_utils.set_autocast_dtype": {
+    "signature": "(dtype)"
+  },
+  "torch_npu.npu.autocast_utils.set_autocast_enabled": {
+    "signature": "(enable)"
+  },
+  "torch_npu.npu.deterministic.disable_deterministic_with_backward": {
+    "signature": "(tensor: torch.Tensor)"
+  },
+  "torch_npu.npu.deterministic.enable_deterministic_with_backward": {
+    "signature": "(tensor: torch.Tensor)"
+  },
+  "torch_npu.npu.memory.NPUPluggableAllocator": {
+    "signature": "(path_to_so_file: str, alloc_fn_name: str, free_fn_name: str)"
+  },
+  "torch_npu.npu.memory.caching_allocator_alloc": {
+    "signature": "(size, device=None, stream=None)"
+  },
+  "torch_npu.npu.memory.caching_allocator_delete": {
+    "signature": "(mem_ptr)"
+  },
+  "torch_npu.npu.memory.change_current_allocator": {
+    "signature": "(allocator: torch_npu.npu.memory._NPUAllocator) -> None"
+  },
+  "torch_npu.npu.memory.empty_cache": {
+    "signature": "()"
+  },
+  "torch_npu.npu.memory.get_allocator_backend": {
+    "signature": "() -> str"
+  },
+  "torch_npu.npu.memory.max_memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.max_memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.max_memory_reserved": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_reserved": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_snapshot": {
+    "signature": "()"
+  },
+  "torch_npu.npu.memory.memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_stats_as_nested_dict": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.memory_summary": {
+    "signature": "(device=None, abbreviated=False)"
+  },
+  "torch_npu.npu.memory.reset_accumulated_memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.reset_max_memory_allocated": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.reset_max_memory_cached": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.reset_peak_memory_stats": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.memory.set_per_process_memory_fraction": {
+    "signature": "(fraction, device=None) -> None"
+  },
+  "torch_npu.npu.mstx.mstx": {
+    "signature": "()"
+  },
+  "torch_npu.npu.mstx.mstx.mark": {
+    "signature": "(message: str, stream=None, domain: str = 'default')"
+  },
+  "torch_npu.npu.mstx.mstx.range_start": {
+    "signature": "(message: str, stream=None, domain: str = 'default') -> int"
+  },
+  "torch_npu.npu.mstx.mstx.range_end": {
+    "signature": "(range_id: int, domain: str = 'default')"
+  },
+  "torch_npu.npu.mstx.mstx.mstx_range": {
+    "signature": "(message: str, stream=None, domain: str = 'default')"
+  },
+  "torch_npu.npu.npu_config.finalize_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.npu_config.get_mm_bmm_format_nd": {
+    "signature": "()"
+  },
+  "torch_npu.npu.npu_config.init_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.npu_config.is_jit_compile_false": {
+    "signature": "() -> bool"
+  },
+  "torch_npu.npu.npu_config.set_aoe": {
+    "signature": "(dump_path)"
+  },
+  "torch_npu.npu.npu_config.set_compile_mode": {
+    "signature": "(jit_compile=False)"
+  },
+  "torch_npu.npu.npu_config.set_dump": {
+    "signature": "(cfg_file)"
+  },
+  "torch_npu.npu.npu_config.set_mm_bmm_format_nd": {
+    "signature": "(is_nd=True)"
+  },
+  "torch_npu.npu.npu_config.set_option": {
+    "signature": "(option)"
+  },
+  "torch_npu.npu.random.get_rng_state": {
+    "signature": "(device: Union[int, str, torch.device] = 'npu') -> torch.Tensor"
+  },
+  "torch_npu.npu.random.get_rng_state_all": {
+    "signature": "()"
+  },
+  "torch_npu.npu.random.initial_seed": {
+    "signature": "()"
+  },
+  "torch_npu.npu.random.manual_seed": {
+    "signature": "(seed)"
+  },
+  "torch_npu.npu.random.manual_seed_all": {
+    "signature": "(seed)"
+  },
+  "torch_npu.npu.random.seed": {
+    "signature": "()"
+  },
+  "torch_npu.npu.random.seed_all": {
+    "signature": "()"
+  },
+  "torch_npu.npu.random.set_rng_state": {
+    "signature": "(new_state: torch.Tensor, device: Union[int, str, torch.device] = 'npu') -> None"
+  },
+  "torch_npu.npu.random.set_rng_state_all": {
+    "signature": "(new_states)"
+  },
+  "torch_npu.npu.streams.Event": {
+    "signature": "(enable_timing=False, blocking=False, interprocess=False)"
+  },
+  "torch_npu.npu.streams.Event.record": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.streams.Event.wait": {
+    "signature": "(self, stream=None)"
+  },
+  "torch_npu.npu.streams.Event.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.Event.elapsed_time": {
+    "signature": "(self, end_event)"
+  },
+  "torch_npu.npu.streams.Event.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.Stream": {
+    "signature": "(device=None, priority=0, **kwargs)"
+  },
+  "torch_npu.npu.streams.Stream.wait_event": {
+    "signature": "(self, event)"
+  },
+  "torch_npu.npu.streams.Stream.wait_stream": {
+    "signature": "(self, stream)"
+  },
+  "torch_npu.npu.streams.Stream.record_event": {
+    "signature": "(self, event=None)"
+  },
+  "torch_npu.npu.streams.Stream.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.Stream.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.Stream.set_data_preprocess_stream": {
+    "signature": "(self, is_data_preprocess_stream=False)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream": {
+    "signature": "(device=None, priority=0, **kwargs)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.wait_event": {
+    "signature": "(self, event)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.wait_stream": {
+    "signature": "(self, stream)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.record_event": {
+    "signature": "(self, event=None)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.query": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.synchronize": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu.streams.SyncLaunchStream.set_data_preprocess_stream": {
+    "signature": "(self, is_data_preprocess_stream=False)"
+  },
+  "torch_npu.npu.utils.can_device_access_peer": {
+    "signature": "(device_id, peer_device_id)"
+  },
+  "torch_npu.npu.utils.clear_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.check_uce_in_memory": {
+    "signature": "(device_id)"
+  },
+  "torch_npu.npu.utils.current_blas_handle": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.current_device": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.current_stream": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utils.default_stream": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utils.device": {
+    "signature": "(device)"
+  },
+  "torch_npu.npu.utils.device_count": {
+    "signature": "() -> int"
+  },
+  "torch_npu.npu.utils.device_of": {
+    "signature": "(obj)"
+  },
+  "torch_npu.npu.utils.StreamContext": {
+    "signature": "(stream_ctx: Optional[ForwardRef('torch_npu.npu.Stream')])"
+  },
+  "torch_npu.npu.utils.finalize_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.get_device_capability": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utils.get_device_name": {
+    "signature": "(device_name=None)"
+  },
+  "torch_npu.npu.utils.get_device_properties": {
+    "signature": "(device_name=None)"
+  },
+  "torch_npu.npu.utils.get_npu_overflow_flag": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.get_sync_debug_mode": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.init_dump": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.is_bf16_supported": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.is_support_inf_nan": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.mem_get_info": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utils.npu_check_overflow": {
+    "signature": "(grad)"
+  },
+  "torch_npu.npu.utils.set_device": {
+    "signature": "(device)"
+  },
+  "torch_npu.npu.utils.set_dump": {
+    "signature": "(cfg_file)"
+  },
+  "torch_npu.npu.utils.set_stream": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.utils.set_sync_debug_mode": {
+    "signature": "(debug_mode)"
+  },
+  "torch_npu.npu.utils.stream": {
+    "signature": "(stream)"
+  },
+  "torch_npu.npu.utils.synchronize": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.npu.utils.stress_detect": {
+    "signature": "()"
+  },
+  "torch_npu.npu.utils.utilization": {
+    "signature": "(device=None)"
+  },
+  "torch_npu.optim.NpuFusedAdadelta": {
+    "signature": "(params, lr=1.0, rho=0.9, eps=1e-06, weight_decay=0)"
+  },
+  "torch_npu.optim.NpuFusedAdadelta._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.NpuFusedAdadelta._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdadelta._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedAdadelta._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdam": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)"
+  },
+  "torch_npu.optim.NpuFusedAdam._init_param_state": {
+    "signature": "(self, p, amsgrad)"
+  },
+  "torch_npu.optim.NpuFusedAdam._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdam._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedAdam._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdamP": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, delta=0.1, wd_ratio=0.1, nesterov=False)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._channel_view": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._layer_view": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._cosine_similarity": {
+    "signature": "(self, x, y, eps, view_func)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._projection": {
+    "signature": "(self, p, grad, perturb, delta, wd_ratio, eps)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._combine_middle_vars": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._combine_middle_vars_by_group": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedAdamP._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdamP.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.NpuFusedAdamW": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)"
+  },
+  "torch_npu.optim.NpuFusedAdamW._init_param_state": {
+    "signature": "(self, p, amsgrad)"
+  },
+  "torch_npu.optim.NpuFusedAdamW._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedAdamW._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedAdamW._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedBertAdam": {
+    "signature": "(params, lr=<required parameter>, warmup=-1, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-06, weight_decay=0.01, max_grad_norm=1.0)"
+  },
+  "torch_npu.optim.NpuFusedBertAdam._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.NpuFusedBertAdam._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedBertAdam._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedBertAdam._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedLamb": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-06, weight_decay=0, adam=False, use_global_grad_norm=False)"
+  },
+  "torch_npu.optim.NpuFusedLamb._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.NpuFusedLamb._combine_middle_vars": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedLamb._combine_middle_vars_by_group": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedLamb._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedLamb._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedLamb._get_global_grad_norm": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedLamb._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedLamb.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase": {
+    "signature": "(params, default)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._maybe_init_combined_params_and_grads": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase.zero_grad": {
+    "signature": "(self, set_to_none=False)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase.get_combined_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase.get_combined_grads": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._clip_grad_norm_fused_": {
+    "signature": "(self, combined_grads, combined_grads_masks, max_norm, norm_type)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._combine_grads_mask": {
+    "signature": "(self, list_of_params)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._maybe_init_combined_grads_masks": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase._get_combined_grad_masks": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedOptimizerBase.clip_grad_norm_fused_": {
+    "signature": "(self, max_norm, norm_type=2)"
+  },
+  "torch_npu.optim.NpuFusedRMSprop": {
+    "signature": "(params, lr=0.01, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)"
+  },
+  "torch_npu.optim.NpuFusedRMSprop._init_param_state": {
+    "signature": "(self, p, momentum, centered)"
+  },
+  "torch_npu.optim.NpuFusedRMSprop._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedRMSprop._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedRMSprop._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedRMSpropTF": {
+    "signature": "(params, lr=0.01, alpha=0.9, eps=1e-10, weight_decay=0, momentum=0.0, centered=False, decoupled_decay=False, lr_in_momentum=True)"
+  },
+  "torch_npu.optim.NpuFusedRMSpropTF._init_param_state": {
+    "signature": "(self, p, momentum, centered)"
+  },
+  "torch_npu.optim.NpuFusedRMSpropTF._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedRMSpropTF._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedRMSpropTF._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedSGD": {
+    "signature": "(params, lr=<required parameter>, momentum=0.0, dampening=0.0, weight_decay=0.0, nesterov=False)"
+  },
+  "torch_npu.optim.NpuFusedSGD._init_param_state": {
+    "signature": "(self, p, weight_decay)"
+  },
+  "torch_npu.optim.NpuFusedSGD._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedSGD._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.NpuFusedSGD._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.NpuFusedSGD.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.npu_fused_adadelta.NpuFusedAdadelta": {
+    "signature": "(params, lr=1.0, rho=0.9, eps=1e-06, weight_decay=0)"
+  },
+  "torch_npu.optim.npu_fused_adadelta.NpuFusedAdadelta._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.npu_fused_adadelta.NpuFusedAdadelta._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adadelta.NpuFusedAdadelta._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_adadelta.NpuFusedAdadelta._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adam.NpuFusedAdam": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)"
+  },
+  "torch_npu.optim.npu_fused_adam.NpuFusedAdam._init_param_state": {
+    "signature": "(self, p, amsgrad)"
+  },
+  "torch_npu.optim.npu_fused_adam.NpuFusedAdam._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adam.NpuFusedAdam._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_adam.NpuFusedAdam._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, delta=0.1, wd_ratio=0.1, nesterov=False)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._channel_view": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._layer_view": {
+    "signature": "(self, x)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._cosine_similarity": {
+    "signature": "(self, x, y, eps, view_func)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._projection": {
+    "signature": "(self, p, grad, perturb, delta, wd_ratio, eps)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._combine_middle_vars": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._combine_middle_vars_by_group": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adamp.NpuFusedAdamP.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.npu_fused_adamw.NpuFusedAdamW": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)"
+  },
+  "torch_npu.optim.npu_fused_adamw.NpuFusedAdamW._init_param_state": {
+    "signature": "(self, p, amsgrad)"
+  },
+  "torch_npu.optim.npu_fused_adamw.NpuFusedAdamW._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_adamw.NpuFusedAdamW._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_adamw.NpuFusedAdamW._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_bert_adam.NpuFusedBertAdam": {
+    "signature": "(params, lr=<required parameter>, warmup=-1, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-06, weight_decay=0.01, max_grad_norm=1.0)"
+  },
+  "torch_npu.optim.npu_fused_bert_adam.NpuFusedBertAdam._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.npu_fused_bert_adam.NpuFusedBertAdam._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_bert_adam.NpuFusedBertAdam._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_bert_adam.NpuFusedBertAdam._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb": {
+    "signature": "(params, lr=0.001, betas=(0.9, 0.999), eps=1e-06, weight_decay=0, adam=False, use_global_grad_norm=False)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._init_param_state": {
+    "signature": "(self, p)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._combine_middle_vars": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._combine_middle_vars_by_group": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._get_global_grad_norm": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_lamb.NpuFusedLamb.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase": {
+    "signature": "(params, default)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._maybe_init_combined_params_and_grads": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase.zero_grad": {
+    "signature": "(self, set_to_none=False)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase.get_combined_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase.get_combined_grads": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._clip_grad_norm_fused_": {
+    "signature": "(self, combined_grads, combined_grads_masks, max_norm, norm_type)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._combine_grads_mask": {
+    "signature": "(self, list_of_params)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._maybe_init_combined_grads_masks": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase._get_combined_grad_masks": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_optim_base.NpuFusedOptimizerBase.clip_grad_norm_fused_": {
+    "signature": "(self, max_norm, norm_type=2)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop.NpuFusedRMSprop": {
+    "signature": "(params, lr=0.01, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop.NpuFusedRMSprop._init_param_state": {
+    "signature": "(self, p, momentum, centered)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop.NpuFusedRMSprop._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop.NpuFusedRMSprop._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop.NpuFusedRMSprop._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop_tf.NpuFusedRMSpropTF": {
+    "signature": "(params, lr=0.01, alpha=0.9, eps=1e-10, weight_decay=0, momentum=0.0, centered=False, decoupled_decay=False, lr_in_momentum=True)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop_tf.NpuFusedRMSpropTF._init_param_state": {
+    "signature": "(self, p, momentum, centered)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop_tf.NpuFusedRMSpropTF._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop_tf.NpuFusedRMSpropTF._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_rmsprop_tf.NpuFusedRMSpropTF._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD": {
+    "signature": "(params, lr=<required parameter>, momentum=0.0, dampening=0.0, weight_decay=0.0, nesterov=False)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD._init_param_state": {
+    "signature": "(self, p, weight_decay)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD._combine_group_param_states": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD._maybe_init_combined_states": {
+    "signature": "(self)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD._group_step": {
+    "signature": "(self, group_index)"
+  },
+  "torch_npu.optim.npu_fused_sgd.NpuFusedSGD.step": {
+    "signature": "(self, closure=None)"
+  },
+  "torch_npu.profiler.AiCMetrics": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.ExportType": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.ProfilerAction": {
+    "signature": "(value, names=None, *, module=None, qualname=None, type=None, start=1)"
+  },
+  "torch_npu.profiler.ProfilerAction._generate_next_value_": {
+    "signature": "(name, start, count, last_values)"
+  },
+  "torch_npu.profiler.ProfilerAction._member_type_": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.ProfilerLevel": {
+    "signature": "()"
+  },
+  "torch_npu.profiler._ExperimentalConfig": {
+    "signature": "(profiler_level: int = 'Level0', aic_metrics: int = 'ACL_AICORE_NONE', l2_cache: bool = False, msprof_tx: bool = False, data_simplification: bool = True, record_op_args: bool = False, op_attr: bool = False, gc_detect_threshold: float = None, export_type: Union[str, list] = None, host_sys: list = None, sys_io: bool = False, sys_interconnection: bool = False, mstx_domain_include: list = None, mstx_domain_exclude: list = None)"
+  },
+  "torch_npu.profiler._ExperimentalConfig._check_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler._ExperimentalConfig._check_mstx_domain_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profile": {
+    "signature": "(*, activities: Optional[Iterable[torch_npu._C._profiler.ProfilerActivity]] = None, schedule: Optional[Callable[[int], torch_npu.profiler.scheduler.ProfilerAction]] = None, on_trace_ready: Optional[Callable[..., Any]] = None, record_shapes: bool = False, profile_memory: bool = False, with_stack: bool = False, with_flops: bool = False, with_modules: bool = False, experimental_config: Optional[torch_npu.profiler.experimental_config._ExperimentalConfig] = None, use_cuda: Optional[bool] = None)"
+  },
+  "torch_npu.profiler.profile.start": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profile.stop": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profile.step": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.schedule": {
+    "signature": "(wait: int, active: int, warmup: int = 0, repeat: int = 0, skip_first: int = 0) -> None"
+  },
+  "torch_npu.profiler.schedule._check_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.supported_activities": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.supported_ai_core_metrics": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.supported_export_type": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.supported_profiler_level": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.tensorboard_trace_handler": {
+    "signature": "(dir_name: str = None, worker_name: str = None, analyse_flag: bool = True)"
+  },
+  "torch_npu.profiler.dynamic_profile.init": {
+    "signature": "(path: str)"
+  },
+  "torch_npu.profiler.dynamic_profile.step": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.dynamic_profile.start": {
+    "signature": "(config_path: str = None)"
+  },
+  "torch_npu.profiler.experimental_config.AiCMetrics": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config.ExportType": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config.ProfilerLevel": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config._ExperimentalConfig": {
+    "signature": "(profiler_level: int = 'Level0', aic_metrics: int = 'ACL_AICORE_NONE', l2_cache: bool = False, msprof_tx: bool = False, data_simplification: bool = True, record_op_args: bool = False, op_attr: bool = False, gc_detect_threshold: float = None, export_type: Union[str, list] = None, host_sys: list = None, sys_io: bool = False, sys_interconnection: bool = False, mstx_domain_include: list = None, mstx_domain_exclude: list = None)"
+  },
+  "torch_npu.profiler.experimental_config._ExperimentalConfig._check_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.experimental_config._ExperimentalConfig._check_mstx_domain_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.experimental_config.supported_ai_core_metrics": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config.supported_export_type": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.experimental_config.supported_profiler_level": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.profiler.analyse": {
+    "signature": "(profiler_path: str, max_process_number: int = 36, export_type: Union[str, list] = None)"
+  },
+  "torch_npu.profiler.profiler.profile": {
+    "signature": "(*, activities: Optional[Iterable[torch_npu._C._profiler.ProfilerActivity]] = None, schedule: Optional[Callable[[int], torch_npu.profiler.scheduler.ProfilerAction]] = None, on_trace_ready: Optional[Callable[..., Any]] = None, record_shapes: bool = False, profile_memory: bool = False, with_stack: bool = False, with_flops: bool = False, with_modules: bool = False, experimental_config: Optional[torch_npu.profiler.experimental_config._ExperimentalConfig] = None, use_cuda: Optional[bool] = None)"
+  },
+  "torch_npu.profiler.profiler.profile.start": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profiler.profile.stop": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profiler.profile.step": {
+    "signature": "(self)"
+  },
+  "torch_npu.profiler.profiler.supported_activities": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.profiler.tensorboard_trace_handler": {
+    "signature": "(dir_name: str = None, worker_name: str = None, analyse_flag: bool = True)"
+  },
+  "torch_npu.profiler.profiler_interface.supported_activities": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.scheduler.ProfilerAction": {
+    "signature": "(value, names=None, *, module=None, qualname=None, type=None, start=1)"
+  },
+  "torch_npu.profiler.scheduler.ProfilerAction._generate_next_value_": {
+    "signature": "(name, start, count, last_values)"
+  },
+  "torch_npu.profiler.scheduler.ProfilerAction._member_type_": {
+    "signature": "()"
+  },
+  "torch_npu.profiler.scheduler.Schedule": {
+    "signature": "(wait: int, active: int, warmup: int = 0, repeat: int = 0, skip_first: int = 0) -> None"
+  },
+  "torch_npu.profiler.scheduler.Schedule._check_params": {
+    "signature": "(self)"
+  },
+  "torch_npu.testing.common_distributed.TestSkip": {
+    "signature": "(exit_code, message)"
+  },
+  "torch_npu.testing.common_distributed.TestSkip._make": {
+    "signature": "(iterable)"
+  },
+  "torch_npu.testing.common_distributed.TestSkip._replace": {
+    "signature": "(self, /, **kwds)"
+  },
+  "torch_npu.testing.common_distributed.TestSkip._asdict": {
+    "signature": "(self)"
+  },
+  "torch_npu.testing.common_distributed.init_pg": {
+    "signature": "(backend: str = 'hccl', world_size=1, rank=0, file_name='file://') -> None"
+  },
+  "torch_npu.testing.common_distributed.skipIfUnsupportMultiNPU": {
+    "signature": "(npu_number_needed)"
+  },
+  "torch_npu.testing.common_distributed.with_comms": {
+    "signature": "(func)"
+  },
+  "torch_npu.testing.common_methods_invocations.sample_inputs_median_custom": {
+    "signature": "(self, device, dtype, requires_grad, **kwargs)"
+  },
+  "torch_npu.testing.common_methods_invocations.sample_inputs_normal_tensor_second": {
+    "signature": "(self, device, dtype, requires_grad, **kwargs)"
+  },
+  "torch_npu.testing.common_utils.Baseline": {
+    "signature": "(baselineFile)"
+  },
+  "torch_npu.testing.common_utils.Baseline.get_baseline": {
+    "signature": "(self, resourceId)"
+  },
+  "torch_npu.testing.common_utils.Baseline.set_baseline": {
+    "signature": "(self, resourceId, baseline)"
+  },
+  "torch_npu.testing.common_utils.Baseline.save_baseline": {
+    "signature": "(self)"
+  },
+  "torch_npu.testing.common_utils.SkipIfNoLapack": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.SkipIfNotRegistered": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.SupportedDevices": {
+    "signature": "(supported_devices: List[str]) -> None"
+  },
+  "torch_npu.testing.common_utils.check_operators_in_prof": {
+    "signature": "(expected_operators, prof, unexpected_operators=None)"
+  },
+  "torch_npu.testing.common_utils.create_common_tensor": {
+    "signature": "(item, minValue, maxValue, device=None)"
+  },
+  "torch_npu.testing.common_utils.create_dtype_tensor": {
+    "signature": "(shape, dtype, npu_format=-1, min_value=-5, max_value=5, no_zero=False, device=None)"
+  },
+  "torch_npu.testing.common_utils.dump_baseline": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.freeze_rng_state": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.get_cycles_per_ms": {
+    "signature": "() -> float"
+  },
+  "torch_npu.testing.common_utils.get_npu_device": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.is_iterable": {
+    "signature": "(obj)"
+  },
+  "torch_npu.testing.common_utils.iter_indices": {
+    "signature": "(tensor)"
+  },
+  "torch_npu.testing.common_utils.set_npu_device": {
+    "signature": "()"
+  },
+  "torch_npu.testing.common_utils.test_2args_broadcast": {
+    "signature": "(fn)"
+  },
+  "torch_npu.testing.decorator.Dtypes": {
+    "signature": "(*args)"
+  },
+  "torch_npu.testing.decorator.Formats": {
+    "signature": "(*args)"
+  },
+  "torch_npu.testing.decorator.feed_data": {
+    "signature": "(func, new_name, *args, **kwargs)"
+  },
+  "torch_npu.testing.decorator.gen_op_input": {
+    "signature": "(testcase, func, op_info)"
+  },
+  "torch_npu.testing.decorator.gen_ops_testcase": {
+    "signature": "(cls, func, name, keys, value, op_info)"
+  },
+  "torch_npu.testing.decorator.instantiate_ops_tests": {
+    "signature": "(op_db)"
+  },
+  "torch_npu.testing.decorator.instantiate_tests": {
+    "signature": "(arg=None, **kwargs)"
+  },
+  "torch_npu.testing.testcase.TestCase": {
+    "signature": "(method_name='runTest')"
+  },
+  "torch_npu.testing.testcase.TestCase.setUpClass": {
+    "signature": "()"
+  },
+  "torch_npu.testing.testcase.TestCase.setUp": {
+    "signature": "(self)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertTensorsSlowEqual": {
+    "signature": "(self, x, y, prec=None, message='')"
+  },
+  "torch_npu.testing.testcase.TestCase.genSparseTensor": {
+    "signature": "(self, size, sparse_dim, nnz, is_uncoalesced, device='cpu')"
+  },
+  "torch_npu.testing.testcase.TestCase.safeToDense": {
+    "signature": "(self, t)"
+  },
+  "torch_npu.testing.testcase.TestCase.safeCoalesce": {
+    "signature": "(self, t)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertRtolEqual": {
+    "signature": "(self, x, y, prec=0.0001, prec16=0.001, auto_trans_dtype=False, message=None)"
+  },
+  "torch_npu.testing.testcase.TestCase._assert_tensor_equal": {
+    "signature": "(self, a, b, message, exact_dtype, allow_inf, prec)"
+  },
+  "torch_npu.testing.testcase.TestCase._assertNumberEqual": {
+    "signature": "(self, x, y, prec=None, message='', allow_inf=False, exact_dtype=None)"
+  },
+  "torch_npu.testing.testcase.TestCase._assertBoolEqual": {
+    "signature": "(self, x, y, prec=None, message='', allow_inf=False, exact_dtype=None)"
+  },
+  "torch_npu.testing.testcase.TestCase._assertTensorsEqual": {
+    "signature": "(self, x, y, prec=None, message='', allow_inf=False, exact_dtype=None)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertEqual": {
+    "signature": "(self, x, y, prec=None, message='', allow_inf=False, exact_dtype=None)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertAlmostEqual": {
+    "signature": "(self, x, y, places=None, msg=None, delta=None, allow_inf=None)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertNotEqual": {
+    "signature": "(self, x, y, prec=None, message='')"
+  },
+  "torch_npu.testing.testcase.TestCase.assertObjectIn": {
+    "signature": "(self, obj, iterable)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertExpectedRaises": {
+    "signature": "(self, exc_type, call_fn, *args, **kwargs)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertNotWarn": {
+    "signature": "(self, call_fn, msg='')"
+  },
+  "torch_npu.testing.testcase.TestCase.assertWarns": {
+    "signature": "(self, call_fn, msg='')"
+  },
+  "torch_npu.testing.testcase.TestCase.maybeWarnsRegex": {
+    "signature": "(self, category, regex='')"
+  },
+  "torch_npu.testing.testcase.TestCase._reset_warning_registry": {
+    "signature": "(self)"
+  },
+  "torch_npu.testing.testcase.TestCase.assertExpectedStripMangled": {
+    "signature": "(self, s, subname=None)"
+  },
+  "torch_npu.testing.testcase.TestCase.run": {
+    "signature": "(self, result=None)"
+  },
+  "torch_npu.testing.testcase.run_tests": {
+    "signature": "()"
+  },
+  "torch_npu.utils.get_part_combined_tensor": {
+    "signature": "(combined_tensor, index, size)"
+  },
+  "torch_npu.utils.is_combined_tensor_valid": {
+    "signature": "(combined_tensor, list_of_tensor)"
+  },
+  "torch_npu.utils.npu_combine_tensors": {
+    "signature": "(list_of_tensor, require_copy_value=True)"
+  },
+  "torch_npu.utils.collect_env.SystemEnv": {
+    "signature": "(torch_version, torch_npu_version, is_debug_build, gcc_version, clang_version, cmake_version, os, libc_version, python_version, python_platform, pip_version, pip_packages, conda_packages, caching_allocator_config, is_xnnpack_available, cpu_info, cann_version)"
+  },
+  "torch_npu.utils.collect_env.SystemEnv._make": {
+    "signature": "(iterable)"
+  },
+  "torch_npu.utils.collect_env.SystemEnv._replace": {
+    "signature": "(self, /, **kwds)"
+  },
+  "torch_npu.utils.collect_env.SystemEnv._asdict": {
+    "signature": "(self)"
+  },
+  "torch_npu.utils.collect_env.check_directory_path_readable": {
+    "signature": "(path)"
+  },
+  "torch_npu.utils.collect_env.check_path_owner_consistent": {
+    "signature": "(path: str)"
+  },
+  "torch_npu.utils.collect_env.get_torch_npu_install_path": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.get_cann_version": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.get_env_info": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.get_pretty_env_info": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.get_torch_npu_version": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.main": {
+    "signature": "()"
+  },
+  "torch_npu.utils.collect_env.pretty_str": {
+    "signature": "(envinfo)"
+  },
+  "torch_npu.utils.combine_tensors.get_part_combined_tensor": {
+    "signature": "(combined_tensor, index, size)"
+  },
+  "torch_npu.utils.combine_tensors.is_combined_tensor_valid": {
+    "signature": "(combined_tensor, list_of_tensor)"
+  },
+  "torch_npu.utils.combine_tensors.npu_combine_tensors": {
+    "signature": "(list_of_tensor, require_copy_value=True)"
+  },
+  "torch_npu.utils.cpp_extension.NpuExtension": {
+    "signature": "(name, sources, *args, **kwargs)"
+  },
+  "torch_npu.utils.profiler.Profile": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.utils.profiler.Singleton": {
+    "signature": "(cls)"
+  },
+  "torch_npu.utils.serialization.load": {
+    "signature": "(f: Union[str, os.PathLike, BinaryIO, IO[bytes]], map_location: Union[Callable[[torch.types.Storage, str], torch.types.Storage], torch.device, str, Dict[str, str], NoneType] = None, pickle_module: Any = None, *, weights_only: bool = False, mmap: Optional[bool] = None, **pickle_load_args: Any) -> Any"
+  },
+  "torch_npu.utils.serialization.save": {
+    "signature": "(obj: object, f: Union[str, os.PathLike, BinaryIO, IO[bytes]], pickle_module: Any = <module 'pickle'>, pickle_protocol: int = 2, _use_new_zipfile_serialization: bool = True, _disable_byteorder_record: bool = False) -> None"
+  },
+  "torch_npu.utils.syncbatchnorm.SyncBatchNorm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.utils.syncbatchnorm.SyncBatchNorm.forward": {
+    "signature": "(self, input_tensor, weight, bias, running_mean, running_var, eps, momentum, process_group, world_size)"
+  },
+  "torch_npu.utils.syncbatchnorm.SyncBatchNorm.backward": {
+    "signature": "(self, grad_output)"
+  },
+  "torch_npu._npu_dropout": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.fast_gelu": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_alloc_float_status": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_anchor_response_flags": {
+    "signature": "(self, featmap_size, stride, num_base_anchors)"
+  },
+  "torch_npu.npu_anti_quant": {
+    "signature": "(x, scale, offset=None, dst_dtype=None, src_dtype=None)"
+  },
+  "torch_npu.npu_batch_nms": {
+    "signature": "(self, scores, score_threshold, iou_threshold, max_size_per_class, max_total_size, change_coordinate_frame=False, transpose_box=False)"
+  },
+  "torch_npu.npu_bert_apply_adam": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_bmmV2": {
+    "signature": "(self, mat2, output_sizes)"
+  },
+  "torch_npu.npu_bounding_box_decode": {
+    "signature": "(rois, deltas, means0, means1, means2, means3, stds0, stds1, stds2, stds3, max_shape, wh_ratio_clip)"
+  },
+  "torch_npu.npu_bounding_box_encode": {
+    "signature": "(anchor_box, ground_truth_box, means0, means1, means2, means3, stds0, stds1, stds2, stds3)"
+  },
+  "torch_npu.npu_clear_float_status": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_confusion_transpose": {
+    "signature": "(self, perm, shape, transpose_first)"
+  },
+  "torch_npu.npu_conv3d": {
+    "signature": "(input_, weight, bias, stride, padding, dilation, groups)"
+  },
+  "torch_npu.npu_convert_weight_to_int4pack": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_deformable_conv2d": {
+    "signature": "(inputs, weight, offset, bias, kernel_size, stride, padding, dilation=[1, 1, 1, 1], groups=1, deformable_groups=1, modulated=True)"
+  },
+  "torch_npu.npu_dropout_with_add_softmax": {
+    "signature": "(self, x1, alpha, prob, dim)"
+  },
+  "torch_npu.npu_dynamic_quant": {
+    "signature": "(input_dummy, smooth_scales=None)"
+  },
+  "torch_npu.npu_dynamic_quant_asymmetric": {
+    "signature": "(input_dummy, smooth_scales=None, group_index=None, dst_type=torch.int8)"
+  },
+  "torch_npu.npu_group_quant": {
+    "signature": "(x, scale, group_index, offset=None, dst_dtype=None)"
+  },
+  "torch_npu.npu_mm_all_reduce_base": {
+    "signature": "(x1, x2, hcom, reduce_op, bias, antiquant_scale, antiquant_offset, x3, dequant_scale, pertoken_scale, comm_quant_scale_1, comm_quant_scale_2, antiquant_group_size, comm_turn)"
+  },
+  "torch_npu.npu_stride_add": {
+    "signature": "(self, other, offset1, offset2, c1_len)"
+  },
+  "torch_npu.npu_ffn": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_format_cast": {
+    "signature": "(self, acl_format)"
+  },
+  "torch_npu.npu_format_cast_": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_fused_attention_score": {
+    "signature": "(query_layer, key_layer, value_layer, attention_mask, scale, keep_prob, query_transpose=False, key_transpose=False, bmm_score_transpose_a=False, bmm_score_transpose_b=False, value_transpose=False, dx_transpose=False)"
+  },
+  "torch_npu.npu_fusion_attention": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_geglu": {
+    "signature": "(self, dim=-1, approximate=1, activate_left=False)"
+  },
+  "torch_npu.npu_get_float_status": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_grid_assign_positive": {
+    "signature": "(self, overlaps, box_responsible_flags, max_overlaps, argmax_overlaps, gt_max_overlaps, gt_argmax_overlaps, num_gts, pos_iou_thr, min_pos_iou, gt_max_assign_all)"
+  },
+  "torch_npu.npu_grouped_matmul": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_incre_flash_attention": {
+    "signature": "(self, query, key, value, padding_mask, atten_mask, pse_shift, actual_seq_lengths, num_heads, scale_value, input_layout, num_key_value_heads)"
+  },
+  "torch_npu.npu_indexing": {
+    "signature": "(self, begin, end, strides, begin_mask=0, end_mask=0, ellipsis_mask=0, new_axis_mask=0, shrink_axis_mask=0)"
+  },
+  "torch_npu.npu_linear": {
+    "signature": "(input_, weight, bias=None)"
+  },
+  "torch_npu.npu_lstm": {
+    "signature": "(inputs, weight, bias, seqMask, h, c, has_biases, num_layers, dropout, train, bidirectional, batch_first, flagSeq, direction)"
+  },
+  "torch_npu.npu_max": {
+    "signature": "(self, dim, keepdim=False)"
+  },
+  "torch_npu.npu_multi_head_attention": {
+    "signature": "(query, key, value, query_weight, key_weight, value_weight, attn_mask, out_proj_weight, query_bias, key_bias, value_bias, out_proj_bias, dropout_mask, attn_head_num, attn_dim_per_head, src_len, tgt_len, dropout_prob, softmax_use_float)"
+  },
+  "torch_npu.npu_nms_v4": {
+    "signature": "(self, scores, max_output_size, iou_threshold, scores_threshold, pad_to_max_output_size=False)"
+  },
+  "torch_npu.npu_nms_with_mask": {
+    "signature": "(inputs, iou_threshold)"
+  },
+  "torch_npu.npu_one_hot": {
+    "signature": "(self, num_classes=-1, depth=1, on_value=1, off_value=0)"
+  },
+  "torch_npu.npu_pad": {
+    "signature": "(input_, paddings)"
+  },
+  "torch_npu.npu_prompt_flash_attention": {
+    "signature": "(self, query, key, value, padding_mask, atten_mask, pse_shift, actual_seq_lengths, num_heads, scale_value, pre_tokens, next_tokens, input_layout, num_key_value_heads)"
+  },
+  "torch_npu.npu_ps_roi_pooling": {
+    "signature": "(self, rois, spatial_scale, group_size, output_dim)"
+  },
+  "torch_npu.npu_quant_matmul": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_quant_scatter": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_random_choice_with_mask": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_rms_norm": {
+    "signature": "(self, gamma, epsilon=1e-06)"
+  },
+  "torch_npu.npu_roi_align": {
+    "signature": "(self, rois, spatial_scale, pooled_height, pooled_width, sample_num, roi_end_mode)"
+  },
+  "torch_npu.npu_rotary_mul": {
+    "signature": "(x, r1, r2)"
+  },
+  "torch_npu.npu_rotated_iou": {
+    "signature": "(self, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0)"
+  },
+  "torch_npu.npu_rotated_overlaps": {
+    "signature": "(self, query_boxes, trans=False)"
+  },
+  "torch_npu.npu_scaled_masked_softmax": {
+    "signature": "(x, mask, scale=1, fixed_triu_mask=False)"
+  },
+  "torch_npu.npu_scatter_nd_update": {
+    "signature": "(self, indices, updates)"
+  },
+  "torch_npu.npu_scatter_nd_update_": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_sign_bits_pack": {
+    "signature": "(self, size)"
+  },
+  "torch_npu.npu_sign_bits_unpack": {
+    "signature": "(inputs, size, dtype)"
+  },
+  "torch_npu.npu_slice": {
+    "signature": "(self, offsets, size)"
+  },
+  "torch_npu.npu_softmax_cross_entropy_with_logits": {
+    "signature": "(self, labels)"
+  },
+  "torch_npu.npu_swiglu": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_trans_quant_param": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_transpose": {
+    "signature": "(self, perm, require_contiguous=True, out=None)"
+  },
+  "torch_npu.npu_transpose_batchmatmul": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_weight_quant_batchmatmul": {
+    "signature": "(x, weight, antiquant_scale, antiquant_offset=None, quant_scale=None, quant_offset=None, bias=None, antiquant_group_size=0, inner_precise=0)"
+  },
+  "torch_npu.npu_yolo_boxes_encode": {
+    "signature": "(self, gt_bboxes, weight)"
+  },
+  "torch_npu_public_env: INF_NAN_MODE_ENABLE": {
+    "mode": "std::unordered_map<int32_t, std::string> infNanMode = {{0, \"max\"}, {1, \"inf_nan\"}}"
+  },
+  "torch_npu_public_env: COMBINED_ENABLE": {
+    "mode": "std::unordered_map<int32_t, std::string> combinedEnableMode = {{0, \"close\"}, {1, \"open\"}}"
+  },
+  "torch_npu_public_env: ASCEND_LAUNCH_BLOCKING": {
+    "mode": "std::unordered_map<int32_t, std::string> launchBlockingMode = {{0, \"disable\"}, {1, \"enable\"}}"
+  },
+  "torch_npu_public_env: HCCL_ASYNC_ERROR_HANDLING": {
+    "mode": "std::unordered_map<int32_t, std::string> asyncErrorHandlingMode = {{0, \"close\"}, {1, \"open\"}}"
+  },
+  "torch_npu_public_env: HCCL_DESYNC_DEBUG": {
+    "mode": "std::unordered_map<int32_t, std::string> desyncDebugMode = {{0, \"close\"}, {1, \"open\"}}"
+  },
+  "torch_npu_public_env: ASCEND_GLOBAL_LOG_LEVEL": {
+    "mode": "std::unordered_map<int32_t, std::string> logLevelMode = {{0, \"debug\"}, {1, \"info\"}, {2, \"warning\"}, {3, \"error\"}, {4, \"null\"}}"
+  },
+  "torch_npu_public_env: PYTORCH_NO_NPU_MEMORY_CACHING": {
+    "mode": "std::unordered_map<int32_t, std::string> memoryCacheMode = {{0, \"open\"}, {1, \"close\"}}"
+  },
+  "torch_npu_public_env: TASK_QUEUE_ENABLE": {
+    "mode": "std::unordered_map<int32_t, std::string> taskQueueEnableMode = {{0, \"close\"}, {1, \"level 1\"}, {2, \"level 2\"}}"
+  },
+  "torch_npu_public_env: INF_NAN_MODE_FORCE_DISABLE": {
+    "mode": "std::unordered_map<int32_t, std::string> disableInfNanMode = {{0, \"enable\"}, {1, \"disable\"}}"
+  },
+  "torch_npu.erase_stream": {
+    "signature": "(tensor, stream)"
+  },
+  "torch_npu.matmul_checksum": {
+    "signature": "(a, b, c)"
+  },
+  "torch_npu.utils.FlopsCounter": {
+    "signature": "()"
+  },
+  "torch_npu.utils.FlopsCounter.stop": {
+    "signature": "(self)"
+  },
+  "torch_npu.utils.FlopsCounter.start": {
+    "signature": "(self)"
+  },
+  "torch_npu.utils.FlopsCounter.resume": {
+    "signature": "(self)"
+  },
+  "torch_npu.utils.FlopsCounter.pause": {
+    "signature": "(self)"
+  },
+  "torch_npu.utils.FlopsCounter.get_flops": {
+    "signature": "(self)"
+  },
+  "torch_npu.scatter_update": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.scatter_update_": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_quantize": {
+    "signature": "(inputs, scales, zero_points, dtype, axis, div_mode=True)"
+  },
+  "torch_npu.npu_quant_scatter_": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_prefetch": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_moe_init_routing": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_moe_gating_top_k_softmax": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_moe_finalize_routing": {
+    "signature": "(expanded_permuted_rows, skip1, skip2, bias, scales, expanded_src_to_dst_row, export_for_source_row, drop_pad_mode=0)"
+  },
+  "torch_npu.npu_moe_compute_expert_tokens": {
+    "signature": "(sorted_experts, num_experts=1)"
+  },
+  "torch_npu.npu_mm_reduce_scatter_base": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.npu_group_norm_silu": {
+    "signature": "(x, gamma, beta, group, eps=1e-05)"
+  },
+  "torch_npu.npu_gelu": {
+    "signature": "(x, approximate='none')"
+  },
+  "torch_npu.npu_fast_gelu": {
+    "signature": "(self)"
+  },
+  "torch_npu.npu_all_gather_base_mm": {
+    "signature": "(*args, **kwargs)"
+  },
+  "torch_npu.utils.set_thread_affinity": {
+    "signature": "(core_range: List[int] = None)"
+  },
+  "torch_npu.utils.reset_thread_affinity": {
+    "signature": "()"
+  },
+  "torch_npu.dynamo.torchair.scope.npu_stream_switch": {
+    "signature": "(stream_tag: str, stream_priority: int = 0)"
+  },
+  "torch_npu.dynamo.torchair.scope.npu_wait_tensor": {
+    "signature": "(self: torch.Tensor, dependency: torch.Tensor)"
+  },
+  "torch_npu.dynamo.torchair.scope.super_kernel": {
+    "signature": "(scope: str, options: str = '')"
+  },
+  "torch_npu.dynamo.torchair.scope.limit_core_num": {
+    "signature": "(op_aicore_num: int, op_vectorcore_num: int)"
+  },
+  "torch_npu.distributed.run.parse_args": {
+    "signature": "(args)"
+  },
+  "torch_npu.distributed.reduce_scatter_tensor_uneven": {
+    "signature": "(output, input, input_split_sizes=None, op=<RedOpType.SUM: 0>, group=None, async_op=False)"
+  },
+  "torch_npu.distributed.all_gather_into_tensor_uneven": {
+    "signature": "(output, input, output_split_sizes=None, group=None, async_op=False)"
+  },
+  "func: unsafe_empty_with_format": {
+    "signature": "(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, int acl_format=2, bool keep_format=False) -> Tensor"
+  },
+  "func: empty_with_format.names": {
+    "signature": "(int[] size, Dimname[]? names, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, int acl_format=2) -> Tensor"
+  },
+  "func: empty_with_format": {
+    "signature": "(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, int acl_format=2, int? base_addr_aligned_kb=None) -> Tensor"
+  },
+  "func: copy_memory_": {
+    "signature": "(Tensor(a!) self, Tensor src, bool non_blocking=False) -> Tensor(a!)"
+  },
+  "func: _copy_from_and_resize": {
+    "signature": ""
+  },
+  "func: resize_as_": {
+    "signature": ""
+  },
+  "func: empty_with_swapped_memory": {
+    "signature": "(int[] size, *, ScalarType? dtype=None, Device? device=None) -> Tensor"
+  },
+  "func: npu_format_cast": {
+    "signature": "(Tensor self, int acl_format) -> Tensor"
+  },
+  "func: npu_format_cast_": {
+    "signature": "(Tensor(a!) self, Tensor src) -> Tensor(a!)"
+  },
+  "func: npu_format_cast_.acl_format": {
+    "signature": "(Tensor(a!) self, int acl_format) -> Tensor(a!)"
+  },
+  "func: npu_format_cast.Tensor": {
+    "signature": "(Tensor self, Tensor dst) -> Tensor"
+  },
+  "func: npu_change_data_ptr": {
+    "signature": "(Tensor dst, Tensor src, int index) -> int"
+  },
+  "func: get_storage_size": {
+    "signature": "(Tensor self) -> int"
+  },
+  "func: get_npu_format": {
+    "signature": "(Tensor self) -> int"
+  },
+  "func: copy_": {
+    "signature": ""
+  },
+  "func: clone": {
+    "signature": ""
+  },
+  "func: _npu_format_cast": {
+    "signature": "(Tensor self, int acl_format) -> Tensor"
+  },
+  "torch_c_func: torch_npu::init_npu(const c10::DeviceIndex device_index = 0)": {
+    "signature": "(const c10::DeviceIndex device_index = 0) -> void",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: torch_npu::init_npu(const std::string& device_str)": {
+    "signature": "(const std::string& device_str) -> void",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: torch_npu::init_npu(const at::Device& device)": {
+    "signature": "(const at::Device& device) -> void",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: torch_npu::finalize_npu": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: torch::npu::synchronize": {
+    "signature": "(int64_t device_index = -1) -> void",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: c10::npu::current_device": {
+    "signature": "() -> DeviceIndex",
+    "file": "torch_npu/csrc/libs/init_npu.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::NPUEvent()": {
+    "signature": "()",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::NPUEvent(unsigned int flags)": {
+    "signature": "(unsigned int flags)",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::~NPUEvent()": {
+    "signature": "()",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::NPUEvent(c10_npu::NPUEvent&& other)": {
+    "signature": "(NPUEvent&& other)",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::aclrtEvent": {
+    "signature": "() -> operator",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::device": {
+    "signature": "() -> c10::optional<at::Device>",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::isCreated": {
+    "signature": "() -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::device_index": {
+    "signature": "() -> c10::DeviceIndex",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::event": {
+    "signature": "() -> aclrtEvent",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::query": {
+    "signature": "() -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::record()": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::record(const c10_npu::NPUStream& stream)": {
+    "signature": "(const NPUStream& stream) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::recordOnce": {
+    "signature": "(const NPUStream& stream) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::block": {
+    "signature": "(const NPUStream& stream) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::elapsed_time": {
+    "signature": "(const NPUEvent& other) -> float",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: c10_npu::NPUEvent::synchronize": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/core/npu/NPUEvent.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::NPUGeneratorImpl": {
+    "signature": "(c10::DeviceIndex device_index = -1)",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::clone": {
+    "signature": "() -> std::shared_ptr<NPUGeneratorImpl>",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::set_current_seed": {
+    "signature": "(uint64_t seed) -> void",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::set_offset": {
+    "signature": "(uint64_t offset) -> void",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::current_seed": {
+    "signature": "() -> uint64_t",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::get_offset": {
+    "signature": "() -> uint64_t",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::seed": {
+    "signature": "() -> uint64_t",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::set_state": {
+    "signature": "(const c10::TensorImpl& new_state) -> void",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::get_state": {
+    "signature": "() -> c10::intrusive_ptr<c10::TensorImpl>",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::set_philox_offset_per_thread": {
+    "signature": "(uint64_t offset) -> void",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::philox_offset_per_thread": {
+    "signature": "() -> uint64_t",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::capture_prologue": {
+    "signature": "(int64_t* offset_extragraph) -> void",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::capture_epilogue": {
+    "signature": "() -> uint64_t",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::philox_npu_state": {
+    "signature": "(uint64_t increment) -> PhiloxNpuState",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::philox_engine_inputs": {
+    "signature": "(uint64_t increment) -> std::pair<uint64_t, uint64_t>",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::NPUGeneratorImpl::device_type": {
+    "signature": "() -> c10::DeviceType",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::detail::getDefaultNPUGenerator": {
+    "signature": "(c10::DeviceIndex device_index = -1) -> at::Generator&",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: at_npu::detail::createNPUGenerator": {
+    "signature": "(c10::DeviceIndex device_index = -1) -> at::Generator",
+    "file": "torch_npu/csrc/aten/NPUGeneratorImpl.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::NPUStream(c10::Stream stream)": {
+    "signature": "(c10::Stream stream)",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::NPUStream(Unchecked, c10::Stream stream)": {
+    "signature": "(Unchecked, c10::Stream stream)",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::~NPUStream": {
+    "signature": "()",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::operator==": {
+    "signature": "(const c10_npu::NPUStream& other) -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::operator!=": {
+    "signature": "(const c10_npu::NPUStream& other) -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: aclrtStream": {
+    "signature": "() -> operator",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10::Stream": {
+    "signature": "() -> operator",
+    "namespace": "c10::",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::device_type": {
+    "signature": "() -> c10::DeviceType",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::device_index": {
+    "signature": "() -> c10::DeviceIndex",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::device": {
+    "signature": "() -> c10::Device",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::id": {
+    "signature": "() -> c10::StreamId",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::query": {
+    "signature": "() -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::synchronize": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::stream()": {
+    "signature": "() -> aclrtStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::unwrap": {
+    "signature": "() -> c10::Stream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::pack3": {
+    "signature": "() -> c10::StreamData3",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::unpack3": {
+    "signature": "(c10::StreamId stream_id, c10::DeviceIndex device_index, c10::DeviceType device_type) -> c10_npu::NPUStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::setDataPreprocessStream": {
+    "signature": "(bool is_data_preprocess_stream) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::isDataPreprocessStream": {
+    "signature": "() -> bool",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::NPUStream::stream(const bool need_empty)": {
+    "signature": "(const bool need_empty) -> aclrtStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::getNPUStreamFromPool": {
+    "signature": "(c10::DeviceIndex device = -1) -> c10_npu::NPUStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::getDefaultNPUStream": {
+    "signature": "(c10::DeviceIndex device_index = -1) -> c10_npu::NPUStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::getCurrentNPUStream": {
+    "signature": "(c10::DeviceIndex device_index = -1) -> c10_npu::NPUStream",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: c10_npu::setCurrentNPUStream": {
+    "signature": "(c10_npu::NPUStream stream) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUStream.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::OpCommand": {
+    "signature": "()",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::~OpCommand": {
+    "signature": "()",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Name": {
+    "signature": "(const string &name) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::SetCustomHandler": {
+    "signature": "(PROC_FUNC func) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::DynamicInputReg": {
+    "signature": "(DynamicInputRegFunc func, DyNumAndIndex num_and_index) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Expect": {
+    "signature": "(UnifiedResult unified_result) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input()": {
+    "signature": "() -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input(const at::Tensor &input, const string &descName = \"\", const c10::optional<aclFormat> &sensitive_format = c10::nullopt, const string &realData = \"\")": {
+    "signature": "(const at::Tensor &input, const string &descName = \"\", const c10::optional<aclFormat> &sensitive_format = c10::nullopt, const string &realData = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::InputWithoutContiguous": {
+    "signature": "(const at::Tensor &input, const string &descName = \"\", const string &realData = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input(const c10::ArrayRef<T> &dimListRef, at::IntArrayRef realShape, at::ScalarType toType, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\", const string& descName = \"\")": {
+    "signature": "(const c10::ArrayRef<T> &dimListRef, at::IntArrayRef realShape, at::ScalarType toType, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\", const string& descName = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input(const c10::IntArrayRef &dimListRef, at::ScalarType toType = at::kLong, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\", const string& descName = \"\")": {
+    "signature": "(const c10::IntArrayRef &dimListRef, at::ScalarType toType = at::kLong, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\", const string& descName = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input(const c10::ArrayRef<double> &dimListRef, at::IntArrayRef realShape, at::ScalarType toType = at::kDouble, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\")": {
+    "signature": "(const c10::ArrayRef<double> &dimListRef, at::IntArrayRef realShape, at::ScalarType toType = at::kDouble, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_DEPENDENT, const string& realDtype = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Input(const c10::Scalar &input, const at::ScalarType type, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_INDEPENDENT)": {
+    "signature": "(const c10::Scalar &input, const at::ScalarType type, CompileType compileType = CompileType::MEMORY_HOST_COMPILE_INDEPENDENT) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Inputs": {
+    "signature": "(const at::TensorList &inputs) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::InputScalarToNPUTensor": {
+    "signature": "(const c10::Scalar& input, const at::ScalarType type) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Output": {
+    "signature": "(at::Tensor &output, const string &descName = \"\", const c10::optional<aclFormat> &sensitive_format = c10::nullopt, const string &realType = \"\") -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Attr(const string &name, dataType value)": {
+    "signature": "(const string &name, dataType value) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Attr(const string &name, dataType value, bool cond)": {
+    "signature": "(const string &name, dataType value, bool cond) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Run": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Sync(c10::SmallVector<int64_t, N> &sync_index)": {
+    "signature": "(c10::SmallVector<int64_t, N> &sync_index) -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: at_npu::native::OpCommand::Sync()": {
+    "signature": "() -> OpCommand&",
+    "file": "torch_npu/csrc/framework/OpCommand.h"
+  },
+  "torch_c_func: c10_npu::NPUHooksInterface::getDefaultGenerator": {
+    "signature": "(c10::DeviceIndex device_index) -> at::Generator&",
+    "file": "torch_npu/csrc/core/npu/NPUHooksInterface.h"
+  },
+  "torch_c_func: c10_npu::device_count": {
+    "signature": "() -> c10::DeviceIndex",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::GetDevice": {
+    "signature": "(int32_t *device) -> aclError",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::SetDevice": {
+    "signature": "(c10::DeviceIndex device) -> aclError",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::current_device()": {
+    "signature": "() -> c10::DeviceIndex",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::set_device": {
+    "signature": "(c10::DeviceIndex device) -> void",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::warning_state": {
+    "signature": "() -> c10_npu::WarningState&",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: c10_npu::warn_or_error_on_sync": {
+    "signature": "() -> void",
+    "file": "torch_npu/csrc/core/npu/NPUFunctions.h"
+  },
+  "torch_c_func: at_npu::native::get_npu_format": {
+    "signature": "(const at::Tensor& self) -> int64_t",
+    "file": "torch_npu/csrc/core/npu/NPUFormat.h"
+  },
+  "torch_c_func: at_npu::native::get_npu_storage_sizes": {
+    "signature": "(const at::Tensor& self) -> std::vector<int64_t>",
+    "file": "torch_npu/csrc/core/npu/NPUFormat.h"
+  },
+  "torch_c_func: at_npu::native::npu_format_cast": {
+    "signature": "(const at::Tensor& self, int64_t acl_format) -> at::Tensor",
+    "file": "torch_npu/csrc/core/npu/NPUFormat.h"
+  },
+  "torch_c_func: at_npu::native::empty_with_format": {
+    "signature": "(c10::IntArrayRef sizes, const c10::TensorOptions& options, int64_t format, bool keep_format = false) -> at::Tensor",
+    "file": "torch_npu/csrc/core/npu/NPUFormat.h"
+  },
+  "torch_c_func: at_npu::native::empty_with_swapped_memory": {
+    "signature": "(c10::IntArrayRef size, c10::optional<at::ScalarType> dtype_opt, c10::optional<c10::Device> device_opt) -> at::Tensor",
+    "file": "torch_npu/csrc/core/npu/NPUFormat.h"
+  },
+  "torch_c_func: c10_npu::c10_npu_get_error_message": {
+    "signature": "() -> char *",
+    "file": "torch_npu/csrc/core/npu/NPUException.h"
+  },
+  "torch_c_func: npu_dropout_gen_mask": {
+    "signature": "(const at::Tensor &self, at::IntArrayRef size, double p, int64_t seed, int64_t offset, c10::optional<bool> parallel, c10::optional<bool> sync) -> at::Tensor",
+    "file": "third_party/op-plugin/op_plugin/include/ops.h"
+  }
+}
