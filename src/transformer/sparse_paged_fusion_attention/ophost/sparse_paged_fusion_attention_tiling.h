@@ -73,6 +73,31 @@ TILING_DATA_FIELD_DEF(uint32_t, antiqSeqSize)
 END_TILING_DATA_DEF
 REGISTER_TILING_DATA_CLASS(SparsePagedFusionAttentionBaseParamsOp, SparsePagedFusionAttentionBaseParams)
 
+BEGIN_TILING_DATA_DEF(SparsePagedFusionAttentionCentSelectParams)
+TILING_DATA_FIELD_DEF(int64_t, bSize);  // Batch size
+TILING_DATA_FIELD_DEF(int64_t, n1Size); // Number of qheads
+TILING_DATA_FIELD_DEF(int64_t, n2Size); // Number of qheads
+TILING_DATA_FIELD_DEF(int64_t, gSize);  // Number of groups
+// compute cent:
+TILING_DATA_FIELD_DEF(int64_t, dSize);  // Dimension size of query and KV
+TILING_DATA_FIELD_DEF(int64_t, cSize);  // Size of the cluster dimension
+TILING_DATA_FIELD_DEF(int64_t, clusterBlockNum);  // Number of cluster blocks
+TILING_DATA_FIELD_DEF(int64_t, clusterBlockSize);  // Size of the cluster block
+// select position:
+TILING_DATA_FIELD_DEF(int64_t, kvPageLen);  // Size of the sequence dimension of block_ids
+TILING_DATA_FIELD_DEF(int64_t, maxBatch);  // Size of the sequence dimension of block_table
+TILING_DATA_FIELD_DEF(int64_t, maxPage);  // Size of the sequence dimension of block_table
+TILING_DATA_FIELD_DEF(int64_t, maxPageNum);  // Size of the sequence dimension of page_position
+// tilling
+TILING_DATA_FIELD_DEF(int32_t, blockSize);
+TILING_DATA_FIELD_DEF(int32_t, usedCoreNum);
+// TopK:
+TILING_DATA_FIELD_DEF(int32_t, k);
+TILING_DATA_FIELD_DEF(uint32_t, tmpsize);
+TILING_DATA_FIELD_DEF_STRUCT(TopkTiling, topkTilingData);
+END_TILING_DATA_DEF
+REGISTER_TILING_DATA_CLASS(SparsePagedFusionAttentionCentSelectParamsOp, SparsePagedFusionAttentionCentSelectParams)
+
 BEGIN_TILING_DATA_DEF(SparsePagedFusionAttentionCoreParams)
 TILING_DATA_FIELD_DEF_ARR(uint32_t, 50, coreSidxEnd); // 50:MAX_CORE_NUM  coreSidxEnd数组首地址要保证8字节对齐
 END_TILING_DATA_DEF;
@@ -107,6 +132,7 @@ BEGIN_TILING_DATA_DEF(SparsePagedFusionAttentionTilingData)
 TILING_DATA_FIELD_DEF_STRUCT(TCubeTiling, bmm1TilingData);
 TILING_DATA_FIELD_DEF_STRUCT(TCubeTiling, bmm2TilingData);
 TILING_DATA_FIELD_DEF_STRUCT(SparsePagedFusionAttentionBaseParams, baseParams);
+TILING_DATA_FIELD_DEF_STRUCT(SparsePagedFusionAttentionCentSelectParams, centSelectParams);
 TILING_DATA_FIELD_DEF_STRUCT(SparsePagedFusionAttentionSplitKVParams, splitKVParams);
 TILING_DATA_FIELD_DEF_STRUCT(SparsePagedFusionAttentionCoreParams, sparsePagedFusionAttentionCoreParams);
 TILING_DATA_FIELD_DEF_STRUCT(SparsePagedFusionAttentionSingleCoreParams, sparsePagedFusionAttentionSingleCoreParams);
@@ -156,6 +182,7 @@ struct RequiredParaInfo {
 struct OptionalParaInfo {
     const gert::CompileTimeTensorDesc *desc;
     const gert::Tensor *tensor;
+    const gert::StorageShape *shape;
 };
 
 struct SparsePagedFusionAttentionContext {
@@ -186,8 +213,14 @@ struct SparsePagedFusionAttentionContext {
     OptionalParaInfo queryRope;
     OptionalParaInfo keyRope;
     OptionalParaInfo keyRopeAntiquantScale;
-    OptionalParaInfo blockPosition; // 块位置张量
+    OptionalParaInfo l1Cent; // 
+    OptionalParaInfo blockIds; // 
+    OptionalParaInfo totalSeqlen; // 
     
+
+    RequiredParaInfo blockPosition; //
+    RequiredParaInfo pagePositionLength; // 
+    RequiredParaInfo maxPagePositionLength; // 
     RequiredParaInfo attenOut;
     const uint32_t *numHeads;
     const float *scaleValue;
@@ -396,6 +429,7 @@ private:
     ge::graphStatus FillTiling();
     void FillTilingBaseParams();
     void FillTilingSplitKV();
+    void FillTilingCentSelect();
     void FillTilingCoreParams();
     void FillTilingSingleCoreParams();
     void FillTilingSingleCoreTensorSize();
@@ -434,6 +468,7 @@ private:
     uint32_t sMax_ = 0;
     uint32_t blockTypeSize_ = 0; // 计算中间量大小
     uint32_t kvSplitPart_ = 1;
+    uint32_t clusterBlockSize_ = 256;
 
     uint32_t sMaxPrefix_ = 0;
     uint32_t maxActualPrefixLen_ = 0;

@@ -318,11 +318,12 @@ void SparseFusionIFATiling::UpdatePerfMode()
 ge::graphStatus SparseFusionIFATiling::ProcessPageAttentionFlag() {
     maxBlockNumPerBatch_ = context_->blockTable.tensor->GetStorageShape().GetDim(1);
 
-    if (context_->blockPosition.tensor != nullptr) {
-        maxPositionNumPerBatch_ = context_->blockPosition.tensor->GetStorageShape().GetDim(2);
-    } else {
-        maxPositionNumPerBatch_ = 0;
-    }
+    maxPositionNumPerBatch_ = context_->blockPosition.shape->GetStorageShape().GetDim(2);
+    // if (context_->blockPosition.tensor != nullptr) {
+    //     maxPositionNumPerBatch_ = context_->blockPosition.tensor->GetStorageShape().GetDim(2);
+    // } else {
+    //     maxPositionNumPerBatch_ = 0;
+    // }
 
     sMax_ = maxBlockNumPerBatch_ * blockSize_;
     seqSize_ = sMax_;
@@ -1517,6 +1518,7 @@ ge::graphStatus SparseFusionIFATiling::FillTiling()
 {
     FillTilingBaseParams();
     FillTilingSplitKV();
+    FillTilingCentSelect();
     FillTilingCoreParams();
     FillTilingSingleCoreParams();
     FillTilingSingleCoreTensorSize();
@@ -1572,6 +1574,70 @@ void SparseFusionIFATiling::FillTilingSplitKV()
     if (!splitKVFlag_) {
         tilingData_->splitKVParams.set_s2(0);
     }
+}
+
+void SparseFusionIFATiling::FillTilingCentSelect()
+{
+    // query 0 BN1D
+    uint32_t batchSize_ = context_->query.shape->GetStorageShape().GetDim(0);
+    uint32_t qHeadNum_ = context_->query.shape->GetStorageShape().GetDim(1);
+    uint32_t dimNum_ = context_->query.shape->GetStorageShape().GetDim(2);
+
+    // l1_cent 1 N2CD
+    uint32_t kvHeadNum_ = context_->l1Cent.shape->GetStorageShape().GetDim(0);
+    uint32_t clusterNum_ = context_->l1Cent.shape->GetStorageShape().GetDim(1);
+    uint32_t clusterBlockNum_ = (clusterNum_ + clusterBlockSize_ - 1) / clusterBlockSize_;
+
+    uint32_t numOfGroups_ = qHeadNum_ / kvHeadNum_;
+    
+    // block_ids 2 PN2 
+    uint32_t kvPageLen_ = context_->blockIds.shape->GetStorageShape().GetDim(1);
+
+    // block_table 3 maxBmaxP
+    uint32_t maxBatch_ = context_->blockTable.shape->GetStorageShape().GetDim(0);
+    uint32_t maxPage_ = context_->blockTable.shape->GetStorageShape().GetDim(1);
+
+    uint32_t k_ = 64;
+    
+    // page_position 6 BNmax
+    uint32_t maxPageNum_ = context_->blockPosition.shape->GetStorageShape().GetDim(2);
+
+    uint32_t bns = batchSize_ * qHeadNum_;
+    usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
+    uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
+
+    tilingData_->centSelectParams.set_bSize(batchSize_);
+    tilingData_->centSelectParams.set_n1Size(qHeadNum_);
+    tilingData_->centSelectParams.set_n2Size(kvHeadNum_);
+    tilingData_->centSelectParams.set_blockSize(blockSize_);
+    tilingData_->centSelectParams.set_usedCoreNum(usedCoreNum_);
+    tilingData_->centSelectParams.set_gSize(numOfGroups_);
+
+    //compute cent
+    tilingData_->centSelectParams.set_dSize(dimNum_);
+    tilingData_->centSelectParams.set_cSize(clusterNum_);
+    tilingData_->centSelectParams.set_clusterBlockNum(clusterBlockNum_);
+    tilingData_->centSelectParams.set_clusterBlockSize(clusterBlockSize_);
+
+    //select position
+    tilingData_->centSelectParams.set_kvPageLen(kvPageLen_);
+    tilingData_->centSelectParams.set_maxBatch(maxBatch_);
+    tilingData_->centSelectParams.set_maxPage(maxPage_);
+    tilingData_->centSelectParams.set_maxPageNum(maxPageNum_); // 这个要怎么传？
+
+    uint32_t maxsize = 0;
+    uint32_t minsize = 0;
+    uint32_t dtypesize = 4;  // float32类型
+    int32_t outter = 1;
+    int32_t inner = clusterNum_;
+    tilingData_->centSelectParams.set_k(k_);
+    auto ascendcPlatform = platform_ascendc::PlatformAscendC(context_->platformInfo);
+
+    AscendC::TopKTilingFunc(ascendcPlatform, inner, outter, k_, dtypesize, false, AscendC::TopKMode::TOPK_NORMAL, true, tilingData_->centSelectParams.topkTilingData);
+    AscendC::GetTopKMaxMinTmpSize(ascendcPlatform, inner, outter, false, false, AscendC::TopKMode::TOPK_NORMAL, true, dtypesize, maxsize, minsize);
+    printf("TopK maxsize: %u, minsize: %u\n", maxsize, minsize);
+    tilingData_->centSelectParams.set_tmpsize(maxsize);
+
 }
 
 void SparseFusionIFATiling::FillTilingCoreParams()
@@ -2028,9 +2094,28 @@ ge::graphStatus SparseFusionIFATiling::ConvertContext(gert::TilingContext &conte
     ifaContext.kvPaddingSize.tensor = context.GetOptionalInputTensor(KV_PADDING_SIZE_INPUT_INDEX);
     ifaContext.kvPaddingSize.desc = context.GetOptionalInputDesc(KV_PADDING_SIZE_INPUT_INDEX);
     
-    ifaContext.blockPosition.tensor = context.GetOptionalInputTensor(BLOCK_POSITION_INPUT_INDEX);
-    ifaContext.blockPosition.desc = context.GetOptionalInputDesc(BLOCK_POSITION_INPUT_INDEX);
+    // // blockPosition 现在不用传入了 需要实时计算
+    ifaContext.blockPosition.desc = context.GetOutputDesc(BLOCK_POSITION_OUTPUT_INDEX);
+    ifaContext.blockPosition.shape = context.GetOutputShape(BLOCK_POSITION_OUTPUT_INDEX);
 
+    ifaContext.pagePositionLength.desc = context.GetOutputDesc(PAGE_POSITION_LENGTHOUTPUT_INDEX);
+    ifaContext.pagePositionLength.shape = context.GetOutputShape(PAGE_POSITION_LENGTHOUTPUT_INDEX);
+
+    ifaContext.maxPagePositionLength.desc = context.GetOutputDesc(MAX_PAGE_POSITION_LENGTHOUTPUT_INDEX);
+    ifaContext.maxPagePositionLength.shape = context.GetOutputShape(MAX_PAGE_POSITION_LENGTHOUTPUT_INDEX);
+
+    // Cent_Select <这样计算的时候就能直接用>
+    ifaContext.l1Cent.tensor = context.GetOptionalInputTensor(L1_CENT_INPUT_INDEX);
+    ifaContext.l1Cent.desc = context.GetOptionalInputDesc(L1_CENT_INPUT_INDEX);
+    ifaContext.l1Cent.shape = context.GetInputShape(L1_CENT_INPUT_INDEX);
+
+    ifaContext.blockIds.tensor = context.GetOptionalInputTensor(BLOCK_IDS_INPUT_INDEX);
+    ifaContext.blockIds.desc = context.GetOptionalInputDesc(BLOCK_IDS_INPUT_INDEX);
+    ifaContext.blockIds.shape = context.GetInputShape(BLOCK_IDS_INPUT_INDEX);
+
+    ifaContext.totalSeqlen.tensor = context.GetOptionalInputTensor(TOTAL_SEQ_LEN_INPUT_INDEX);
+    ifaContext.totalSeqlen.desc = context.GetOptionalInputDesc(TOTAL_SEQ_LEN_INPUT_INDEX);
+    ifaContext.totalSeqlen.shape = context.GetInputShape(TOTAL_SEQ_LEN_INPUT_INDEX);
 
     auto attrs = context.GetAttrs();
     OPS_ERR_IF(attrs == nullptr, OPS_LOG_E(context.GetNodeName(), "attrs got from ge is nullptr"),
@@ -2145,7 +2230,12 @@ IFA_EXTERN_C ge::graphStatus TilingSparsePagedFusionAttention(gert::TilingContex
         .queryRope = {nullptr, nullptr},
         .keyRope = {nullptr, nullptr},
         .keyRopeAntiquantScale = {nullptr, nullptr},
+        .l1Cent = {nullptr, nullptr},
+        .blockIds = {nullptr, nullptr},
+        .totalSeqlen = {nullptr, nullptr},
         .blockPosition = {nullptr, nullptr},
+        .pagePositionLength = {nullptr, nullptr},
+        .maxPagePositionLength = {nullptr, nullptr},
         .attenOut = {nullptr, nullptr},
         .numHeads = nullptr,
         .scaleValue = nullptr,

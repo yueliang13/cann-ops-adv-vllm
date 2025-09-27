@@ -35,13 +35,23 @@ extern "C" {
  * @param [in] antiquantOffset : optional
  * @param [in] blocktable : optional
  * @param [in] kvPaddingSize : optional
- * @param [in] blockposition : optional #V5新增
+ * 
+ * 
+ * @param [in] l1_cent : optional # Cent_Select Need
+ * @param [in] block_ids : optional # Cent_Select Need
+ * @param [in] total_seq_len : optional # Cent_Select Need
+ * 
+ * @param [out] block_position : optional #V5新增
+ * @param [out] page_position_length : optional #V5新增
+ * @param [out] max_page_position_length : optional #V5新增
+ * 
  * @param [in] numHeads : required
  * @param [in] scaleValue : optional
  * @param [in] inputLayout : optional
  * @param [in] numKeyValueHeads : optional
  * @param [in] blockSize : optional
  * @param [in] innerPrecise : optional
+ * 
  * @param [out] attentionOut : required
  * @param [out] workspaceSize : size of workspace(output).
  * @param [out] executor : executor context(output).
@@ -52,8 +62,10 @@ __attribute__((visibility("default"))) aclnnStatus aclnnSparsePagedFusionAttenti
     const aclTensor *attenMask, const aclIntArray *actualSeqLengths, const aclTensor *dequantScale1,
     const aclTensor *quantScale1, const aclTensor *dequantScale2, const aclTensor *quantScale2,
     const aclTensor *quantOffset2, const aclTensor *antiquantScale, const aclTensor *antiquantOffset,
-    const aclTensor *blocktable, const aclTensor *kvPaddingSize, const aclTensor *blockposition, int64_t numHeads,
-    double scaleValue, char *inputLayout, int64_t numKeyValueHeads, int64_t blockSize, int64_t innerPrecise,
+    const aclTensor *blocktable, const aclTensor *kvPaddingSize,
+    const aclTensor *l1_cent, const aclTensor *block_ids, const aclTensor *total_seq_len,// 新增入参
+    int64_t numHeads, double scaleValue, char *inputLayout, int64_t numKeyValueHeads, int64_t blockSize, int64_t innerPrecise,
+    const aclTensor *block_position, const aclTensor *page_position_length, const aclTensor *max_page_position_length,// 新增输出参数 也准备用来存中间变量
     const aclTensor *attentionOut, uint64_t *workspaceSize, aclOpExecutor **executor);
 
 /**

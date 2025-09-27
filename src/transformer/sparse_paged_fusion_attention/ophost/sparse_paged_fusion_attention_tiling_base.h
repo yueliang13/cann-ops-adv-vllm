@@ -80,7 +80,10 @@ constexpr uint32_t ANTIQUANT_SCALE_INPUT_INDEX = 11;
 constexpr uint32_t ANTIQUANT_OFFSET_INPUT_INDEX = 12;
 constexpr uint32_t BLOCK_TABLE_INPUT_INDEX = 13;
 constexpr uint32_t KV_PADDING_SIZE_INPUT_INDEX = 14;
-constexpr uint32_t BLOCK_POSITION_INPUT_INDEX = 15; // blockPosition张量
+// constexpr uint32_t BLOCK_POSITION_INPUT_INDEX = 15; // blockPosition张量
+constexpr uint32_t L1_CENT_INPUT_INDEX = 15; // l1_cent
+constexpr uint32_t BLOCK_IDS_INPUT_INDEX = 16; // block_ids
+constexpr uint32_t TOTAL_SEQ_LEN_INPUT_INDEX = 17; // total_seq_len
 
 constexpr uint32_t PER_TOKEN_Split_B = 0;
 constexpr uint32_t PER_TOKEN_Split_S = 1;
@@ -101,7 +104,12 @@ constexpr uint32_t BH_H_IDX = 1;
 constexpr uint32_t BND_B_IDX = 0;
 constexpr uint32_t BND_N_IDX = 1;
 constexpr uint32_t BND_D_IDX = 2;
-constexpr uint32_t OUTPUT_INDEX = 0;
+
+constexpr uint32_t BLOCK_POSITION_OUTPUT_INDEX = 0;
+constexpr uint32_t PAGE_POSITION_LENGTHOUTPUT_INDEX = 1;
+constexpr uint32_t MAX_PAGE_POSITION_LENGTHOUTPUT_INDEX = 2;
+constexpr uint32_t OUTPUT_INDEX = 3;
+
 constexpr uint32_t NUM_HEADS_ATTR_INDEX = 0;
 constexpr uint32_t SCALE_VALUE_ATTR_INDEX = 1;
 constexpr uint32_t LAYOUT_ATTR_INDEX = 2;

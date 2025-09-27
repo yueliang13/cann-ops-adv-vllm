@@ -142,7 +142,8 @@ extern "C" __global__ __aicore__ void sparse_paged_fusion_attention_FIAS(
     __gm__ uint8_t *valueAntiquantScale, __gm__ uint8_t *valueAntiquantOffset, __gm__ uint8_t *keySharedPrefix,
     __gm__ uint8_t *valueSharedPrefix, __gm__ uint8_t *actualSharedPrefixLen,
     __gm__ uint8_t *queryRope, __gm__ uint8_t *keyRope, __gm__ uint8_t *keyRopeAntiquantScale,
-    __gm__ uint8_t *blockPosition,
+    __gm__ uint8_t *l1_cent, __gm__ uint8_t *block_ids, __gm__ uint8_t *total_seq_len,
+    __gm__ uint8_t *blockPosition, __gm__ uint8_t *pagePositionLength, __gm__ uint8_t *maxPagePositionLength,    
     __gm__ uint8_t *attentionOut,
     __gm__ uint8_t *softmaxLse, __gm__ uint8_t *workspace, __gm__ uint8_t *tiling)
 {
@@ -1134,11 +1135,14 @@ sparse_paged_fusion_attention(__gm__ uint8_t *query, __gm__ uint8_t *key, __gm__
                       __gm__ uint8_t *attenMask, __gm__ uint8_t *actualSeqLengths, __gm__ uint8_t *deqScale1,
                       __gm__ uint8_t *quantScale1, __gm__ uint8_t *deqScale2, __gm__ uint8_t *quantScale2,
                       __gm__ uint8_t *quantOffset2, __gm__ uint8_t *antiquantScale, __gm__ uint8_t *antiquantOffset,
-                      __gm__ uint8_t *blocktable, __gm__ uint8_t *kvPaddingSize, __gm__ uint8_t *blockPosition, __gm__ uint8_t *attentionOut,
+                      __gm__ uint8_t *blocktable, __gm__ uint8_t *kvPaddingSize,
+                      __gm__ uint8_t *l1_cent, __gm__ uint8_t *block_ids, __gm__ uint8_t *total_seq_len,
+                      __gm__ uint8_t *blockPosition, __gm__ uint8_t *pagePositionLength, __gm__ uint8_t *maxPagePositionLength,    
+                      __gm__ uint8_t *attentionOut,
                       __gm__ uint8_t *workspace, __gm__ uint8_t *tiling)
 {
     sparse_paged_fusion_attention_FIAS(query, key, value, pseShift, attenMask, nullptr, actualSeqLengths, deqScale1,
                                quantScale1, deqScale2, quantScale2, quantOffset2, antiquantScale, antiquantOffset,
                                blocktable, kvPaddingSize, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                               nullptr, nullptr, nullptr, blockPosition, attentionOut, nullptr, workspace, tiling);
+                               nullptr, nullptr, nullptr, l1_cent, block_ids, total_seq_len, blockPosition, pagePositionLength, maxPagePositionLength, attentionOut, nullptr, workspace, tiling);
 }
