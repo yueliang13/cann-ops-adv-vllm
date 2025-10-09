@@ -44,6 +44,12 @@ public:
                                 __gm__ uint8_t *softmaxLse, __gm__ uint8_t *workspace,
                                 const SparsePagedFusionAttentionTilingData *__restrict tiling, __gm__ uint8_t *gmTiling,
                                 TPipe *tPipe, bool isPrefix = false);
+    __aicore__ inline void InitCentSelect(__gm__ uint8_t *query, __gm__ uint8_t *l1_cent, __gm__ uint8_t *block_ids,
+                                          __gm__ uint8_t *block_table, __gm__ uint8_t *total_seq_len,
+                                          __gm__ uint8_t *blockPosition, __gm__ uint8_t *pagePositionLength,
+                                          __gm__ uint8_t *maxPagePositionLength, __gm__ uint8_t *workspace,
+                                          const SparsePagedFusionAttentionTilingData *__restrict tiling, __gm__ uint8_t *gmTiling,
+                                          TPipe *tPipe);
     __aicore__ inline void InitQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1, __gm__ uint8_t *deqScale2,
                                      __gm__ uint8_t *quantScale2, __gm__ uint8_t *quantOffset2,
                                      __gm__ uint8_t *antiquantScale, __gm__ uint8_t *antiquantOffset,
@@ -56,6 +62,14 @@ public:
     __aicore__ inline void InitPostQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1, __gm__ uint8_t *deqScale2,
                                      __gm__ uint8_t *quantScale2, __gm__ uint8_t *quantOffset2);
     __aicore__ inline void Process();
+    __aicore__ inline void ProcessCentSelect();
+    __aicore__ inline void CentCopyIn();
+    __aicore__ inline void CentComputeTopK(LocalTensor<int32_t> &dstIndexLocal);
+    __aicore__ inline void VectorCompute(LocalTensor<float> &mmResUb, LocalTensor<half> &aUb, LocalTensor<half> &bUb, uint32_t dealRowCount);
+    __aicore__ inline void BlockingL1CentCopyIn(uint32_t idx);
+    __aicore__ inline void CentSelectPosition(LocalTensor<int32_t> indicesLocal);
+    __aicore__ inline void CentCopyOut();
+    __aicore__ inline void CentMaxReducePagePositionLength(uint32_t localBlockIdx);
 
     __aicore__ inline void InitPrefix(__gm__ uint8_t *query, __gm__ uint8_t *key, __gm__ uint8_t *value,
                                       __gm__ uint8_t *pseShift, __gm__ uint8_t *attenMask,
@@ -680,6 +694,81 @@ protected:
     // kv_left_padding
     GlobalTensor<int64_t> kvPaddingSizeGm;
 
+    // cent_select 相关全局张量
+    GlobalTensor<half> queryGlobal;
+    GlobalTensor<half> l1CentGlobal;
+    GlobalTensor<int32_t> blockIdsGlobal;
+    GlobalTensor<int32_t> blockTableGlobal;
+    GlobalTensor<int32_t> seqLenGlobal;
+    GlobalTensor<int32_t> blockPositionGlobal;
+    GlobalTensor<int32_t> pagePositionLengthGlobal;
+    GlobalTensor<int64_t> maxPagePositionLengthGlobal;
+
+    // cent_select 相关队列
+    TQue<QuePosition::VECIN, 1> inQuery;
+    TQue<QuePosition::VECIN, 1> inL1Cent;
+    TQue<QuePosition::VECIN, 1> inBlockIds;
+    TQue<QuePosition::VECIN, 1> inBlockTable;
+    TQue<QuePosition::VECOUT, 1> outPagePosition;
+    TQue<QuePosition::VECOUT, 1> outPagePositionLength;
+    TQue<QuePosition::VECOUT, 1> outMaxPagePositionLength;
+    
+    // cent_select 相关 TBuf
+    TBuf<> tmpBmm1ResBuff;
+    TBuf<> bmm1ResBuff;
+
+    // TopK 相关 TBuf
+    TBuf<QuePosition::VECCALC> topKDstValue;
+    TBuf<QuePosition::VECCALC> topKDstIndex;
+    TBuf<QuePosition::VECCALC> topKSrcIndexLocal;
+    TBuf<QuePosition::VECCALC> topKWrokLocal;
+    TBuf<QuePosition::VECCALC> topKFinishLocal;
+
+    // 位置选择相关 TBuf
+    TBuf<QuePosition::VECCALC> tmpBuffPageBatch;
+    TBuf<QuePosition::VECCALC> tmpBuffSelectReduce;
+    TBuf<QuePosition::VECCALC> tmpBuffSelectTmp;
+    TBuf<QuePosition::VECCALC> selectBlockIdsIndexLocal;
+
+    // 最大页面位置长度相关 TBuf
+    TBuf<QuePosition::VECCALC> totalPagePositionLength;
+    TBuf<QuePosition::VECCALC> totalPagePositionLengthFloat;
+    TBuf<QuePosition::VECCALC> outMaxPagePositionLengthInt32;
+    TBuf<QuePosition::VECCALC> maxWorkLocal;
+    TBuf<QuePosition::VECCALC> dstMaxLocal;
+
+    // cent_select 相关参数
+    // base
+    // int32_t blockIdx = 0;
+    // compute cent
+    int32_t clusterNum = 0;
+    int32_t dimNum = 0;
+    int32_t clusterBlockNum = 0;
+    int32_t clusterBlockSize = 0;
+    // select position
+    int32_t kvPageLen = 0;
+    int32_t maxBatch = 0;
+    int32_t maxPage = 0;
+    int32_t maxPageNum = 0;
+    // topk
+    int32_t k = 0;
+    int32_t tmpsize = 0;
+    int32_t maxWorkSize = 0;
+
+    // cent_select 计算相关参数
+    int32_t pagePositionLength = 0;
+    int32_t seqLen = 0;
+    float32_t importance_ = 0;
+    int32_t pageLen = 0;
+    int32_t gatherMaskLen = 0;
+    int32_t workLoadThreshold = 0;
+    int32_t gatherMaskU32Len = 0;
+    int32_t kvBlockSize = 0;
+
+    // TopK 相关
+    TopkTiling topkTilingData;
+    TopKInfo topKInfo;
+
     // queue
     TQue<QuePosition::VECIN, 1> inputQue1;   // 32K, inque
     TQue<QuePosition::VECIN, 1> inputQue2;   // 16K, inque
@@ -763,6 +852,13 @@ protected:
     uint32_t antiquantPerTensorFlag = 0U;
     uint64_t sUnitSize = 0;
 
+    // cent_select 相关常量
+    static constexpr uint32_t BUFFER_NUM = 1;
+    static constexpr int32_t tplPadding = 8; // padding to 32B for int32
+    static constexpr int32_t tplPaddingHalf = 4; // padding to 32B for int64
+    static constexpr int32_t PAGESIZE = 128;
+
+
     // kv_left_padding
     uint32_t kvPaddingFlag = 0;
     uint64_t kvPaddingBeginOffset = 0;
@@ -792,6 +888,7 @@ protected:
     uint32_t formerCoreNum = 0U;
     uint32_t usedCoreNum = 0U;
     uint32_t bIdx = 0U;
+    uint32_t n1Idx = 0U;
     uint32_t n2Idx = 0U;
 
     uint32_t mmResUbSize = 0U;
@@ -1509,6 +1606,332 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
         }
     }
 }
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::InitCentSelect(__gm__ uint8_t *query, __gm__ uint8_t *l1_cent, __gm__ uint8_t *block_ids,
+    __gm__ uint8_t *block_table, __gm__ uint8_t *total_seq_len, __gm__ uint8_t *blockPosition, __gm__ uint8_t *pagePositionLength,
+    __gm__ uint8_t *maxPagePositionLength, __gm__ uint8_t *workspace,
+    const SparsePagedFusionAttentionTilingData *__restrict tiling, __gm__ uint8_t *gmTiling, TPipe *tPipe) {
+    
+    // Init tiling data
+    tilingData = tiling;
+    batchSize = tilingData->centSelectParams.bSize;
+    qHeadNum = tilingData->centSelectParams.n1Size;
+    kvHeadNum = tilingData->centSelectParams.n2Size;
+    gSize = tilingData->centSelectParams.gSize;
+    kvBlockSize = tilingData->centSelectParams.blockSize;
+    usedCoreNum = tilingData->centSelectParams.usedCoreNum;
+    // compute cent
+    clusterNum = tilingData->centSelectParams.cSize;
+    dimNum = tilingData->centSelectParams.dSize;
+    clusterBlockNum = tilingData->centSelectParams.clusterBlockNum;
+    clusterBlockSize = tilingData->centSelectParams.clusterBlockSize;
+    // select position
+    kvPageLen = tilingData->centSelectParams.kvPageLen;
+    maxBatch = tilingData->centSelectParams.maxBatch;
+    maxPage = tilingData->centSelectParams.maxPage;
+    maxPageNum = tilingData->centSelectParams.maxPageNum;
+    // topk
+    k = tilingData->centSelectParams.k;
+    tmpsize = tilingData->centSelectParams.tmpsize;
+    topkTilingData = tilingData->centSelectParams.topkTilingData;
+    // max
+    maxWorkSize = qHeadNum * tplPadding * 2 * 32;
+
+    // blockIdx = AscendC::GetBlockIdx();
+    
+    // Set global buffers
+    queryGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ half *>(query), batchSize * qHeadNum * dimNum);
+    l1CentGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ half *>(l1_cent), kvHeadNum * clusterNum * dimNum);
+    blockIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_ids), kvHeadNum * kvPageLen);
+    blockTableGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table), maxBatch * maxPage);
+    seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(total_seq_len), batchSize);
+    blockPositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(blockPosition), kvHeadNum * kvPageLen);
+    pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(pagePositionLength), batchSize);
+    maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(maxPagePositionLength), batchSize);
+
+    // Init input buffers
+    pipe->InitBuffer(inQuery, BUFFER_NUM, dimNum * sizeof(half));
+    pipe->InitBuffer(inL1Cent, BUFFER_NUM, clusterBlockSize * dimNum * sizeof(half));
+    pipe->InitBuffer(inBlockIds, BUFFER_NUM, kvPageLen * sizeof(int32_t));
+    pipe->InitBuffer(inBlockTable, BUFFER_NUM, maxPage * sizeof(int32_t));
+
+    // Init output buffers
+    pipe->InitBuffer(outPagePosition, BUFFER_NUM, batchSize * qHeadNum * maxPageNum * sizeof(int32_t));
+    pipe->InitBuffer(outPagePositionLength, BUFFER_NUM, batchSize * qHeadNum * tplPadding * sizeof(int32_t));
+
+    // Init compute buffers
+    pipe->InitBuffer(tmpBuff1, BUFFER_SIZE_BYTE_32K);
+    pipe->InitBuffer(tmpBmm1ResBuff, clusterBlockSize * sizeof(float));
+    pipe->InitBuffer(bmm1ResBuff, clusterNum * sizeof(float));
+
+    // Init topk buffers
+    pipe->InitBuffer(topKDstValue, k * sizeof(float));
+    pipe->InitBuffer(topKDstIndex, k * sizeof(int32_t));
+    pipe->InitBuffer(topKSrcIndexLocal, clusterNum * sizeof(int32_t));
+    pipe->InitBuffer(topKWrokLocal, tmpsize * sizeof(uint8_t));
+    pipe->InitBuffer(topKFinishLocal, tmpsize * sizeof(bool));
+
+    // Init select position buffers
+    pipe->InitBuffer(tmpBuffPageBatch, maxPage * sizeof(int32_t));
+    pipe->InitBuffer(tmpBuffSelectReduce, maxPage / 8 * sizeof(uint8_t));
+    pipe->InitBuffer(tmpBuffSelectTmp, maxPage / 8 * sizeof(uint8_t));
+    pipe->InitBuffer(selectBlockIdsIndexLocal, maxPage * sizeof(int32_t));
+
+    // Init max page position length buffers
+    pipe->InitBuffer(totalPagePositionLength, qHeadNum * tplPadding * sizeof(int32_t));
+    pipe->InitBuffer(totalPagePositionLengthFloat, qHeadNum * tplPadding * sizeof(float));
+    pipe->InitBuffer(outMaxPagePositionLengthInt32, qHeadNum * tplPadding * sizeof(int32_t));
+
+    // Init max buffers
+    pipe->InitBuffer(maxWorkLocal, maxWorkSize * sizeof(uint8_t));
+    pipe->InitBuffer(dstMaxLocal, 1 * sizeof(float));
+    pipe->InitBuffer(outMaxPagePositionLength, 1, tplPadding * sizeof(int64_t));
+
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::ProcessCentSelect() {
+    auto localBlockIdx = AscendC::GetBlockIdx();
+    if (g_coreType == AIV && localBlockIdx >= usedCoreNum) {
+        // skip
+    } else {
+        int64_t multiCoreInnerOffset = static_cast<int64_t>(localBlockIdx) * static_cast<int64_t>(kvBlockSize);
+        int64_t multiCoreInnerLimit = multiCoreInnerOffset + static_cast<int64_t>(kvBlockSize);
+        for (int64_t bn1Idx = multiCoreInnerOffset; bn1Idx < multiCoreInnerLimit; ++bn1Idx) {
+            bIdx = static_cast<uint64_t>(bn1Idx) / qHeadNum;
+            n1Idx = static_cast<uint64_t>(bn1Idx) % qHeadNum;
+            n2Idx = n1Idx / gSize;
+            if (bIdx < batchSize && n1Idx < qHeadNum) {
+                CentCopyIn();
+                auto dstIndexLocal = topKDstIndex.Get<int32_t>();
+                CentComputeTopK(dstIndexLocal);
+                CentSelectPosition(dstIndexLocal);
+                CentCopyOut();
+            }
+        }
+    }
+    SyncAll();
+    if (g_coreType == AIV && static_cast<uint32_t>(AscendC::GetBlockIdx()) < batchSize) {
+        CentMaxReducePagePositionLength(static_cast<uint32_t>(AscendC::GetBlockIdx()));
+    }
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentCopyIn()
+{
+    int64_t queryOffset = static_cast<int64_t>(bIdx) * static_cast<int64_t>(qHeadNum * dimNum) + static_cast<int64_t>(n1Idx * dimNum);
+    auto inputUa = inQuery.AllocTensor<half>();
+    DataCopyParams intriParamsQ;
+    uint32_t typeElementSizeQ = BYTE_BLOCK / sizeof(half);
+    intriParamsQ.blockCount = 1;
+    intriParamsQ.dstStride = 0;
+    intriParamsQ.blockLen = dimNum / typeElementSizeQ;
+    intriParamsQ.srcStride = 0;
+    DataCopy(inputUa, queryGlobal[queryOffset], intriParamsQ);
+    inQuery.EnQue(inputUa);
+
+    int64_t blockIdsOffset = static_cast<int64_t>(n2Idx) * static_cast<int64_t>(kvPageLen);
+    auto blockIdsLocal = inBlockIds.AllocTensor<int32_t>();
+    AscendC::DataCopy(blockIdsLocal, blockIdsGlobal[blockIdsOffset], kvPageLen);
+    blockIdsLocal.SetSize(kvPageLen);
+    inBlockIds.EnQue(blockIdsLocal);
+
+    int64_t blockTableOffset = static_cast<int64_t>(bIdx) * static_cast<int64_t>(maxPage);
+    auto blockTableLocal = inBlockTable.AllocTensor<int32_t>();
+    AscendC::DataCopy(blockTableLocal, blockTableGlobal[blockTableOffset], maxPage);
+    blockTableLocal.SetSize(maxPage);
+    inBlockTable.EnQue(blockTableLocal);
+
+    seqLen = seqLenGlobal.GetValue(static_cast<uint32_t>(bIdx));
+    pageLen = (seqLen + PAGESIZE - 1) / PAGESIZE;
+    workLoadThreshold = pageLen / 8;
+    gatherMaskLen = pageLen / 8;
+    gatherMaskU32Len = pageLen / 32;
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentComputeTopK(LocalTensor<int32_t> &dstIndexLocal)
+{
+    auto inputUa = inQuery.DeQue<half>();
+    auto mmResUb = bmm1ResBuff.Get<float>();
+    for (uint32_t i = 0; i < static_cast<uint32_t>(clusterBlockNum); i++) {
+        uint32_t clusterBlockOffset = i * static_cast<uint32_t>(clusterBlockSize);
+        BlockingL1CentCopyIn(clusterBlockOffset);
+        auto inputUb = inL1Cent.DeQue<half>();
+        auto tmpBmm1ResUb = tmpBmm1ResBuff.Get<float>();
+        VectorCompute(tmpBmm1ResUb, inputUa, inputUb, static_cast<uint32_t>(clusterBlockSize));
+        DataCopy(mmResUb[clusterBlockOffset], tmpBmm1ResUb, static_cast<uint32_t>(clusterBlockSize));
+        inL1Cent.FreeTensor(inputUb);
+    }
+    inQuery.FreeTensor(inputUa);
+    pipe_barrier(PIPE_ALL);
+
+    auto dstValueLocal = topKDstValue.Get<float>();
+    auto srcLocalIndex = topKSrcIndexLocal.Get<int32_t>();
+    auto finishLocal = topKFinishLocal.Get<bool>();
+    auto tmpLocal = topKWrokLocal.Get<uint8_t>();
+
+    topKInfo.outter = 1;
+    topKInfo.inner = static_cast<uint32_t>(clusterNum);
+    topKInfo.n = static_cast<uint32_t>(clusterNum);
+    AscendC::TopK<float, false, false, false, AscendC::TopKMode::TOPK_NORMAL>(
+        dstValueLocal,
+        dstIndexLocal,
+        mmResUb,
+        srcLocalIndex,
+        finishLocal,
+        tmpLocal,
+        static_cast<uint32_t>(k),
+        topkTilingData,
+        topKInfo,
+        true
+    );
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::BlockingL1CentCopyIn(uint32_t idx)
+{
+    int64_t l1CentOffset = static_cast<int64_t>(n2Idx) * static_cast<int64_t>(clusterNum * dimNum) + static_cast<int64_t>(idx * dimNum);
+    auto inputUb = inL1Cent.AllocTensor<half>();
+    DataCopyParams intriParams;
+    uint32_t typeElementSize = BYTE_BLOCK / sizeof(half);
+    intriParams.blockCount = static_cast<uint32_t>(clusterBlockSize);
+    intriParams.dstStride = 0;
+    intriParams.blockLen = static_cast<uint32_t>(dimNum) / typeElementSize;
+    intriParams.srcStride = 0;
+    DataCopy(inputUb, l1CentGlobal[l1CentOffset], intriParams);
+    inL1Cent.EnQue(inputUb);
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::VectorCompute(LocalTensor<float> &mmResUb, LocalTensor<half> &aUb, LocalTensor<half> &bUb, uint32_t dealRowCount)
+{
+    auto vmlaResUb = tmpBuff1.Get<float>();
+    uint32_t elementSize = vmlaResUb.GetSize();
+    uint32_t maxDealRowCount = elementSize / (BYTE_BLOCK / sizeof(half));
+    uint32_t singleDealRowCnt = (maxDealRowCount > dealRowCount) ? dealRowCount : maxDealRowCount;
+    uint32_t rowLoopCnt = (dealRowCount + singleDealRowCnt - 1) / singleDealRowCnt;
+    uint32_t columnLoopCnt = static_cast<uint32_t>(dimNum) / FP16_ONE_BLOCK_SIZE;
+    uint32_t rowElementCnt = static_cast<uint32_t>(dimNum);
+    for (uint32_t i = 0, curDealRowCnt = singleDealRowCnt; i < rowLoopCnt; i++) {
+        uint32_t rowStart = i * singleDealRowCnt;
+        BinaryRepeatParams repeatParams;
+        uint32_t repeat_times = curDealRowCnt / VMLA_ONE_REPEATE_ROW_COUNT;
+        repeatParams.dstBlkStride = 1;
+        repeatParams.src0BlkStride = 0;
+        repeatParams.src1BlkStride = rowElementCnt / FP16_ONE_BLOCK_SIZE;
+        repeatParams.dstRepStride = 2 * VMLA_ONE_REPEATE_ROW_COUNT;
+        repeatParams.src0RepStride = 0;
+        repeatParams.src1RepStride = VMLA_ONE_REPEATE_ROW_COUNT * rowElementCnt / FP16_ONE_BLOCK_SIZE;
+        Duplicate(vmlaResUb, FLOAT_ZERO, repeat_times * VMLA_ONE_REPEATE_ROW_COUNT * 16);
+        pipe_barrier(PIPE_V);
+        for (uint32_t j = 0; j < columnLoopCnt; j++) {
+            MulAddDst(vmlaResUb, aUb[j * FP16_ONE_BLOCK_SIZE], bUb[rowStart * rowElementCnt + j * FP16_ONE_BLOCK_SIZE],
+                      64, repeat_times, repeatParams);
+            pipe_barrier(PIPE_V);
+        }
+        repeat_times = IFA_MAX_REPEAT_TIMES - 1;
+        for (uint32_t j = 0; j < curDealRowCnt; j += repeat_times) {
+            if (j + repeat_times > curDealRowCnt) {
+                repeat_times = curDealRowCnt - j;
+            }
+            BinaryRepeatParams addRepeatParamsForBmm1;
+            addRepeatParamsForBmm1.src0BlkStride = 1;
+            addRepeatParamsForBmm1.src1BlkStride = 1;
+            addRepeatParamsForBmm1.dstBlkStride = 1;
+            addRepeatParamsForBmm1.src0RepStride = 2;
+            addRepeatParamsForBmm1.src1RepStride = 2;
+            addRepeatParamsForBmm1.dstRepStride = 2;
+            Add(vmlaResUb[j * FP16_ONE_BLOCK_SIZE], vmlaResUb[j * FP16_ONE_BLOCK_SIZE],
+                vmlaResUb[j * FP16_ONE_BLOCK_SIZE + 8], 8, repeat_times, addRepeatParamsForBmm1);
+        }
+        pipe_barrier(PIPE_V);
+        BlockReduceSum(mmResUb[rowStart], vmlaResUb[0], Align<uint32_t>(curDealRowCnt, static_cast<uint32_t>(8)) / 8, 64, 1, 2, 16);
+        pipe_barrier(PIPE_V);
+    }
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentSelectPosition(LocalTensor<int32_t> indicesLocal)
+{
+    auto blockTableLocal = inBlockTable.DeQue<int32_t>();
+    AscendC::Muls(blockTableLocal, blockTableLocal, int32_t(4), static_cast<uint32_t>(pageLen));
+    auto blockIdsLocal = inBlockIds.DeQue<int32_t>();
+    auto pageBatchLocal = tmpBuffPageBatch.Get<int32_t>();
+    pipe_barrier(PIPE_ALL);
+    AscendC::Gather(pageBatchLocal, blockIdsLocal, blockTableLocal.ReinterpretCast<uint32_t>(), uint32_t(0), static_cast<uint32_t>(pageLen));
+
+    auto dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
+    auto dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+    AscendC::CompareScalar(dstResultMaskLocal, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, static_cast<uint32_t>(pageLen));
+    for (uint32_t i = 1; i < static_cast<uint32_t>(k); i++) {
+        AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(i), CMPMODE::EQ, static_cast<uint32_t>(pageLen));
+        pipe_barrier(PIPE_ALL);
+        AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, static_cast<uint32_t>(pageLen));
+    }
+
+    uint64_t rsvdCnt = 0;
+    auto blockIdsIndex = selectBlockIdsIndexLocal.Get<int32_t>();
+    AscendC::CreateVecIndex(blockIdsIndex, (int32_t)0, static_cast<uint32_t>(pageLen));
+
+    auto pagePositionLengthLocal = outPagePositionLength.AllocTensor<int32_t>();
+    pagePositionLengthLocal.SetSize(tplPadding);
+    auto pagePositionLocal = outPagePosition.AllocTensor<int32_t>();
+    pagePositionLocal.SetSize(maxPageNum);
+    AscendC::Duplicate(pagePositionLocal, 0x7fffffff, static_cast<uint32_t>(maxPageNum));
+
+    AscendC::GatherMask(pagePositionLocal, blockIdsIndex, dstResultMaskLocal.ReinterpretCast<uint32_t>(), true, static_cast<uint32_t>(pageLen), {1, 1, 8, 8}, rsvdCnt);
+    if (rsvdCnt > static_cast<uint64_t>(workLoadThreshold)) {
+        pagePositionLength = workLoadThreshold;
+    } else {
+        pagePositionLength = static_cast<int32_t>(rsvdCnt);
+    }
+    AscendC::Duplicate(pagePositionLengthLocal, pagePositionLength, tplPadding);
+    outPagePositionLength.EnQue(pagePositionLengthLocal);
+    outPagePosition.EnQue(pagePositionLocal);
+
+    inBlockIds.FreeTensor(blockIdsLocal);
+    inBlockTable.FreeTensor(blockTableLocal);
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentCopyOut()
+{
+    int64_t pagePositionOffset = static_cast<int64_t>(bIdx) * static_cast<int64_t>(qHeadNum * maxPageNum) + static_cast<int64_t>(n1Idx * maxPageNum);
+    auto pagePositionLocal = outPagePosition.DeQue<int32_t>();
+    AscendC::DataCopy(blockPositionGlobal[pagePositionOffset], pagePositionLocal, static_cast<uint32_t>(maxPageNum));
+    outPagePosition.FreeTensor(pagePositionLocal);
+
+    int64_t pagePositionLengthOffset = static_cast<int64_t>(bIdx) * static_cast<int64_t>(qHeadNum * tplPadding) + static_cast<int64_t>(n1Idx * tplPadding);
+    auto pagePositionLengthLocal = outPagePositionLength.DeQue<int32_t>();
+    DataCopy(pagePositionLengthGlobal[pagePositionLengthOffset], pagePositionLengthLocal, tplPadding);
+    outPagePositionLength.FreeTensor(pagePositionLengthLocal);
+}
+
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentMaxReducePagePositionLength(uint32_t localBlockIdx)
+{
+    auto totalPagePositionLengthLocal = totalPagePositionLength.Get<int32_t>();
+    AscendC::DataCopy(totalPagePositionLengthLocal, pagePositionLengthGlobal[localBlockIdx * qHeadNum * tplPadding], static_cast<uint32_t>(qHeadNum * tplPadding));
+    auto totalPagePositionLengthFloatLocal = totalPagePositionLengthFloat.Get<float>();
+    pipe_barrier(PIPE_ALL);
+    AscendC::Cast(totalPagePositionLengthFloatLocal, totalPagePositionLengthLocal, AscendC::RoundMode::CAST_CEIL, static_cast<uint32_t>(qHeadNum * tplPadding));
+    auto worklocal = maxWorkLocal.Get<float>();
+    auto dstLocal = dstMaxLocal.Get<float>();
+    AscendC::ReduceMax(dstLocal, totalPagePositionLengthFloatLocal, worklocal, static_cast<uint32_t>(qHeadNum * tplPadding));
+    int32_t maxSeqLen = static_cast<int32_t>(dstLocal.GetValue(0)) * PAGESIZE;
+    auto outMaxPagePositionLengthInt32Local = outMaxPagePositionLengthInt32.Get<int32_t>();
+    AscendC::Duplicate(outMaxPagePositionLengthInt32Local, maxSeqLen, tplPadding);
+    auto outMaxPagePositionLengthLocal = outMaxPagePositionLength.AllocTensor<int64_t>();
+    AscendC::Cast(outMaxPagePositionLengthLocal, outMaxPagePositionLengthInt32Local, AscendC::RoundMode::CAST_NONE, tplPadding);
+    outMaxPagePositionLength.EnQue(outMaxPagePositionLengthLocal);
+    outMaxPagePositionLength.DeQue<int64_t>();
+    AscendC::DataCopy(maxPagePositionLengthGlobal[localBlockIdx * tplPadding], outMaxPagePositionLengthLocal, tplPadding);
+    outMaxPagePositionLength.FreeTensor(outMaxPagePositionLengthLocal);
+}
+
+
 
 template <typename IFAT>
 __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::InitQuant(

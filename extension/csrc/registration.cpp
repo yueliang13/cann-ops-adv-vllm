@@ -47,6 +47,13 @@ TORCH_LIBRARY(myops, m)
     m.def("compute_cent(Tensor query, Tensor l1_cent) -> Tensor");
     m.def("select_position(Tensor block_ids, Tensor block_table, Tensor seq_len, Tensor indices) -> (Tensor, Tensor, Tensor)");
     m.def("cent_select(Tensor query, Tensor l1_cent, Tensor block_ids, Tensor block_table, Tensor seq_len) -> (Tensor, Tensor, Tensor)");
+    m.def("sparse_paged_fusion_attention(\
+Tensor query, Tensor[] key_list, Tensor[] value_list, Tensor pse_shift, Tensor attention_mask, Tensor actual_seq_lengths, \
+Tensor dequant_scale1, Tensor quant_scale1, Tensor dequant_scale2, Tensor quant_scale2, Tensor quant_offset2, \
+Tensor antiquant_scale, Tensor antiquant_offset, Tensor blocktable, Tensor kv_padding_size, \
+Tensor l1_cent, Tensor block_ids, Tensor total_seq_len, \
+Tensor block_position, Tensor page_position_length, Tensor max_page_position_length, \
+int num_heads, float scale_value, str input_layout, int num_key_value_heads, int block_size, int inner_precise) -> Tensor");
 }
 
 // 算子绑定二选一
@@ -57,6 +64,7 @@ TORCH_LIBRARY_IMPL(myops, PrivateUse1, m)
     m.impl("compute_cent", &compute_cent_impl_npu);
     m.impl("select_position", &select_position_impl_npu);
     m.impl("cent_select", &cent_select_impl_npu);
+    m.impl("sparse_paged_fusion_attention", &sparse_paged_fusion_attention_impl_npu);
 }
 
 // 通过 pybind 绑定
@@ -67,4 +75,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
     m.def("compute_cent", &compute_cent_impl_npu, "Compute Cent implementation");
     m.def("select_position", &select_position_impl_npu, "Select Position implementation");
     m.def("cent_select", &cent_select_impl_npu, "Cent Select implementation");
+    m.def("sparse_paged_fusion_attention", &sparse_paged_fusion_attention_impl_npu, "Fused Sparse Paged Fusion Attention implementation");
 }

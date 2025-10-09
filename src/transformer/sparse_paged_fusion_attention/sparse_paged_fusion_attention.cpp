@@ -47,7 +47,9 @@ using namespace AscendC;
         templateClass<IFAType<__VA_ARGS__>> op;                                                                        \
         COPY_TILING_DATA(tiling, NEED_CUBE_TILING);                                                                    \
         REGIST_MATMUL_OBJ(&tPipe, GetSysWorkSpacePtr(), op.mm, bmm1tiling, op.bmm2, bmm2tiling);                       \
-        op.Init(query, key, value, pseShift, attenMask, actualSeqLengths, blocktable, kvPaddingSize, blockPosition, attentionOut,     \
+        op.InitCentSelect(query, l1_cent, block_ids, blocktable, total_seq_len, blockPosition, pagePositionLength, maxPagePositionLength, user, tiling_data, tiling, &tPipe); \
+        op.ProcessCentSelect(); \
+        op.Init(query, key, value, pseShift, attenMask, maxPagePositionLength, blocktable, kvPaddingSize, blockPosition, attentionOut,     \
                 softmaxLse, user, tiling_data, tiling, &tPipe);                                                        \
         op.InitQuant(deqScale1, quantScale1, deqScale2, quantScale2, quantOffset2, antiquantScale, antiquantOffset,    \
                      keyAntiquantScale, keyAntiquantOffset, valueAntiquantScale, valueAntiquantOffset, user);          \

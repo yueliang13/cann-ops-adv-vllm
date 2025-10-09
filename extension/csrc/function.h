@@ -51,4 +51,34 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
 at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent);
 std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len, const at::Tensor &indices);
 std::tuple<at::Tensor, at::Tensor, at::Tensor> cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len);
+
+// 融合算子声明：返回 attention_out（其余中间结果由调用侧传入并在设备侧写回）
+at::Tensor sparse_paged_fusion_attention_impl_npu(
+    const at::Tensor &query,
+    const std::vector<at::Tensor> &key_list,
+    const std::vector<at::Tensor> &value_list,
+    const at::Tensor &pse_shift,
+    const at::Tensor &attention_mask,
+    const at::Tensor &actual_seq_lengths,
+    const at::Tensor &dequant_scale1,
+    const at::Tensor &quant_scale1,
+    const at::Tensor &dequant_scale2,
+    const at::Tensor &quant_scale2,
+    const at::Tensor &quant_offset2,
+    const at::Tensor &antiquant_scale,
+    const at::Tensor &antiquant_offset,
+    const at::Tensor &blocktable,
+    const at::Tensor &kv_padding_size,
+    const at::Tensor &l1_cent,
+    const at::Tensor &block_ids,
+    const at::Tensor &total_seq_len,
+    const at::Tensor &block_position,
+    const at::Tensor &page_position_length,
+    const at::Tensor &max_page_position_length,
+    int64_t num_heads,
+    double scale_value,
+    const std::string &input_layout,
+    int64_t num_key_value_heads,
+    int64_t block_size,
+    int64_t inner_precise);
 #endif // FUNCTION_H_

@@ -15,6 +15,7 @@
 #include "acl/acl.h"
 #include "aclnnop/aclnn_incre_flash_attention_v4.h"
 #include "aclnn_sparse_paged_attention.h"
+#include "aclnn_sparse_paged_fusion_attention.h"
 #include "aclnn_compute_cent.h"
 #include "aclnn_select_position.h"
 #include "aclnn_cent_select.h"
@@ -765,6 +766,129 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
     }
 }
 
+// 融合算子：CentSelect + SparsePagedAttention
+at::Tensor sparse_paged_fusion_attention_impl_npu(
+    const at::Tensor &query,
+    const std::vector<at::Tensor> &key_list_vec,
+    const std::vector<at::Tensor> &value_list_vec,
+    const at::Tensor &pse_shift,
+    const at::Tensor &attention_mask,
+    const at::Tensor &actual_seq_lengths,
+    const at::Tensor &dequant_scale1,
+    const at::Tensor &quant_scale1,
+    const at::Tensor &dequant_scale2,
+    const at::Tensor &quant_scale2,
+    const at::Tensor &quant_offset2,
+    const at::Tensor &antiquant_scale,
+    const at::Tensor &antiquant_offset,
+    const at::Tensor &blocktable,
+    const at::Tensor &kv_padding_size,
+    const at::Tensor &l1_cent,
+    const at::Tensor &block_ids,
+    const at::Tensor &total_seq_len,
+    const at::Tensor &block_position,
+    const at::Tensor &page_position_length,
+    const at::Tensor &max_page_position_length,
+    int64_t num_heads,
+    double scale_value,
+    const std::string &input_layout,
+    int64_t num_key_value_heads,
+    int64_t block_size,
+    int64_t inner_precise)
+{
+    // 输出：attentionOut（与 query 同形）
+    auto out_shape = query.sizes().vec();
+    at::Tensor attention_out = at::empty(out_shape, query.options());
+
+    try {
+        // 转 ACL
+        aclTensor *queryTensor = ConvertTensorToAcl(query);
+        at::TensorList key_tensor_list(key_list_vec);
+        at::TensorList value_tensor_list(value_list_vec);
+        aclTensorList *tensorKeyList = ConvertTensorListToAcl(key_tensor_list);
+        aclTensorList *tensorValueList = ConvertTensorListToAcl(value_tensor_list);
+        aclTensor *pseShiftTensor = ConvertTensorToAcl(pse_shift);
+        aclTensor *attenTensor = ConvertTensorToAcl(attention_mask);
+        aclIntArray *actualSeqLengths = ConvertToIntArray(actual_seq_lengths);
+        aclTensor *dequantScale1Tensor = ConvertTensorToAcl(dequant_scale1);
+        aclTensor *quantScale1Tensor = ConvertTensorToAcl(quant_scale1);
+        aclTensor *dequantScale2Tensor = ConvertTensorToAcl(dequant_scale2);
+        aclTensor *quantScale2Tensor = ConvertTensorToAcl(quant_scale2);
+        aclTensor *quantOffset2Tensor = ConvertTensorToAcl(quant_offset2);
+        aclTensor *antiquantScaleTensor = ConvertTensorToAcl(antiquant_scale);
+        aclTensor *antiquantOffsetTensor = ConvertTensorToAcl(antiquant_offset);
+        aclTensor *blocktableTensor = ConvertTensorToAcl(blocktable);
+        aclTensor *kvPaddingSizeTensor = ConvertTensorToAcl(kv_padding_size);
+        aclTensor *l1CentTensor = ConvertTensorToAcl(l1_cent);
+        aclTensor *blockIdsTensor = ConvertTensorToAcl(block_ids);
+        aclTensor *totalSeqLenTensor = ConvertTensorToAcl(total_seq_len);
+        aclTensor *blockPositionTensor = ConvertTensorToAcl(block_position);
+        aclTensor *pagePositionLengthTensor = ConvertTensorToAcl(page_position_length);
+        aclTensor *maxPagePositionLengthTensor = ConvertTensorToAcl(max_page_position_length);
+        aclTensor *attentionOutTensor = ConvertTensorToAcl(attention_out);
+
+        char layerOut[input_layout.length() + 1];
+        strcpy(layerOut, input_layout.c_str());
+
+        // GetWorkspaceSize
+        uint64_t workspaceSize = 0;
+        aclOpExecutor *executor = nullptr;
+        int ret = aclnnSparsePagedFusionAttentionGetWorkspaceSize(
+            queryTensor, tensorKeyList, tensorValueList, pseShiftTensor,
+            attenTensor, actualSeqLengths, dequantScale1Tensor, quantScale1Tensor, dequantScale2Tensor, quantScale2Tensor,
+            quantOffset2Tensor, antiquantScaleTensor, antiquantOffsetTensor,
+            blocktableTensor, kvPaddingSizeTensor,
+            l1CentTensor, blockIdsTensor, totalSeqLenTensor,
+            num_heads, scale_value, layerOut, num_key_value_heads, block_size, inner_precise,
+            blockPositionTensor, pagePositionLengthTensor, maxPagePositionLengthTensor,
+            attentionOutTensor, &workspaceSize, &executor);
+        if (ret != 0) {
+            throw std::runtime_error("aclnnSparsePagedFusionAttentionGetWorkspaceSize failed: " + std::to_string(ret));
+        }
+
+        // workspace & run
+        void *workspaceAddr = nullptr;
+        at::Tensor workspace_tensor;
+        if (workspaceSize > 0) {
+            workspace_tensor = at::empty({static_cast<int64_t>(workspaceSize)}, query.options().dtype(at::kByte));
+            workspaceAddr = workspace_tensor.data_ptr();
+        }
+        auto stream = c10_npu::getCurrentNPUStream().stream(false);
+        ret = aclnnSparsePagedFusionAttention(workspaceAddr, workspaceSize, executor, stream);
+        if (ret != 0) {
+            throw std::runtime_error("aclnnSparsePagedFusionAttention failed: " + std::to_string(ret));
+        }
+
+        // 清理（必要对象）
+        if (queryTensor) aclDestroyTensor(queryTensor);
+        if (tensorKeyList) aclDestroyTensorList(tensorKeyList);
+        if (tensorValueList) aclDestroyTensorList(tensorValueList);
+        if (pseShiftTensor) aclDestroyTensor(pseShiftTensor);
+        if (attenTensor) aclDestroyTensor(attenTensor);
+        if (actualSeqLengths) aclDestroyIntArray(actualSeqLengths);
+        if (dequantScale1Tensor) aclDestroyTensor(dequantScale1Tensor);
+        if (quantScale1Tensor) aclDestroyTensor(quantScale1Tensor);
+        if (dequantScale2Tensor) aclDestroyTensor(dequantScale2Tensor);
+        if (quantScale2Tensor) aclDestroyTensor(quantScale2Tensor);
+        if (quantOffset2Tensor) aclDestroyTensor(quantOffset2Tensor);
+        if (antiquantScaleTensor) aclDestroyTensor(antiquantScaleTensor);
+        if (antiquantOffsetTensor) aclDestroyTensor(antiquantOffsetTensor);
+        if (blocktableTensor) aclDestroyTensor(blocktableTensor);
+        if (kvPaddingSizeTensor) aclDestroyTensor(kvPaddingSizeTensor);
+        if (l1CentTensor) aclDestroyTensor(l1CentTensor);
+        if (blockIdsTensor) aclDestroyTensor(blockIdsTensor);
+        if (totalSeqLenTensor) aclDestroyTensor(totalSeqLenTensor);
+        if (blockPositionTensor) aclDestroyTensor(blockPositionTensor);
+        if (pagePositionLengthTensor) aclDestroyTensor(pagePositionLengthTensor);
+        if (maxPagePositionLengthTensor) aclDestroyTensor(maxPagePositionLengthTensor);
+        if (attentionOutTensor) aclDestroyTensor(attentionOutTensor);
+
+        return attention_out;
+    } catch (...) {
+        throw;
+    }
+}
+
 at::Tensor compute_cent_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent)
 {
     // 1. 创建输出张量
@@ -820,7 +944,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor>  cent_select_impl_npu(const at::T
     at::Tensor importance = at::empty({batch_size, q_head_num}, query.options().dtype(torch::kFloat32));
     // call aclnn interface to perform the computation
     try {
-        EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len, importance, page_position, page_position_length, max_page_position_length);
+        EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len, 
+        importance, page_position, page_position_length, max_page_position_length);
     } catch (const std::exception &e) {
         std::cout << "[LOG] EXEC_NPU_CMD failed with exception: " << e.what() << std::endl;
         throw;
@@ -841,6 +966,7 @@ TORCH_LIBRARY_IMPL(myops, PrivateUse1, m)
     m.impl("compute_cent", &compute_cent_impl_npu);
     m.impl("select_position", &select_position_impl_npu);
     m.impl("cent_select", &cent_select_impl_npu);
+    m.impl("sparse_paged_fusion_attention", &sparse_paged_fusion_attention_impl_npu);
 }
 
 // // 给op绑定NPU的自动求导实现

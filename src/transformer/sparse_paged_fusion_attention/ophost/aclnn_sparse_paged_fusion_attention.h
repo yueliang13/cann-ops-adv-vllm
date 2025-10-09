@@ -8,8 +8,8 @@
  * See LICENSE in the root of the software repository for the full text of the License.
  */
 
-#ifndef ACLNN_INCRE_FLASH_ATTENTION_V5_H_
-#define ACLNN_INCRE_FLASH_ATTENTION_V5_H_
+#ifndef ACLNN_SPARSE_PAGED_FUSION_ATTENTION_H_
+#define ACLNN_SPARSE_PAGED_FUSION_ATTENTION_H_
 
 #include "aclnn/aclnn_base.h"
 
