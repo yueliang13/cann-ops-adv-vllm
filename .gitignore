@@ -80,6 +80,7 @@ __pycache__/
 *.dll
 *.a
 *.lib
+*.slice_*
 
 # PyTorch 扩展编译文件
 *.cpython-*.so

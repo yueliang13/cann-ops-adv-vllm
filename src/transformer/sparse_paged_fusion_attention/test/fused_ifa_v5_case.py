@@ -18,17 +18,20 @@ def build_case_tensors():
     torch.npu.set_device(0)
 
     # 配置（与分离用例保持一致的规模，便于对比）
-    B = 8
+    B = 1
     Nq = 32
     Nk = 8
     D = 128
     C = 512             # centroids
     block_size = 128
-    total_seq_len_kv = 32 * 1024
+    total_seq_len_kv = 128 * 1024
     kvPageLen = 1280
     maxBatch = 256
     maxPage = 1024
     gSize = Nq // Nk
+    
+    sparsity_ratio = 0.125 # 稀疏比例 1/8
+    base_block_num = (total_seq_len_kv * sparsity_ratio) // block_size
 
     # 头与布局
     num_heads = Nq
@@ -80,7 +83,6 @@ def build_case_tensors():
     pse_shift = empty_f16.npu()
     attention_mask = empty_f16.npu()
     
-    base_block_num = (4 * 1024) // block_size
     actual_seq_lengths = torch.full((B,), base_block_num * block_size, dtype=torch.int64, device='npu').contiguous()    
     
     dequant_scale1 = empty_f16.npu()
