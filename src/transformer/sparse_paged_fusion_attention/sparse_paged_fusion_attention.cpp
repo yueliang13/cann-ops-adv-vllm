@@ -23,6 +23,17 @@ using namespace AscendC;
 #define NEED_CUBE_TILING (true)
 #define NOT_NEED_CUBE_TILING (false)
 
+#define DEBUG_ENABLE 0 // 设置为1启用调试，设置为0关闭所有调试输出
+
+#if DEBUG_ENABLE
+#define DEBUG_PRINTF(...) AscendC::printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINTF(...)                                                                                           \
+    do {                                                                                                               \
+    } while (0)
+#endif
+
+
 #define INVOKE_IFA_GENERAL_OP_IMPL_PREFIX(templateClass, ...)                                                          \
     do {                                                                                                               \
         templateClass<IFAType<__VA_ARGS__>> op;                                                                        \
@@ -47,13 +58,21 @@ using namespace AscendC;
         templateClass<IFAType<__VA_ARGS__>> op;                                                                        \
         COPY_TILING_DATA(tiling, NEED_CUBE_TILING);                                                                    \
         REGIST_MATMUL_OBJ(&tPipe, GetSysWorkSpacePtr(), op.mm, bmm1tiling, op.bmm2, bmm2tiling);                       \
+        DEBUG_PRINTF("[LOG] InitCentSelect Start\n"); \
         op.InitCentSelect(query, l1_cent, block_ids, blocktable, total_seq_len, blockPosition, pagePositionLength, maxPagePositionLength, user, tiling_data, tiling, &tPipe); \
-        op.ProcessCentSelect(); \
+        DEBUG_PRINTF("[LOG] InitCentSelect End\n"); \
+        op.ProcessCentSelect(&tPipe); \
+        DEBUG_PRINTF("[LOG] ProcessCentSelect End\n"); \
+        /*SyncAll();*/ /* workspace改为每个核单独使用即可去掉此处同步 <不太确定要不要开 暂时不开> */                                  \
+        DEBUG_PRINTF("[LOG] Init Attention Start\n"); \
         op.Init(query, key, value, pseShift, attenMask, maxPagePositionLength, blocktable, kvPaddingSize, blockPosition, attentionOut,     \
                 softmaxLse, user, tiling_data, tiling, &tPipe);                                                        \
+        DEBUG_PRINTF("[LOG] Init End\n"); \
         op.InitQuant(deqScale1, quantScale1, deqScale2, quantScale2, quantOffset2, antiquantScale, antiquantOffset,    \
                      keyAntiquantScale, keyAntiquantOffset, valueAntiquantScale, valueAntiquantOffset, user);          \
+        DEBUG_PRINTF("[LOG] InitQuant End\n"); \
         op.Process();                                                                                                  \
+        DEBUG_PRINTF("[LOG] Process End\n"); \
     } while (0)
 
 #define INVOKE_IFA_ALL_VEC_OP_IMPL(templateClass, ...)                                                                 \

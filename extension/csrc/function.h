@@ -53,7 +53,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at
 std::tuple<at::Tensor, at::Tensor, at::Tensor> cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len);
 
 // 融合算子声明：返回 attention_out（其余中间结果由调用侧传入并在设备侧写回）
-at::Tensor sparse_paged_fusion_attention_impl_npu(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_impl_npu(
     const at::Tensor &query,
     const std::vector<at::Tensor> &key_list,
     const std::vector<at::Tensor> &value_list,

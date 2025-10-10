@@ -1594,8 +1594,8 @@ void SparseFusionIFATiling::FillTilingCentSelect()
     uint32_t kvPageLen_ = context_->blockIds.shape->GetStorageShape().GetDim(1);
 
     // block_table 3 maxBmaxP
-    uint32_t maxBatch_ = context_->blockTable.shape->GetStorageShape().GetDim(0);
-    uint32_t maxPage_ = context_->blockTable.shape->GetStorageShape().GetDim(1);
+    uint32_t maxBatch_ = context_->blockTable.tensor->GetStorageShape().GetDim(0);
+    uint32_t maxPage_ = context_->blockTable.tensor->GetStorageShape().GetDim(1);
 
     uint32_t k_ = 64;
     
@@ -1909,6 +1909,9 @@ ge::graphStatus SparseFusionIFATiling::GenTilingKey()
 
     originVal = inputQVal;
     // TillingKey[16:0]  15位 perfMode_:core 运行模式 0: C1_V2 (CV配比1:2); 1：全V； 2 C1_V1（CV配比1:1）
+    // std::cout << "[LOG] perfMode_: " << static_cast<uint64_t>(perfMode_) << std::endl;
+    // std::cout << "[LOG] aivNum_: " << aivNum_ << std::endl;
+    // std::cout << "[LOG] usedCoreNum_: " << usedCoreNum_ << std::endl;
     uint64_t baseOffset =
         modeVal * IFA_TILINGKEYOFFSET + (static_cast<uint64_t>(perfMode_)) * IFA_PERF_MODE_TILINGKEYOFFSET;
     if (antiquantMode_ == PER_TOKEN_MODE || antiquantMode_ == PER_CHANNEL_MODE){

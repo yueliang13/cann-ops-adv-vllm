@@ -12,8 +12,8 @@
  * \file sparse_paged_fusion_attention_tiling_base.h
  * \brief
  */
-#ifndef IFA_TILING_BASE_DEFINE_H
-#define IFA_TILING_BASE_DEFINE_H
+#ifndef FUSION_IFA_TILING_BASE_DEFINE_H
+#define FUSION_IFA_TILING_BASE_DEFINE_H
 
 #include <cstdint>
 #include <string>

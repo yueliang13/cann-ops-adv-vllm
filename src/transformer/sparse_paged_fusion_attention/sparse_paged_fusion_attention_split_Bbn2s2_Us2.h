@@ -12,8 +12,8 @@
  * \file sparse_paged_attention_split_Bbn2s2_Us2.h
  * \brief
  */
-#ifndef SPARCE_PAGED_ATTENTION_SPLIT_BBN2S2_US2
-#define SPARCE_PAGED_ATTENTION_SPLIT_BBN2S2_US2
+#ifndef SPARCE_PAGED_FUSION_ATTENTION_SPLIT_BBN2S2_US2
+#define SPARCE_PAGED_FUSION_ATTENTION_SPLIT_BBN2S2_US2
 
 #include "kernel_operator.h"
 #include "kernel_operator_list_tensor_intf.h"
@@ -25,9 +25,9 @@
 using namespace matmul;
 using AscendC::CacheMode;
 
-#define V5_SPARSE_DEBUG_ENABLE 0 // 设置为1启用调试，设置为0关闭所有调试输出
+#define V5_SPARSE_DEBUG_ENABLE_CUBE 0 // 设置为1启用调试，设置为0关闭所有调试输出
 
-#if V5_SPARSE_DEBUG_ENABLE
+#if V5_SPARSE_DEBUG_ENABLE_CUBE
 #define V5_DEBUG_PRINTF(...) AscendC::printf(__VA_ARGS__)
 #else
 #define V5_DEBUG_PRINTF(...)                                                                                           \
@@ -62,8 +62,9 @@ public:
     __aicore__ inline void InitPostQuant(__gm__ uint8_t *deqScale1, __gm__ uint8_t *quantScale1, __gm__ uint8_t *deqScale2,
                                      __gm__ uint8_t *quantScale2, __gm__ uint8_t *quantOffset2);
     __aicore__ inline void Process();
-    __aicore__ inline void ProcessCentSelect();
+    __aicore__ inline void ProcessCentSelect(TPipe *tPipe);
     __aicore__ inline void CentCopyIn();
+    __aicore__ inline void ReleaseCentSelectBuffers(TPipe *tPipe);
     __aicore__ inline void CentComputeTopK(LocalTensor<int32_t> &dstIndexLocal);
     __aicore__ inline void VectorCompute(LocalTensor<float> &mmResUb, LocalTensor<half> &aUb, LocalTensor<half> &bUb, uint32_t dealRowCount);
     __aicore__ inline void BlockingL1CentCopyIn(uint32_t idx);
@@ -249,8 +250,8 @@ public:
 
 
         // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("bmm1CopyB1: BlockPositionAddr=%llu (High=%u, Low=%u)\n", 
-                        bmm1BlockPositionAddr, bmm1BlockPositionAddrHigh, bmm1BlockPositionAddrLow);
+        // V5_DEBUG_PRINTF("bmm1CopyB1: BlockPositionAddr=%llu (High=%u, Low=%u)\n", 
+        //                 bmm1BlockPositionAddr, bmm1BlockPositionAddrHigh, bmm1BlockPositionAddrLow);
 
         uint64_t s2BatchOffset = bmm1SInnerLoopIdx * singleProcessSInnerSize; // single块在当前batch的s2方向起始位置
         uint32_t startRow = col * bmm1BaseN;                                  // 在single块内偏移
@@ -272,8 +273,8 @@ public:
         uint64_t blockPositionBaseOffset = bmm1BIdx * kvHeadNum * maxPositionNumPerBatch;
 
         // 添加调试日志：打印基础偏移信息
-        V5_DEBUG_PRINTF("bmm1CopyB1: blockIdBaseOffset=%llu, blockPositionBaseOffset=%llu\n", 
-                        blockIdBaseOffset, blockPositionBaseOffset);
+        //  V5_DEBUG_PRINTF("bmm1CopyB1: blockIdBaseOffset=%llu, blockPositionBaseOffset=%llu\n", 
+        //                 blockIdBaseOffset, blockPositionBaseOffset);
 
         uint32_t blockElementCnt = BYTE_BLOCK / sizeof(KV_T);
         while (copyFinishRowCnt < useN) {
@@ -293,15 +294,15 @@ public:
                                          blockIdOffset;
 
                 // 添加调试日志：打印偏移计算信息
-                V5_DEBUG_PRINTF("bmm1CopyB1: blockIdOffset=%llu, N2Idx=%u, positionOffset=%llu\n", 
-                                blockIdOffset, bmm1N2Idx, positionOffset);
+                //  V5_DEBUG_PRINTF("bmm1CopyB1: blockIdOffset=%llu, N2Idx=%u, positionOffset=%llu\n", 
+                //                 blockIdOffset, bmm1N2Idx, positionOffset);
                 
                 // 修改：使用GlobalTensor的GetValue方法，与Vector核保持一致
                 uint32_t newBlockIdOffset =
                     *(reinterpret_cast<__gm__ int32_t *>(bmm1BlockPositionAddr) + positionOffset);
 
                 // 添加调试日志：打印读取的值
-                V5_DEBUG_PRINTF("bmm1CopyB1: newBlockIdOffset=%d (0x%x)\n", newBlockIdOffset, newBlockIdOffset);
+                //  V5_DEBUG_PRINTF("bmm1CopyB1: newBlockIdOffset=%d (0x%x)\n", newBlockIdOffset, newBlockIdOffset);
 
                 // 如果newBlockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == 0x7FFFFFFF) {
@@ -320,6 +321,9 @@ public:
                      // 假设 final_block_id_for_table 是有效的
                     uint32_t final_physical_block_id = 
                         *(reinterpret_cast<__gm__ int32_t *>(bmm1BlockTableAddr) + blockIdBaseOffset + final_logical_block_idx);
+                    
+                    V5_DEBUG_PRINTF("bmm1CopyB1: Final Table: offset=%llu, blockId=%u\n", 
+                            blockIdBaseOffset + final_logical_block_idx, final_physical_block_id);
 
                     // 3. 计算源地址的基地址
                     uint64_t final_src_base_offset =
@@ -376,7 +380,7 @@ public:
             uint32_t blockId = *(reinterpret_cast<__gm__ int32_t *>(bmm1BlockTableAddr) + blockIdBaseOffset +
                                  blockIdOffset); // 从block table上的获取编号
                                  
-            // 添加调试日志：打印从blockTable读取的blockId
+            // // 添加调试日志：打印从blockTable读取的blockId
             V5_DEBUG_PRINTF("bmm1CopyB1: blockTable读取: offset=%llu, blockId=%u\n", 
                             blockIdBaseOffset + blockIdOffset, blockId);
 
@@ -416,7 +420,9 @@ public:
                               currentCopyRowCnt, currentCopyColCnt, bmm1Kb, 1, 0, 0, alignedUseN);
                 }
             }
-
+            
+            V5_DEBUG_PRINTF("bmm1CopyB1: Compute Finish: offset=%llu, blockId=%u \n",
+                blockIdBaseOffset + blockIdOffset, blockId);
             // 更新循环变量
             copyFinishRowCnt += currentCopyRowCnt;
             curSeqIdx += currentCopyRowCnt;
@@ -477,14 +483,14 @@ public:
             (static_cast<uint64_t>(curActualSeqLenHigh) << 32) | static_cast<uint64_t>(curActualSeqLenLow);
 
 
-        // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("bmm2CopyB1: BlockTableAddr=%llu (High=%u, Low=%u)\n", bmm2BlockTableAddr,
-                        bmm2BlockTableAddrHigh, bmm2BlockTableAddrLow);
+        // // 添加调试日志：打印blockPosition地址信息
+        //  V5_DEBUG_PRINTF("bmm2CopyB1: BlockTableAddr=%llu (High=%u, Low=%u)\n", bmm2BlockTableAddr,
+        //                 bmm2BlockTableAddrHigh, bmm2BlockTableAddrLow);
 
 
-        // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("bmm2CopyB1: BlockPositionAddr=%llu (High=%u, Low=%u)\n", 
-                        bmm2BlockPositionAddr, bmm2BlockPositionAddrHigh, bmm2BlockPositionAddrLow);
+        // // 添加调试日志：打印blockPosition地址信息
+        //  V5_DEBUG_PRINTF("bmm2CopyB1: BlockPositionAddr=%llu (High=%u, Low=%u)\n", 
+        //                 bmm2BlockPositionAddr, bmm2BlockPositionAddrHigh, bmm2BlockPositionAddrLow);
 
         uint64_t s2BatchOffset = bmm2SInnerLoopIdx * singleProcessSInnerSize;
         uint32_t startRow = row * bmm2BaseK;
@@ -504,9 +510,9 @@ public:
         uint64_t blockIdBaseOffset = bmm2BIdx * maxBlockNumPerBatch;
         uint64_t blockPositionBaseOffset = bmm2BIdx * kvHeadNum * maxPositionNumPerBatch;
         
-        // 添加调试日志：打印基础偏移信息
-        V5_DEBUG_PRINTF("bmm2CopyB1: blockIdBaseOffset=%llu, blockPositionBaseOffset=%llu\n", 
-                        blockIdBaseOffset, blockPositionBaseOffset);
+        // // 添加调试日志：打印基础偏移信息
+        //  V5_DEBUG_PRINTF("bmm2CopyB1: blockIdBaseOffset=%llu, blockPositionBaseOffset=%llu\n", 
+        //                 blockIdBaseOffset, blockPositionBaseOffset);
 
         // 分块拷贝,块数为ndNum
         uint32_t blockElementCnt = 32 / sizeof(KV_T);
@@ -528,16 +534,16 @@ public:
                                          (uint64_t)(bmm2N2Idx * maxPositionNumPerBatch) + 
                                          blockIdOffset;
                 
-                // 添加调试日志：打印偏移计算信息
-                V5_DEBUG_PRINTF("bmm2CopyB1: blockIdOffset=%llu, N2Idx=%u, positionOffset=%llu\n", 
-                                blockIdOffset, bmm2N2Idx, positionOffset);
+                // // 添加调试日志：打印偏移计算信息
+                //  V5_DEBUG_PRINTF("bmm2CopyB1: blockIdOffset=%llu, N2Idx=%u, positionOffset=%llu\n", 
+                //                 blockIdOffset, bmm2N2Idx, positionOffset);
                 
                 // 修改：使用GlobalTensor的GetValue方法，与Vector核保持一致
                 uint32_t newBlockIdOffset =
                     *(reinterpret_cast<__gm__ int32_t *>(bmm2BlockPositionAddr) + positionOffset);
 
-                // 添加调试日志：打印读取的值
-                V5_DEBUG_PRINTF("bmm2CopyB1: newBlockIdOffset=%d (0x%x)\n", newBlockIdOffset, newBlockIdOffset);
+                // // 添加调试日志：打印读取的值
+                //  V5_DEBUG_PRINTF("bmm2CopyB1: newBlockIdOffset=%d (0x%x)\n", newBlockIdOffset, newBlockIdOffset);
 
                 // 如果blockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == (uint64_t)(0x7FFFFFFF)) {
@@ -590,7 +596,7 @@ public:
                     blockIdOffset = static_cast<uint64_t>(newBlockIdOffset);
                     
                     // 添加调试日志：打印转换后的blockIdOffset
-                    V5_DEBUG_PRINTF("bmm2CopyB1: 转换后blockIdOffset=%llu\n", blockIdOffset);
+                    //  V5_DEBUG_PRINTF("bmm2CopyB1: 转换后blockIdOffset=%llu\n", blockIdOffset);
                 }
             }
 
@@ -598,8 +604,8 @@ public:
                                  blockIdOffset); // 从block table上的获取编号
 
             // 添加调试日志：打印从blockTable读取的blockId
-            V5_DEBUG_PRINTF("bmm2CopyB1: blockTable读取: offset=%llu, blockId=%u\n", 
-                            blockIdBaseOffset + blockIdOffset, blockId);
+            //  V5_DEBUG_PRINTF("bmm2CopyB1: blockTable读取: offset=%llu, blockId=%u\n", 
+                            // blockIdBaseOffset + blockIdOffset, blockId);
 
             uint64_t srcOffset = (uint64_t)blockId * kvCacheBlockSize * kvHeadNum * headSize + // 整个 blocksize 偏移
                                  bmm2N2Offset; // 多n，n方向上偏移
@@ -1227,7 +1233,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
 {
     actualLenDims = tilingData->baseParams.actualLenDims;
     if (actualLenDims != 0) {
-        actualSeqLengthsGm.SetGlobalBuffer((__gm__ uint64_t *)actualSeqLengths, actualLenDims);
+        actualSeqLengthsGm.SetGlobalBuffer((__gm__ uint64_t *)actualSeqLengths, actualLenDims * 8);
     }
 }
 
@@ -1298,7 +1304,9 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
     } else if (actualLenDims == 1) {
         curActualSeqLen = actualSeqLengthsGm.GetValue(0);
     } else {
-        curActualSeqLen = actualSeqLengthsGm.GetValue(bIdx);
+        V5_DEBUG_PRINTF("[LOG] GetActualSeqLen bIdx: %d\n", bIdx);
+        curActualSeqLen = actualSeqLengthsGm.GetValue(bIdx*8);
+        V5_DEBUG_PRINTF("[LOG] GetActualSeqLen curActualSeqLen: %d\n", curActualSeqLen);
     }
 }
 
@@ -1456,8 +1464,8 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     useBlockPosition = (blockPosition != nullptr);
     
     // 添加调试日志：打印blockPosition地址信息
-    V5_DEBUG_PRINTF("Init: blockPosition=%p, useBlockPosition=%d\n", 
-                    blockpositionPtr, useBlockPosition);
+    //  V5_DEBUG_PRINTF("Init: blockPosition=%p, useBlockPosition=%d\n", 
+                    // blockpositionPtr, useBlockPosition);
 
     // PA 新增，一次性tiling信息配置
     if constexpr (PAGE_ATTENTION) {
@@ -1503,7 +1511,17 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     }
 
     InitActualSeqLen(actualSeqLengths);
-
+    do {
+        const uint32_t bPrint = (actualLenDims < 2u) ? actualLenDims : 2u;
+        const uint32_t hPrint = (qHeadNum < 4u) ? qHeadNum : 4u;
+        __gm__ uint64_t *actPtr = reinterpret_cast<__gm__ uint64_t *>(actualSeqLengths);
+        for (uint32_t b = 0; b < bPrint; ++b) {
+            for (uint32_t h = 0; h < hPrint; ++h) {
+                uint64_t v = actPtr[b * qHeadNum + h];
+                V5_DEBUG_PRINTF("[LOG] actualSeqLengths[b=%u,h=%u]=%lu\n", b, h, v);
+            }
+        }
+    } while (0);
     if (kvPaddingFlag == 1) {
         kvPaddingSizeGm.SetGlobalBuffer((__gm__ int64_t *)kvPaddingSize);
     }
@@ -1612,7 +1630,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     __gm__ uint8_t *block_table, __gm__ uint8_t *total_seq_len, __gm__ uint8_t *blockPosition, __gm__ uint8_t *pagePositionLength,
     __gm__ uint8_t *maxPagePositionLength, __gm__ uint8_t *workspace,
     const SparsePagedFusionAttentionTilingData *__restrict tiling, __gm__ uint8_t *gmTiling, TPipe *tPipe) {
-    
+    // V5_DEBUG_PRINTF("[LOG] InitCentSelect Tilling Data Start\n");
     // Init tiling data
     tilingData = tiling;
     batchSize = tilingData->centSelectParams.bSize;
@@ -1637,6 +1655,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     topkTilingData = tilingData->centSelectParams.topkTilingData;
     // max
     maxWorkSize = qHeadNum * tplPadding * 2 * 32;
+    pipe = tPipe;
 
     // blockIdx = AscendC::GetBlockIdx();
     
@@ -1646,52 +1665,48 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     blockIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_ids), kvHeadNum * kvPageLen);
     blockTableGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table), maxBatch * maxPage);
     seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(total_seq_len), batchSize);
-    blockPositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(blockPosition), kvHeadNum * kvPageLen);
-    pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(pagePositionLength), batchSize);
-    maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(maxPagePositionLength), batchSize);
-
+    
+    blockPositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(blockPosition), batchSize * qHeadNum * maxPageNum);
+    pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(pagePositionLength), batchSize * qHeadNum * tplPadding);
+    maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(maxPagePositionLength), batchSize * tplPadding);
+    
     // Init input buffers
     pipe->InitBuffer(inQuery, BUFFER_NUM, dimNum * sizeof(half));
     pipe->InitBuffer(inL1Cent, BUFFER_NUM, clusterBlockSize * dimNum * sizeof(half));
     pipe->InitBuffer(inBlockIds, BUFFER_NUM, kvPageLen * sizeof(int32_t));
     pipe->InitBuffer(inBlockTable, BUFFER_NUM, maxPage * sizeof(int32_t));
-
     // Init output buffers
-    pipe->InitBuffer(outPagePosition, BUFFER_NUM, batchSize * qHeadNum * maxPageNum * sizeof(int32_t));
-    pipe->InitBuffer(outPagePositionLength, BUFFER_NUM, batchSize * qHeadNum * tplPadding * sizeof(int32_t));
-
+    pipe->InitBuffer(outPagePosition, BUFFER_NUM, maxPageNum * sizeof(int32_t));
+    pipe->InitBuffer(outPagePositionLength, BUFFER_NUM, tplPadding * sizeof(int32_t));
     // Init compute buffers
     pipe->InitBuffer(tmpBuff1, BUFFER_SIZE_BYTE_32K);
     pipe->InitBuffer(tmpBmm1ResBuff, clusterBlockSize * sizeof(float));
     pipe->InitBuffer(bmm1ResBuff, clusterNum * sizeof(float));
-
     // Init topk buffers
     pipe->InitBuffer(topKDstValue, k * sizeof(float));
     pipe->InitBuffer(topKDstIndex, k * sizeof(int32_t));
     pipe->InitBuffer(topKSrcIndexLocal, clusterNum * sizeof(int32_t));
     pipe->InitBuffer(topKWrokLocal, tmpsize * sizeof(uint8_t));
     pipe->InitBuffer(topKFinishLocal, tmpsize * sizeof(bool));
-
     // Init select position buffers
     pipe->InitBuffer(tmpBuffPageBatch, maxPage * sizeof(int32_t));
     pipe->InitBuffer(tmpBuffSelectReduce, maxPage / 8 * sizeof(uint8_t));
     pipe->InitBuffer(tmpBuffSelectTmp, maxPage / 8 * sizeof(uint8_t));
     pipe->InitBuffer(selectBlockIdsIndexLocal, maxPage * sizeof(int32_t));
-
     // Init max page position length buffers
     pipe->InitBuffer(totalPagePositionLength, qHeadNum * tplPadding * sizeof(int32_t));
     pipe->InitBuffer(totalPagePositionLengthFloat, qHeadNum * tplPadding * sizeof(float));
     pipe->InitBuffer(outMaxPagePositionLengthInt32, qHeadNum * tplPadding * sizeof(int32_t));
-
     // Init max buffers
     pipe->InitBuffer(maxWorkLocal, maxWorkSize * sizeof(uint8_t));
     pipe->InitBuffer(dstMaxLocal, 1 * sizeof(float));
     pipe->InitBuffer(outMaxPagePositionLength, 1, tplPadding * sizeof(int64_t));
 
+    // V5_DEBUG_PRINTF("[LOG] InitCentSelect InitBuffer End\n");
 }
 
 template <typename IFAT>
-__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::ProcessCentSelect() {
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::ProcessCentSelect(TPipe *tPipe) {
     auto localBlockIdx = AscendC::GetBlockIdx();
     if (g_coreType == AIV && localBlockIdx >= usedCoreNum) {
         // skip
@@ -1715,7 +1730,62 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Proc
     if (g_coreType == AIV && static_cast<uint32_t>(AscendC::GetBlockIdx()) < batchSize) {
         CentMaxReducePagePositionLength(static_cast<uint32_t>(AscendC::GetBlockIdx()));
     }
+    // 第一个kernel完成后释放不再需要的内存
+    ReleaseCentSelectBuffers(tPipe);
 }
+
+// 新增函数：释放cent_select不再需要的内存
+template <typename IFAT>
+__aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::ReleaseCentSelectBuffers(TPipe *tPipe) {
+    // TODO: 最好Tensor也释放掉
+    pipe = tPipe;
+    pipe->Reset();
+
+    // // Set global buffers
+    // queryGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ half *>(query), batchSize * qHeadNum * dimNum);
+    // l1CentGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ half *>(l1_cent), kvHeadNum * clusterNum * dimNum);
+    // blockIdsGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_ids), kvHeadNum * kvPageLen);
+    // blockTableGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(block_table), maxBatch * maxPage);
+    // seqLenGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(total_seq_len), batchSize);
+    
+    // blockPositionGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(blockPosition), batchSize * qHeadNum * maxPageNum);
+    // pagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int32_t *>(pagePositionLength), batchSize * qHeadNum * tplPadding);
+    // maxPagePositionLengthGlobal.SetGlobalBuffer(reinterpret_cast<__gm__ int64_t *>(maxPagePositionLength), batchSize * tplPadding);
+        
+
+
+    // // 释放输入缓冲区
+    // pipe->FreeBuffer(inQuery);
+    // pipe->FreeBuffer(inL1Cent);
+    // pipe->FreeBuffer(inBlockIds);
+    // pipe->FreeBuffer(inBlockTable);
+    
+    // // 释放计算缓冲区
+    // pipe->FreeBuffer(tmpBmm1ResBuff);
+    // pipe->FreeBuffer(bmm1ResBuff);
+    
+    // // 释放TopK缓冲区
+    // pipe->FreeBuffer(topKDstValue);
+    // pipe->FreeBuffer(topKDstIndex);
+    // pipe->FreeBuffer(topKSrcIndexLocal);
+    // pipe->FreeBuffer(topKWrokLocal);
+    // pipe->FreeBuffer(topKFinishLocal);
+    
+    // // 释放选择位置缓冲区
+    // pipe->FreeBuffer(tmpBuffPageBatch);
+    // pipe->FreeBuffer(tmpBuffSelectReduce);
+    // pipe->FreeBuffer(tmpBuffSelectTmp);
+    // pipe->FreeBuffer(selectBlockIdsIndexLocal);
+    
+    // // 释放最大工作缓冲区
+    // pipe->FreeBuffer(maxWorkLocal);
+    // pipe->FreeBuffer(dstMaxLocal);
+    
+    // // 释放冲突的临时缓冲区，为第二个kernel重新分配做准备
+    // pipe->FreeBuffer(tmpBuff1);
+}
+
+
 
 template <typename IFAT>
 __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentCopyIn()
@@ -3003,7 +3073,7 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
     } else if (actualLenDims == 1) {
         curActualSeqLen = actualSeqLengthsGm.GetValue(0);
     } else {
-        curActualSeqLen = actualSeqLengthsGm.GetValue(bIdx);
+        curActualSeqLen = actualSeqLengthsGm.GetValue(bIdx*8);
     }
 
     actualCombineLoopSize = (curActualSeqLen + sInnerLoopSize - 1) / sInnerLoopSize;
@@ -3109,9 +3179,9 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Bmm1
         bmm1PageAttentionDataUb.SetValue(6, (uint32_t)(reinterpret_cast<uint64_t>(blocktablePtr)));
 
         // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("Bmm1ComputeCommon: blocktablePtr=%p, high=%u, low=%u\n", blocktablePtr,
-                        (uint32_t)((reinterpret_cast<uint64_t>(blocktablePtr) >> 32) & 0x00000000ffffffff),
-                        (uint32_t)(reinterpret_cast<uint64_t>(blocktablePtr)));
+        //  V5_DEBUG_PRINTF("Bmm1ComputeCommon: blocktablePtr=%p, high=%u, low=%u\n", blocktablePtr,
+                        // (uint32_t)((reinterpret_cast<uint64_t>(blocktablePtr) >> 32) & 0x00000000ffffffff),
+                        // (uint32_t)(reinterpret_cast<uint64_t>(blocktablePtr)));
 
         // PA 新增，BlockPosition 支持
         bmm1PageAttentionDataUb.SetValue(
@@ -3119,10 +3189,10 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Bmm1
         bmm1PageAttentionDataUb.SetValue(8, (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
         
         // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("Bmm1ComputeCommon: blockpositionPtr=%p, high=%u, low=%u\n", 
-                        blockpositionPtr, 
-                        (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
-                        (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
+        //  V5_DEBUG_PRINTF("Bmm1ComputeCommon: blockpositionPtr=%p, high=%u, low=%u\n", 
+                        // blockpositionPtr, 
+                        // (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
+                        // (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
         
         // 传入 uint64_t curActualSeqLen 
         bmm1PageAttentionDataUb.SetValue(
@@ -3210,10 +3280,10 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Bmm2
         bmm2PageAttentionDataUb.SetValue(8, (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
             
         // 添加调试日志：打印blockPosition地址信息
-        V5_DEBUG_PRINTF("Bmm2ComputeCommon: blockpositionPtr=%p, high=%u, low=%u\n", 
-                        blockpositionPtr, 
-                        (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
-                        (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
+        //  V5_DEBUG_PRINTF("Bmm2ComputeCommon: blockpositionPtr=%p, high=%u, low=%u\n", 
+                        // blockpositionPtr, 
+                        // (uint32_t)((reinterpret_cast<uint64_t>(blockpositionPtr) >> 32) & 0x00000000ffffffff),
+                        // (uint32_t)(reinterpret_cast<uint64_t>(blockpositionPtr)));
 
         // 传入 uint64_t curActualSeqLen 
         bmm2PageAttentionDataUb.SetValue(
@@ -4333,18 +4403,23 @@ template <typename IFAT>
 __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::SInnerLoopFunc(const uint32_t bn2Idx,
                                                                                     const uint32_t sInnerLoopIdx)
 {
+    V5_DEBUG_PRINTF("[LOG] SInnerLoopFunc bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
     // setOrgShape
     SetMMOrgShape();
 
+    V5_DEBUG_PRINTF("[LOG] SetMMOrgShape bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
     // mm1
     Bmm1Compute(bn2Idx, sInnerLoopIdx);
 
+    V5_DEBUG_PRINTF("[LOG] Bmm1Compute bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
     // v1
     ProcessVec1(sInnerLoopIdx);
 
+    V5_DEBUG_PRINTF("[LOG] ProcessVec1 bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
     // mm2
     Bmm2Compute(bn2Idx, sInnerLoopIdx);
 
+    V5_DEBUG_PRINTF("[LOG] Bmm2Compute bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
     // v2
     ProcessVec2(sInnerLoopIdx);
 }
@@ -4355,30 +4430,41 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
         // skip cores
     } else {
         for (uint32_t bn2Idx = 0; bn2Idx < bn2LoopTimes; bn2Idx++) {
+            // V5_DEBUG_PRINTF("[LOG] Process bn2Idx: %d\n", bn2Idx);
             GetBN2id(bn2Idx);
+            // V5_DEBUG_PRINTF("[LOG] GetBN2id bn2Idx: %d\n", bn2Idx);
             GetActualSeqLen();
+            // V5_DEBUG_PRINTF("[LOG] GetActualSeqLen bn2Idx: %d\n", bn2Idx);
             CalculateSUnitSize();
+            // V5_DEBUG_PRINTF("[LOG] CalculateSUnitSize bn2Idx: %d\n", bn2Idx);
             // ComputeKVPaddingBeginOffset return false means this loop skip calculation
             if (!ComputeKVPaddingBeginOffset()) {
                 continue;
             }
+            // V5_DEBUG_PRINTF("[LOG] ComputeKVPaddingBeginOffset bn2Idx: %d\n", bn2Idx);
 
             // 计算BN2方向的offset
             CalcBN2Offset();
+            // V5_DEBUG_PRINTF("[LOG] CalcBN2Offset bn2Idx: %d\n", bn2Idx);
             CalcBN2Params();
+            // V5_DEBUG_PRINTF("[LOG] CalcBN2Params bn2Idx: %d\n", bn2Idx);
             // 根据当前块实际长度, 重配flashattention循环条件
             UpdateInnerLoopCond();
+            // V5_DEBUG_PRINTF("[LOG] UpdateInnerLoopCond bn2Idx: %d\n", bn2Idx);
             pipe_barrier(PIPE_V);
             if (curActSeqLenIsZero) {
                 continue;
             }
-
+            // V5_DEBUG_PRINTF("[LOG] ComputeKVPaddingBeginOffset bn2Idx: %d\n", bn2Idx);
             // softmax不区分首次
             Duplicate(softmaxMaxUb, SOFTMAX_MIN_NUM, BUFFER_SIZE_BYTE_2K / sizeof(T));
+            // V5_DEBUG_PRINTF("[LOG] Duplicate softmaxMaxUb bn2Idx: %d\n", bn2Idx);
             Duplicate(softmaxSumUb, FLOAT_ZERO, BUFFER_SIZE_BYTE_2K / sizeof(T));
-
+            // V5_DEBUG_PRINTF("[LOG] Duplicate softmaxSumUb bn2Idx: %d\n", bn2Idx);
+            // V5_DEBUG_PRINTF("[LOG] Duplicate bn2Idx: %d\n", bn2Idx);
             // 如果S2开多核，可能出现多核重复预处理Q的情况，可以将Q的预处理做成一个前置小kernel，拼接FA，可能影响不大
             if constexpr (ANTIQUANT) {
+                // V5_DEBUG_PRINTF("[LOG] Antiq bn2Idx: %d\n", bn2Idx);
                 if constexpr (ANTIQUANT_PER_CHANNEL) {
                     QueryPreProcess();
                 } else if constexpr (ANTIQUANT_PER_TOKEN) {
@@ -4388,14 +4474,15 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
                 }
             } else if constexpr (SHARED_PREFIX) {
                 SysPrefixQueryPreProcess();
+                // V5_DEBUG_PRINTF("[LOG] SysPrefixQueryPreProcess bn2Idx: %d\n", bn2Idx);
             }
-
+            // V5_DEBUG_PRINTF("[LOG] Process bn2Idx: %d sInnerLoopTimes: %d\n", bn2Idx, sInnerLoopTimes);
             // GQA场景需要处理G，1、mm1 A矩阵 singleM=G 2、mm1结果vector1内部切分mm1的M轴
             // 3、涉及souter的地方，需要注意GQA
             for (uint32_t sInnerLoopIdx = 0; sInnerLoopIdx < sInnerLoopTimes; sInnerLoopIdx++) {
                 // 计算s2方向的offset
                 CalcSInnerOffsetAndParams(sInnerLoopIdx);
-
+                // V5_DEBUG_PRINTF("[LOG] Process bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
                 SInnerLoopFunc(bn2Idx, sInnerLoopIdx);
             }
         }
@@ -4851,4 +4938,4 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Deal
         }
     }
 }
-#endif // SPARCE_PAGED_ATTENTION_SPLIT_BBN2S2_US2
+#endif // SPARCE_PAGED_FUSION_ATTENTION_SPLIT_BBN2S2_US2

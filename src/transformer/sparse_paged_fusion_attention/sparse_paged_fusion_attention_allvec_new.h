@@ -12,8 +12,8 @@
  * \file sparse_paged_attention_allvec_new.h
  * \brief
  */
-#ifndef SPARCE_PAGED_ATTENTION_ALLVEC_NEW
-#define SPARCE_PAGED_ATTENTION_ALLVEC_NEW
+#ifndef SPARCE_PAGED_FUSION_ATTENTION_ALLVEC_NEW
+#define SPARCE_PAGED_FUSION_ATTENTION_ALLVEC_NEW
 
 #include "kernel_operator.h"
 #include "kernel_operator_list_tensor_intf.h"
@@ -28,9 +28,9 @@ using AscendC::MulAddDst;
 #define V5_SPARSE_DEBUG_ENABLE 0 // 设置为1启用调试，设置为0关闭所有调试输出
 
 #if V5_SPARSE_DEBUG_ENABLE
-#define V5_DEBUG_PRINTF(...) AscendC::printf(__VA_ARGS__)
+#define V5_Vector_DEBUG_PRINTF(...) AscendC::printf(__VA_ARGS__)
 #else
-#define V5_DEBUG_PRINTF(...)                                                                                           \
+#define V5_Vector_DEBUG_PRINTF(...)                                                                                           \
     do {                                                                                                               \
     } while (0)
 #endif
@@ -729,7 +729,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenAllVecNew<IFAT>::Init(
     }
 
     InitActualSeqLen(actualSeqLengths);
-
+    
     if (kvPaddingFlag == 1) {
         kvPaddingSizeGm.SetGlobalBuffer((__gm__ int64_t *)kvPaddingSize);
     }
@@ -1348,7 +1348,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenAllVecNew<IFAT>::ComputeSi
 
             // if (useBlockPosition) {
             //     // // 在初始化阶段打印这些值
-            //     // V5_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
+            //     // V5_Vector_DEBUG_PRINTF("Initialized with: maxPositionNumPerBatch=%u, blockPositionBaseOffset=%llu\n",
             //     //                 maxPositionNumPerBatch, blockPositionBaseOffset);
             //     uint64_t positionOffset =
             //         blockPositionBaseOffset + (uint64_t)(n2Idx * maxPositionNumPerBatch) + logicalOffset;
@@ -1507,7 +1507,7 @@ __aicore__ inline void SparsePagedFusionAttentionAttenAllVecNew<IFAT>::CopyValue
             uint64_t blockIdOffset = blockPositionGm.GetValue(positionOffset); // 获取blcok table上的索引
 
             if (blockIdOffset == (uint64_t)(0x7FFFFFFF)) { // int32_t最大值
-                // V5_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
+                // V5_Vector_DEBUG_PRINTF("Invalid block detected, filling zeros: blockId=%llu, rows=%u\n", blockIdOffset,
                 //                 copyRowCnt);
                 // CopyZero(valueUb[copyFinishRowCnt * headDimAlign], copyRowCnt);
                 uint64_t fix_length = 30;
@@ -1923,41 +1923,41 @@ __aicore__ inline void SparsePagedFusionAttentionAttenAllVecNew<IFAT>::SampleAnd
 #if V5_SPARSE_DEBUG_ENABLE
     // 只在特定的头或条件下打印，避免日志泛滥
     if (headIdx == 0 || headIdx == 15 || headIdx == 31) {
-        V5_DEBUG_PRINTF("--- Sampling UB Data for [%s], Head: %u, Shape: (%u, %u) ---\n", tensorName, headIdx, rows, cols);
+        V5_Vector_DEBUG_PRINTF("--- Sampling UB Data for [%s], Head: %u, Shape: (%u, %u) ---\n", tensorName, headIdx, rows, cols);
         
         // 定义采样点
         const uint32_t sample_points = 4; // 每个采样区域打印的点数
         
         // 打印头部数据
-        V5_DEBUG_PRINTF("  Head data:\n");
+        V5_Vector_DEBUG_PRINTF("  Head data:\n");
         for (uint32_t r = 0; r < min(rows, 2u); ++r) {
             for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
                 float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
-                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+                V5_Vector_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
             }
         }
 
         // 打印中间数据
         if (rows > 4) {
-            V5_DEBUG_PRINTF("  Middle data:\n");
+            V5_Vector_DEBUG_PRINTF("  Middle data:\n");
             uint32_t mid_row = rows / 2;
             for (uint32_t c = 0; c < min(cols, sample_points); ++c) {
                 float val = static_cast<float>(ubTensor.GetValue(mid_row * cols + c));
-                V5_DEBUG_PRINTF("    [%u, %u] = %f\n", mid_row, c, val);
+                V5_Vector_DEBUG_PRINTF("    [%u, %u] = %f\n", mid_row, c, val);
             }
         }
 
         // 打印尾部数据
         if (rows > 2) {
-            V5_DEBUG_PRINTF("  Tail data:\n");
+            V5_Vector_DEBUG_PRINTF("  Tail data:\n");
             for (uint32_t r = rows - min(rows, 2u); r < rows; ++r) {
                 for (uint32_t c = cols - min(cols, sample_points); c < cols; ++c) {
                     float val = static_cast<float>(ubTensor.GetValue(r * cols + c));
-                    V5_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
+                    V5_Vector_DEBUG_PRINTF("    [%u, %u] = %f\n", r, c, val);
                 }
             }
         }
-        V5_DEBUG_PRINTF("--- End Sampling [%s] ---\n", tensorName);
+        V5_Vector_DEBUG_PRINTF("--- End Sampling [%s] ---\n", tensorName);
     }
 #endif
 }

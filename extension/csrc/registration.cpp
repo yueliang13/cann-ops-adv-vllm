@@ -53,7 +53,7 @@ Tensor dequant_scale1, Tensor quant_scale1, Tensor dequant_scale2, Tensor quant_
 Tensor antiquant_scale, Tensor antiquant_offset, Tensor blocktable, Tensor kv_padding_size, \
 Tensor l1_cent, Tensor block_ids, Tensor total_seq_len, \
 Tensor block_position, Tensor page_position_length, Tensor max_page_position_length, \
-int num_heads, float scale_value, str input_layout, int num_key_value_heads, int block_size, int inner_precise) -> Tensor");
+int num_heads, float scale_value, str input_layout, int num_key_value_heads, int block_size, int inner_precise) -> (Tensor, Tensor, Tensor)");
 }
 
 // 算子绑定二选一

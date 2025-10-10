@@ -119,7 +119,7 @@ def sparse_paged_fusion_attention(query: torch.Tensor,
                                   input_layout: str,
                                   num_key_value_heads: int,
                                   block_size: int,
-                                  inner_precise: int) -> torch.Tensor:
+                                  inner_precise: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     融合算子 Python 封装：
     - 内部先进行 CentSelect（写回 block_position/page_position_length/max_page_position_length），

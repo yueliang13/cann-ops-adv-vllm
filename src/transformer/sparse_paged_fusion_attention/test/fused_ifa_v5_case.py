@@ -1,6 +1,8 @@
 import torch
 import torch_npu
 import numpy as np
+import argparse
+import time
 
 # 说明：
 # 本测试脚本用于验证融合算子（CentSelect + SparsePagedAttention）与分离算子的一致性。
@@ -12,7 +14,7 @@ import numpy as np
 import custom_ops  # 通过 pybind 导出的自定义封装
 
 
-def run_fused_case():
+def build_case_tensors():
     torch.npu.set_device(0)
 
     # 配置（与分离用例保持一致的规模，便于对比）
@@ -23,7 +25,7 @@ def run_fused_case():
     C = 512             # centroids
     block_size = 128
     total_seq_len_kv = 32 * 1024
-    kvPageLen = 1280
+    kvPageLen = total_seq_len_kv // block_size  # 1280
     maxBatch = 256
     maxPage = 1024
     gSize = Nq // Nk
@@ -49,7 +51,10 @@ def run_fused_case():
     query = torch.ones(query_shape, dtype=torch.float16)
     l1_cent = torch.randn(l1_shape, dtype=torch.float16)
     block_ids = torch.randint(0, C, block_ids_shape, dtype=torch.int32)
-    block_table = torch.randint(0, kvPageLen, block_table_shape, dtype=torch.int32)
+
+    # 注意：block_table 的取值范围应为 [0, block_num)，否则会越界访问 KV
+    block_table = torch.randint(0, block_num, block_table_shape, dtype=torch.int32)
+    # import ipdb; ipdb.set_trace()
     total_seq_len = torch.full(total_seq_len_shape, total_seq_len_kv, dtype=torch.int32)
     key = torch.ones(key_shape, dtype=torch.float16)
     value = torch.ones(value_shape, dtype=torch.float16)
@@ -77,8 +82,10 @@ def run_fused_case():
     pse_shift = empty_f16.npu()
     attention_mask = empty_f16.npu()
     # 复用 IFA 的数据：实际长度 = base_block_num * block_size
-    base_block_num = (16 * 1024) // block_size
-    actual_seq_lengths = torch.tensor([base_block_num * block_size], dtype=torch.int64, device='npu')
+    
+    base_block_num = (4 * 1024) // block_size
+    actual_seq_lengths = torch.full((B,), base_block_num * block_size, dtype=torch.int64, device='npu').contiguous()    
+    
     dequant_scale1 = empty_f16.npu()
     quant_scale1 = empty_f16.npu()
     dequant_scale2 = empty_f16.npu()
@@ -88,55 +95,129 @@ def run_fused_case():
     antiquant_offset = empty_f16.npu()
     kv_padding_size = empty_i64.npu()
 
-    # 1) 融合算子
-    fused_out = custom_ops.sparse_paged_fusion_attention(
-        query,
-        key, value,
-        pse_shift, attention_mask,
-        actual_seq_lengths,
-        dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2,
-        antiquant_scale, antiquant_offset, block_table, kv_padding_size,
-        l1_cent, block_ids, total_seq_len,
-        block_position, page_position_length, max_page_position_length,
-        num_heads, scale_value, layout, num_key_value_heads, block_size, inner_precise
+    case = {
+        "B": B,
+        "Nq": Nq,
+        "Nk": Nk,
+        "D": D,
+        "block_size": block_size,
+        "total_seq_len_kv": total_seq_len_kv,
+        "kvPageLen": kvPageLen,
+        "maxBatch": maxBatch,
+        "maxPage": maxPage,
+        "num_heads": num_heads,
+        "num_key_value_heads": num_key_value_heads,
+        "layout": layout,
+        "inner_precise": inner_precise,
+        "scale_value": scale_value,
+        # tensors
+        "query": query,
+        "l1_cent": l1_cent,
+        "block_ids": block_ids,
+        "block_table": block_table,
+        "total_seq_len": total_seq_len,
+        "key": key,
+        "value": value,
+        "pse_shift": pse_shift,
+        "attention_mask": attention_mask,
+        "actual_seq_lengths": actual_seq_lengths,
+        "dequant_scale1": dequant_scale1,
+        "quant_scale1": quant_scale1,
+        "dequant_scale2": dequant_scale2,
+        "quant_scale2": quant_scale2,
+        "quant_offset2": quant_offset2,
+        "antiquant_scale": antiquant_scale,
+        "antiquant_offset": antiquant_offset,
+        "kv_padding_size": kv_padding_size,
+        "block_position": block_position,
+        "page_position_length": page_position_length,
+        "max_page_position_length": max_page_position_length,
+    }
+    return case
+
+
+def run_perf(iters: int, warmup: int):
+    case = build_case_tensors()
+    # warmup
+    for _ in range(warmup):
+        _ = custom_ops.sparse_paged_fusion_attention(
+            case["query"], case["key"], case["value"],
+            case["pse_shift"], case["attention_mask"],
+            case["actual_seq_lengths"],
+            case["dequant_scale1"], case["quant_scale1"], case["dequant_scale2"], case["quant_scale2"], case["quant_offset2"],
+            case["antiquant_scale"], case["antiquant_offset"], case["block_table"], case["kv_padding_size"],
+            case["l1_cent"], case["block_ids"], case["total_seq_len"],
+            case["block_position"], case["page_position_length"], case["max_page_position_length"],
+            case["num_heads"], case["scale_value"], case["layout"], case["num_key_value_heads"], case["block_size"], case["inner_precise"]
+        )
+    torch.npu.synchronize()
+
+    # measure
+    t0 = time.time()
+    for _ in range(iters):
+        _ = custom_ops.sparse_paged_fusion_attention(
+            case["query"], case["key"], case["value"],
+            case["pse_shift"], case["attention_mask"],
+            case["actual_seq_lengths"],
+            case["dequant_scale1"], case["quant_scale1"], case["dequant_scale2"], case["quant_scale2"], case["quant_offset2"],
+            case["antiquant_scale"], case["antiquant_offset"], case["block_table"], case["kv_padding_size"],
+            case["l1_cent"], case["block_ids"], case["total_seq_len"],
+            case["block_position"], case["page_position_length"], case["max_page_position_length"],
+            case["num_heads"], case["scale_value"], case["layout"], case["num_key_value_heads"], case["block_size"], case["inner_precise"]
+        )
+    torch.npu.synchronize()
+    t1 = time.time()
+
+    avg_ms = (t1 - t0) * 1000.0 / max(iters, 1)
+    print(f"[Perf] iters={iters}, warmup={warmup}, avg_latency_ms={avg_ms:.3f}")
+
+
+def run_acc():
+    case = build_case_tensors()
+
+    print("Call fused case...")
+    attention_out, fused_block_position_out, fused_max_page_position_length_out = custom_ops.sparse_paged_fusion_attention(
+        case["query"],
+        case["key"], case["value"],
+        case["pse_shift"], case["attention_mask"],
+        case["actual_seq_lengths"],
+        case["dequant_scale1"], case["quant_scale1"], case["dequant_scale2"], case["quant_scale2"], case["quant_offset2"],
+        case["antiquant_scale"], case["antiquant_offset"], case["block_table"], case["kv_padding_size"],
+        case["l1_cent"], case["block_ids"], case["total_seq_len"],
+        case["block_position"], case["page_position_length"], case["max_page_position_length"],
+        case["num_heads"], case["scale_value"], case["layout"], case["num_key_value_heads"], case["block_size"], case["inner_precise"]
     )
 
-    # 2) 分离算子：cent_select + 官方稀疏注意力
+    print("Call sep case cent_select...")
     sep_block_position, sep_page_position_length, sep_max_page_position_length = custom_ops.cent_select(
-        query, l1_cent, block_ids, block_table, total_seq_len
+        case["query"], case["l1_cent"], case["block_ids"], case["block_table"], case["total_seq_len"]
     )
 
-    # 使用 torch_npu 官方稀疏注意力（npu_sparse_paged_attention），与分离结果对齐
-    # 注：该 API 期望的 actual_seq_lengths 为 int64 token 长度；我们用 batch 最大值输出
     sep_actual_seq_lengths = (sep_max_page_position_length[:, 0]).to(torch.int64)
-
-    # 这里直接调用 torch_npu 的官方接口（若你需要，也可以改为调用自定义 sparse_paged_attention 包装）
+    print("Call sep case sparse_paged_attention...")
     sep_out = torch_npu.npu_sparse_paged_attention(
-        query,
-        key,  # 空
-        value,  # 空
+        case["query"],
+        case["key"],  # 这里传入与 fused 相同的 K/V 以对齐对比
+        case["value"],
         actual_seq_lengths=sep_actual_seq_lengths,
-        block_table=block_table,
+        block_table=case["block_table"],
         block_position=sep_block_position,
-        num_heads=num_heads,
-        scale_value=scale_value,
-        input_layout=layout,
-        num_key_value_heads=num_key_value_heads,
-        block_size=block_size,
-        inner_precise=inner_precise
+        num_heads=case["num_heads"],
+        scale_value=case["scale_value"],
+        input_layout=case["layout"],
+        num_key_value_heads=case["num_key_value_heads"],
+        block_size=case["block_size"],
+        inner_precise=case["inner_precise"]
     )
 
-    # 对比
-    fused_out_cpu = fused_out.cpu().to(torch.float32)
+    fused_out_cpu = attention_out.cpu().to(torch.float32)
     sep_out_cpu = sep_out.cpu().to(torch.float32)
 
     diff = (fused_out_cpu - sep_out_cpu).abs()
     max_abs = diff.max().item()
     mean_abs = diff.mean().item()
 
-    print("[Fused Test] max_abs_diff=", max_abs, "mean_abs_diff=", mean_abs)
-
-    # 简单阈值判断
+    print("[Acc] max_abs_diff=", max_abs, "mean_abs_diff=", mean_abs)
     tol = 1e-1 if fused_out_cpu.dtype == torch.float32 else 1e-2
     if max_abs < 1e-1:
         print("✅ 融合与分离算子输出一致（在容忍度内）")
@@ -145,6 +226,15 @@ def run_fused_case():
 
 
 if __name__ == "__main__":
-    run_fused_case()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["perf", "acc"], default="acc")
+    parser.add_argument("--iters", type=int, default=10)
+    parser.add_argument("--warmup", type=int, default=5)
+    args = parser.parse_args()
+
+    if args.mode == "perf":
+        run_perf(args.iters, args.warmup)
+    else:
+        run_acc()
 
 

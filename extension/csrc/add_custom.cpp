@@ -767,7 +767,7 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
 }
 
 // 融合算子：CentSelect + SparsePagedAttention
-at::Tensor sparse_paged_fusion_attention_impl_npu(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_impl_npu(
     const at::Tensor &query,
     const std::vector<at::Tensor> &key_list_vec,
     const std::vector<at::Tensor> &value_list_vec,
@@ -842,7 +842,17 @@ at::Tensor sparse_paged_fusion_attention_impl_npu(
             num_heads, scale_value, layerOut, num_key_value_heads, block_size, inner_precise,
             blockPositionTensor, pagePositionLengthTensor, maxPagePositionLengthTensor,
             attentionOutTensor, &workspaceSize, &executor);
+        
+        #ifdef DEBUG
+        std::cout << "[LOG] GetWorkspaceSize returned: " << ret << std::endl;
+        std::cout << "[LOG] Workspace size: " << workspaceSize << " bytes ("
+                    << (workspaceSize / 1024.0 / 1024.0) << " MB)" << std::endl;
+        std::cout.flush();
+        #endif
         if (ret != 0) {
+            #ifdef DEBUG
+            std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
+            #endif
             throw std::runtime_error("aclnnSparsePagedFusionAttentionGetWorkspaceSize failed: " + std::to_string(ret));
         }
 
@@ -850,12 +860,28 @@ at::Tensor sparse_paged_fusion_attention_impl_npu(
         void *workspaceAddr = nullptr;
         at::Tensor workspace_tensor;
         if (workspaceSize > 0) {
+            #ifdef DEBUG
+            std::cout << "[LOG] Allocating workspace..." << std::endl;
+            #endif
             workspace_tensor = at::empty({static_cast<int64_t>(workspaceSize)}, query.options().dtype(at::kByte));
             workspaceAddr = workspace_tensor.data_ptr();
+            #ifdef DEBUG
+            std::cout << "[LOG] Workspace allocated at: " << workspaceAddr << std::endl;
+            #endif
+        }
+        else
+        {
+            #ifdef DEBUG
+            std::cout << "[LOG] No workspace needed" << std::endl;
+            #endif
         }
         auto stream = c10_npu::getCurrentNPUStream().stream(false);
         ret = aclnnSparsePagedFusionAttention(workspaceAddr, workspaceSize, executor, stream);
-        if (ret != 0) {
+        
+        if (ret != 0) { 
+            #ifdef DEBUG
+            std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
+            #endif
             throw std::runtime_error("aclnnSparsePagedFusionAttention failed: " + std::to_string(ret));
         }
 
@@ -883,7 +909,7 @@ at::Tensor sparse_paged_fusion_attention_impl_npu(
         if (maxPagePositionLengthTensor) aclDestroyTensor(maxPagePositionLengthTensor);
         if (attentionOutTensor) aclDestroyTensor(attentionOutTensor);
 
-        return attention_out;
+        return std::make_tuple(attention_out, block_position, max_page_position_length);
     } catch (...) {
         throw;
     }

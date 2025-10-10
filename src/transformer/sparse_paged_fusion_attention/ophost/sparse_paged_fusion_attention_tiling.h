@@ -12,8 +12,8 @@
  * \file sparse_paged_attention_tiling.h
  * \brief
  */
-#ifndef AIR_CXX_RUNTIME_V2_OP_IMPL_INCREFLASHATTENTIONSCORE_NEW_H_
-#define AIR_CXX_RUNTIME_V2_OP_IMPL_INCREFLASHATTENTIONSCORE_NEW_H_
+#ifndef AIR_CXX_RUNTIME_V2_OP_IMPL_FUSION_INCREFLASHATTENTIONSCORE_NEW_H_
+#define AIR_CXX_RUNTIME_V2_OP_IMPL_FUSION_INCREFLASHATTENTIONSCORE_NEW_H_
 
 #include <cstdint>
 #include <string>
@@ -590,4 +590,4 @@ ge::graphStatus TilingSparsePagedFusionAttentionAdapter(gert::TilingContext *con
 IFA_EXTERN_C ge::graphStatus TilingSparsePagedFusionAttention(gert::TilingContext *context);
 
 } // namespace optiling
-#endif // AIR_CXX_RUNTIME_V2_OP_IMPL_INCREFLASHATTENTIONSCORE_H_
+#endif // AIR_CXX_RUNTIME_V2_OP_IMPL_FUSION_INCREFLASHATTENTIONSCORE_H_

@@ -12,8 +12,8 @@
  * \file ifa_public_define.h
  * \brief
  */
-#ifndef IFA_PUBLIC_DEFINE_H
-#define IFA_PUBLIC_DEFINE_H
+#ifndef FUSION_IFA_PUBLIC_DEFINE_H
+#define FUSION_IFA_PUBLIC_DEFINE_H
 
 #include "kernel_operator.h"
 #include "lib/matmul_intf.h"
@@ -409,4 +409,4 @@ __aicore__ inline void RowMax(LocalTensor<float> &dstUb, LocalTensor<float> &src
                    columnCount / FP32_BLOCK_ELEMENT_NUM, ReduceOrder::ORDER_ONLY_VALUE);
 }
 
-#endif // IFA_PUBLIC_DEFINE_H
+#endif // FUSION_IFA_PUBLIC_DEFINE_H
