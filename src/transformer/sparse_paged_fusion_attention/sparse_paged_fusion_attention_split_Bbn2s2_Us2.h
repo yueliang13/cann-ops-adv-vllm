@@ -1511,17 +1511,6 @@ __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::Init
     }
 
     InitActualSeqLen(actualSeqLengths);
-    do {
-        const uint32_t bPrint = (actualLenDims < 2u) ? actualLenDims : 2u;
-        const uint32_t hPrint = (qHeadNum < 4u) ? qHeadNum : 4u;
-        __gm__ uint64_t *actPtr = reinterpret_cast<__gm__ uint64_t *>(actualSeqLengths);
-        for (uint32_t b = 0; b < bPrint; ++b) {
-            for (uint32_t h = 0; h < hPrint; ++h) {
-                uint64_t v = actPtr[b * qHeadNum + h];
-                V5_DEBUG_PRINTF("[LOG] actualSeqLengths[b=%u,h=%u]=%lu\n", b, h, v);
-            }
-        }
-    } while (0);
     if (kvPaddingFlag == 1) {
         kvPaddingSizeGm.SetGlobalBuffer((__gm__ int64_t *)kvPaddingSize);
     }
@@ -4458,10 +4447,7 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
             // V5_DEBUG_PRINTF("[LOG] ComputeKVPaddingBeginOffset bn2Idx: %d\n", bn2Idx);
             // softmax不区分首次
             Duplicate(softmaxMaxUb, SOFTMAX_MIN_NUM, BUFFER_SIZE_BYTE_2K / sizeof(T));
-            // V5_DEBUG_PRINTF("[LOG] Duplicate softmaxMaxUb bn2Idx: %d\n", bn2Idx);
             Duplicate(softmaxSumUb, FLOAT_ZERO, BUFFER_SIZE_BYTE_2K / sizeof(T));
-            // V5_DEBUG_PRINTF("[LOG] Duplicate softmaxSumUb bn2Idx: %d\n", bn2Idx);
-            // V5_DEBUG_PRINTF("[LOG] Duplicate bn2Idx: %d\n", bn2Idx);
             // 如果S2开多核，可能出现多核重复预处理Q的情况，可以将Q的预处理做成一个前置小kernel，拼接FA，可能影响不大
             if constexpr (ANTIQUANT) {
                 // V5_DEBUG_PRINTF("[LOG] Antiq bn2Idx: %d\n", bn2Idx);
@@ -4474,15 +4460,12 @@ template <typename IFAT> __aicore__ inline void SparsePagedFusionAttentionAttenS
                 }
             } else if constexpr (SHARED_PREFIX) {
                 SysPrefixQueryPreProcess();
-                // V5_DEBUG_PRINTF("[LOG] SysPrefixQueryPreProcess bn2Idx: %d\n", bn2Idx);
             }
-            // V5_DEBUG_PRINTF("[LOG] Process bn2Idx: %d sInnerLoopTimes: %d\n", bn2Idx, sInnerLoopTimes);
             // GQA场景需要处理G，1、mm1 A矩阵 singleM=G 2、mm1结果vector1内部切分mm1的M轴
             // 3、涉及souter的地方，需要注意GQA
             for (uint32_t sInnerLoopIdx = 0; sInnerLoopIdx < sInnerLoopTimes; sInnerLoopIdx++) {
                 // 计算s2方向的offset
                 CalcSInnerOffsetAndParams(sInnerLoopIdx);
-                // V5_DEBUG_PRINTF("[LOG] Process bn2Idx: %d sInnerLoopIdx: %d\n", bn2Idx, sInnerLoopIdx);
                 SInnerLoopFunc(bn2Idx, sInnerLoopIdx);
             }
         }

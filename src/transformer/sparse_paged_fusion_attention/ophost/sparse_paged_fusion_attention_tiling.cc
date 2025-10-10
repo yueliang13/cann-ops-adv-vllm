@@ -1518,9 +1518,9 @@ ge::graphStatus SparseFusionIFATiling::FillTiling()
 {
     FillTilingBaseParams();
     FillTilingSplitKV();
-    FillTilingCentSelect();
     FillTilingCoreParams();
     FillTilingSingleCoreParams();
+    FillTilingCentSelect();
     FillTilingSingleCoreTensorSize();
     FillTilingSoftmax();
     FillTilingOutputParams();
@@ -1603,7 +1603,7 @@ void SparseFusionIFATiling::FillTilingCentSelect()
     uint32_t maxPageNum_ = context_->blockPosition.shape->GetStorageShape().GetDim(2);
 
     uint32_t bns = batchSize_ * qHeadNum_;
-    usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
+    // usedCoreNum_ = bns > coreNum_ ? coreNum_ : bns;
     uint32_t blockSize_ = (bns + usedCoreNum_ - 1) / usedCoreNum_;
 
     tilingData_->centSelectParams.set_bSize(batchSize_);

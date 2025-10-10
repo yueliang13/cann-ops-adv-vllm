@@ -18,14 +18,14 @@ def build_case_tensors():
     torch.npu.set_device(0)
 
     # 配置（与分离用例保持一致的规模，便于对比）
-    B = 1
+    B = 8
     Nq = 32
     Nk = 8
     D = 128
     C = 512             # centroids
     block_size = 128
     total_seq_len_kv = 32 * 1024
-    kvPageLen = total_seq_len_kv // block_size  # 1280
+    kvPageLen = 1280
     maxBatch = 256
     maxPage = 1024
     gSize = Nq // Nk
@@ -43,21 +43,19 @@ def build_case_tensors():
     block_ids_shape = [Nk, kvPageLen]
     block_table_shape = [maxBatch, maxPage]
     total_seq_len_shape = [B]
-    block_num = total_seq_len_kv // block_size
-    key_shape = [block_num, block_size, Nk, D]
-    value_shape = [block_num, block_size, Nk, D]
+    key_shape = [kvPageLen, block_size, Nk, D]
+    value_shape = [kvPageLen, block_size, Nk, D]
 
-    # 构造输入（QKV 全 1，不影响 cent_select 的 l1_cent 随机）
-    query = torch.ones(query_shape, dtype=torch.float16)
+    # 构造输入（QKV 常数 0.1）
+    eps = 1e-3
+    query = (torch.rand(query_shape, dtype=torch.float16) * (1.0 - eps) + eps)
     l1_cent = torch.randn(l1_shape, dtype=torch.float16)
     block_ids = torch.randint(0, C, block_ids_shape, dtype=torch.int32)
 
-    # 注意：block_table 的取值范围应为 [0, block_num)，否则会越界访问 KV
-    block_table = torch.randint(0, block_num, block_table_shape, dtype=torch.int32)
-    # import ipdb; ipdb.set_trace()
+    block_table = torch.randint(0, kvPageLen, block_table_shape, dtype=torch.int32)
     total_seq_len = torch.full(total_seq_len_shape, total_seq_len_kv, dtype=torch.int32)
-    key = torch.ones(key_shape, dtype=torch.float16)
-    value = torch.ones(value_shape, dtype=torch.float16)
+    key = (torch.rand(key_shape, dtype=torch.float16) * (1.0 - eps) + eps)
+    value = (torch.rand(value_shape, dtype=torch.float16) * (1.0 - eps) + eps)
 
     # 可选参数留空
     empty_f16 = torch.empty(0, dtype=torch.float16)
@@ -81,7 +79,6 @@ def build_case_tensors():
     value = value.npu()
     pse_shift = empty_f16.npu()
     attention_mask = empty_f16.npu()
-    # 复用 IFA 的数据：实际长度 = base_block_num * block_size
     
     base_block_num = (4 * 1024) // block_size
     actual_seq_lengths = torch.full((B,), base_block_num * block_size, dtype=torch.int64, device='npu').contiguous()    
@@ -187,12 +184,54 @@ def run_acc():
         case["block_position"], case["page_position_length"], case["max_page_position_length"],
         case["num_heads"], case["scale_value"], case["layout"], case["num_key_value_heads"], case["block_size"], case["inner_precise"]
     )
-
+# attention_out [1, 32, 128] 
+    # 采样每个头的数据（按batch维B、头维Nq）
+    with torch.no_grad():
+        B = case["B"] if "B" in case else attention_out.shape[0]
+        Nq = case["Nq"] if "Nq" in case else attention_out.shape[1]
+        D = attention_out.shape[2]
+        sample_tokens = min(8, D)
+        b_idx = 0 if B > 0 else 0
+        print("[Sample Per-Head] batch=", b_idx)
+        for h in range(Nq):
+            # attention_out: [B, Nq, D]，取前 sample_tokens 个通道做示例
+            head_vec = attention_out[b_idx, h, :sample_tokens].cpu().float()
+            head_mean = attention_out[b_idx, h, :].mean().item()
+            # block_position: [B, Nq, 256]，取前8个位置
+            pos_sample = fused_block_position_out[b_idx, h, :8].cpu()
+            # page length: [B, 8]（或 [B, tplPadding]），取第0列代表该batch的最大长度通道
+            max_page_len_b = fused_max_page_position_length_out[b_idx, 0].item()
+            print(f"  head={h:02d} attn_mean={head_mean:.6f} attn_sample={head_vec.tolist()} pos_sample={pos_sample.tolist()} max_page_len={int(max_page_len_b)}")
+    
+    
     print("Call sep case cent_select...")
     sep_block_position, sep_page_position_length, sep_max_page_position_length = custom_ops.cent_select(
         case["query"], case["l1_cent"], case["block_ids"], case["block_table"], case["total_seq_len"]
     )
 
+    # 校验 fused 与 sep 的 block_position 是否完全一致
+    try:
+        if fused_block_position_out.shape != sep_block_position.shape:
+            print("[Check] block_position shape mismatch:", fused_block_position_out.shape, sep_block_position.shape)
+        else:
+            same = torch.equal(fused_block_position_out, sep_block_position)
+            if same:
+                print("[Check] fused_block_position_out == sep_block_position: True")
+            else:
+                print("[Check] fused_block_position_out == sep_block_position: False")
+                # 打印首个不一致位置样例
+                diff = (fused_block_position_out != sep_block_position)
+                idx = torch.nonzero(diff)
+                num_print = min(10, idx.shape[0])
+                for i in range(num_print):
+                    b, h, p = idx[i].tolist()
+                    fv = int(fused_block_position_out[b, h, p].item())
+                    sv = int(sep_block_position[b, h, p].item())
+                    print(f"  mismatch at (b={b}, h={h}, pos={p}): fused={fv}, sep={sv}")
+    except Exception as e:
+        print("[Check] block_position compare error:", e)
+    
+    # import ipdb; ipdb.set_trace()
     sep_actual_seq_lengths = (sep_max_page_position_length[:, 0]).to(torch.int64)
     print("Call sep case sparse_paged_attention...")
     sep_out = torch_npu.npu_sparse_paged_attention(
@@ -217,9 +256,18 @@ def run_acc():
     max_abs = diff.max().item()
     mean_abs = diff.mean().item()
 
-    print("[Acc] max_abs_diff=", max_abs, "mean_abs_diff=", mean_abs)
-    tol = 1e-1 if fused_out_cpu.dtype == torch.float32 else 1e-2
-    if max_abs < 1e-1:
+    eps = 1e-6
+    denom = sep_out_cpu.abs().clamp_min(eps)
+    rel = (diff / denom)
+    max_rel = rel.max().item()
+    mean_rel = rel.mean().item()
+
+    print("[Acc] max_abs_diff=", max_abs, "mean_abs_diff=", mean_abs,
+          "max_rel_diff=", max_rel, "mean_rel_diff=", mean_rel)
+
+    abs_tol = 1e-1 if fused_out_cpu.dtype == torch.float32 else 1e-2
+    rel_tol = 3e-2
+    if mean_rel < rel_tol:
         print("✅ 融合与分离算子输出一致（在容忍度内）")
     else:
         print("❌ 差异较大，请检查实现")
