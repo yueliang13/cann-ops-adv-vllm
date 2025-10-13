@@ -12,7 +12,7 @@
 #include "torch_npu/csrc/aten/CustomRedispatch.h"
 
 
-// @generated from /workspace/profile/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/VariableType.cpp
+// @generated from /root/xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/VariableType.cpp
 
 // NOTE [Sharded File]: on this file's split-into-shards state
 //

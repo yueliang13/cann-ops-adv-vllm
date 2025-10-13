@@ -1,6 +1,6 @@
 #pragma once
 
-// @generated from /workspace/profile/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/VariableType.h
+// @generated from /root/xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/VariableType.h
 
 #include <cstdint> // for size_t
 #include <functional> // for function

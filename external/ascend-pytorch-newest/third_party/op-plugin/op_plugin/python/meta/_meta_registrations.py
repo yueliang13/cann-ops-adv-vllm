@@ -35,6 +35,19 @@ def npu_our_incre_flash_attention_forward(query, key, value, *, padding_mask=Non
     else:
         return torch.empty_like(query)
 
+@impl(m, "npu_sparse_paged_fusion_attention")
+def npu_sparse_paged_fusion_attention_forward(query, key, value,blocktable,l1_cent,block_ids,total_seq_len,block_position,page_position_length,max_page_position_length, *,
+                                      pse_shift=None, atten_mask=None, actual_seq_lengths=None,
+                                      dequant_scale1=None,quant_scale1=None,dequant_scale2=None,quant_scale2=None,quant_offset2=None,
+                                      antiquant_scale=None,antiquant_offset=None,kv_padding_size=None,
+                                      num_heads=1,scale_value=1.0,input_layout="BSH",num_key_value_heads=0,block_size=0,inner_precise=1):
+    if quant_scale2 is not None:
+        return torch.empty_like(query, dtype=torch.int8)
+    elif query.dtype == torch.int8:
+        return torch.empty_like(query, dtype=torch.half)
+    else:
+        return torch.empty_like(query)
+
 @impl(m, "npu_sparse_paged_attention")
 def npu_sparse_paged_attention_forward(query, key, value, *, padding_mask=None, atten_mask=None, pse_shift=None, actual_seq_lengths=None,
                                       antiquant_scale=None, antiquant_offset=None, block_table=None, block_position=None,

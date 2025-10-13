@@ -843,6 +843,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
             blockPositionTensor, pagePositionLengthTensor, maxPagePositionLengthTensor,
             attentionOutTensor, &workspaceSize, &executor);
         
+        // 设置executor为可复用
+        aclSetAclOpExecutorRepeatable(executor);  
+        // void *addr;
+        // aclSetDynamicInputTensorAddr(executor, 0, 0, tensorKeyList, addr);   // 刷新输入tensorlist中第1个aclTensor的device地址
+        // aclSetDynamicInputTensorAddr(executor, 0, 1, tensorValueList, addr);  // 刷新输入tensorlist中第2个aclTensor的device地址
+        
         #ifdef DEBUG
         std::cout << "[LOG] GetWorkspaceSize returned: " << ret << std::endl;
         std::cout << "[LOG] Workspace size: " << workspaceSize << " bytes ("
@@ -876,8 +882,19 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
             #endif
         }
         auto stream = c10_npu::getCurrentNPUStream().stream(false);
+
+        for (int i = 0; i < 100; i++) {
+            ret = aclnnSparsePagedFusionAttention(workspaceAddr, workspaceSize, executor, stream);
+            // if (ret != 0) {
+            //     #ifdef DEBUG
+            //     std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
+            //     #endif
+            //     throw std::runtime_error("aclnnSparsePagedFusionAttention failed: " + std::to_string(ret));
+            // }
+        }
         ret = aclnnSparsePagedFusionAttention(workspaceAddr, workspaceSize, executor, stream);
-        
+
+
         if (ret != 0) { 
             #ifdef DEBUG
             std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
@@ -908,6 +925,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
         if (pagePositionLengthTensor) aclDestroyTensor(pagePositionLengthTensor);
         if (maxPagePositionLengthTensor) aclDestroyTensor(maxPagePositionLengthTensor);
         if (attentionOutTensor) aclDestroyTensor(attentionOutTensor);
+
+        aclDestroyAclOpExecutor(executor);  
 
         return std::make_tuple(attention_out, block_position, max_page_position_length);
     } catch (...) {

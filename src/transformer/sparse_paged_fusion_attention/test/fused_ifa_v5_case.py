@@ -83,7 +83,8 @@ def build_case_tensors():
     pse_shift = empty_f16.npu()
     attention_mask = empty_f16.npu()
     
-    actual_seq_lengths = torch.full((B,), base_block_num * block_size, dtype=torch.int64, device='npu').contiguous()    
+    actual_seq_lengths = torch.full((1,), base_block_num * block_size, dtype=torch.int64, device='npu').contiguous()    
+    # actual_seq_lengths = base_block_num * block_size   
     
     dequant_scale1 = empty_f16.npu()
     quant_scale1 = empty_f16.npu()

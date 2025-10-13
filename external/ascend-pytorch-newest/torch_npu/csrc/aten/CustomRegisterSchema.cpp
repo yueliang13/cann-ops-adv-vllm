@@ -2299,6 +2299,46 @@ at::Tensor wrapper__npu_our_incre_flash_attention(const at::Tensor & query, cons
   return op_plugin::npu_our_incre_flash_attention_symint(query, key, value, padding_mask, atten_mask, pse_shift, actual_seq_lengths, antiquant_scale, antiquant_offset, block_table, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, kv_padding_size, num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise);
 }
 
+::std::tuple<at::Tensor,at::Tensor,at::Tensor> wrapper__npu_sparse_paged_fusion_attention(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const at::Tensor & blocktable, const at::Tensor & l1_cent, const at::Tensor & block_ids, const at::Tensor & total_seq_len, const at::Tensor & block_position, const at::Tensor & page_position_length, const at::Tensor & max_page_position_length, const ::std::optional<at::Tensor> & pse_shift, const ::std::optional<at::Tensor> & attention_mask, at::OptionalSymIntArrayRef actual_seq_lengths, const ::std::optional<at::Tensor> & dequant_scale1, const ::std::optional<at::Tensor> & quant_scale1, const ::std::optional<at::Tensor> & dequant_scale2, const ::std::optional<at::Tensor> & quant_scale2, const ::std::optional<at::Tensor> & quant_offset2, const ::std::optional<at::Tensor> & antiquant_scale, const ::std::optional<at::Tensor> & antiquant_offset, const ::std::optional<at::Tensor> & kv_padding_size, int64_t num_heads, double scale_value, c10::string_view input_layout, int64_t num_key_value_heads, int64_t block_size, int64_t inner_precise) {
+
+  if (c10_npu::get_npu_data_unsafe_flag()) {
+      c10_npu::check_npu_tensor_is_safe(query);
+      c10_npu::check_npu_tensor_is_safe(key);
+      c10_npu::check_npu_tensor_is_safe(value);
+      c10_npu::check_npu_tensor_is_safe(blocktable);
+      c10_npu::check_npu_tensor_is_safe(l1_cent);
+      c10_npu::check_npu_tensor_is_safe(block_ids);
+      c10_npu::check_npu_tensor_is_safe(total_seq_len);
+      c10_npu::check_npu_tensor_is_safe(block_position);
+      c10_npu::check_npu_tensor_is_safe(page_position_length);
+      c10_npu::check_npu_tensor_is_safe(max_page_position_length);
+  }
+  c10::optional<at::Device> common_device = at::nullopt;
+  (void)common_device; // Suppress unused variable warning
+  c10::impl::check_and_update_common_device(common_device, query, "wrapper__npu_sparse_paged_fusion_attention", "query");
+  c10::impl::check_and_update_common_device(common_device, key, "wrapper__npu_sparse_paged_fusion_attention", "key");
+  c10::impl::check_and_update_common_device(common_device, value, "wrapper__npu_sparse_paged_fusion_attention", "value");
+  c10::impl::check_and_update_common_device(common_device, blocktable, "wrapper__npu_sparse_paged_fusion_attention", "blocktable");
+  c10::impl::check_and_update_common_device(common_device, l1_cent, "wrapper__npu_sparse_paged_fusion_attention", "l1_cent");
+  c10::impl::check_and_update_common_device(common_device, block_ids, "wrapper__npu_sparse_paged_fusion_attention", "block_ids");
+  c10::impl::check_and_update_common_device(common_device, total_seq_len, "wrapper__npu_sparse_paged_fusion_attention", "total_seq_len");
+  c10::impl::check_and_update_common_device(common_device, block_position, "wrapper__npu_sparse_paged_fusion_attention", "block_position");
+  c10::impl::check_and_update_common_device(common_device, page_position_length, "wrapper__npu_sparse_paged_fusion_attention", "page_position_length");
+  c10::impl::check_and_update_common_device(common_device, max_page_position_length, "wrapper__npu_sparse_paged_fusion_attention", "max_page_position_length");
+  c10::impl::check_and_update_common_device(common_device, pse_shift, "wrapper__npu_sparse_paged_fusion_attention", "pse_shift");
+  c10::impl::check_and_update_common_device(common_device, attention_mask, "wrapper__npu_sparse_paged_fusion_attention", "attention_mask");
+  c10::impl::check_and_update_common_device(common_device, dequant_scale1, "wrapper__npu_sparse_paged_fusion_attention", "dequant_scale1");
+  c10::impl::check_and_update_common_device(common_device, quant_scale1, "wrapper__npu_sparse_paged_fusion_attention", "quant_scale1");
+  c10::impl::check_and_update_common_device(common_device, dequant_scale2, "wrapper__npu_sparse_paged_fusion_attention", "dequant_scale2");
+  c10::impl::check_and_update_common_device(common_device, quant_scale2, "wrapper__npu_sparse_paged_fusion_attention", "quant_scale2");
+  c10::impl::check_and_update_common_device(common_device, quant_offset2, "wrapper__npu_sparse_paged_fusion_attention", "quant_offset2");
+  c10::impl::check_and_update_common_device(common_device, antiquant_scale, "wrapper__npu_sparse_paged_fusion_attention", "antiquant_scale");
+  c10::impl::check_and_update_common_device(common_device, antiquant_offset, "wrapper__npu_sparse_paged_fusion_attention", "antiquant_offset");
+  c10::impl::check_and_update_common_device(common_device, kv_padding_size, "wrapper__npu_sparse_paged_fusion_attention", "kv_padding_size");
+  const c10::OptionalDeviceGuard device_guard(device_of(query));
+  return op_plugin::npu_sparse_paged_fusion_attention_symint(query, key, value, blocktable, l1_cent, block_ids, total_seq_len, block_position, page_position_length, max_page_position_length, pse_shift, attention_mask, actual_seq_lengths, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale, antiquant_offset, kv_padding_size, num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise);
+}
+
 at::Tensor wrapper__npu_sparse_paged_attention(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const ::std::optional<at::Tensor> & padding_mask, const ::std::optional<at::Tensor> & atten_mask, const ::std::optional<at::Tensor> & pse_shift, at::OptionalSymIntArrayRef actual_seq_lengths, const ::std::optional<at::Tensor> & antiquant_scale, const ::std::optional<at::Tensor> & antiquant_offset, const ::std::optional<at::Tensor> & block_table, const ::std::optional<at::Tensor> & block_position, const ::std::optional<at::Tensor> & dequant_scale1, const ::std::optional<at::Tensor> & quant_scale1, const ::std::optional<at::Tensor> & dequant_scale2, const ::std::optional<at::Tensor> & quant_scale2, const ::std::optional<at::Tensor> & quant_offset2, const ::std::optional<at::Tensor> & kv_padding_size, int64_t num_heads, double scale_value, c10::string_view input_layout, int64_t num_key_value_heads, int64_t block_size, int64_t inner_precise) {
 
   if (c10_npu::get_npu_data_unsafe_flag()) {
@@ -5081,6 +5121,7 @@ TORCH_LIBRARY(npu, m) {
   m.def("npu_hans_decode.out(Tensor mantissa, Tensor fixed, Tensor var, Tensor pdf, bool reshuff=False, *, Tensor(a!) out) -> Tensor(a!)", tags_0);
   m.def("npu_ifmr(Tensor data, Tensor data_min, Tensor data_max, Tensor cumsum, float min_percentile, float max_percentile, float search_start, float search_end, float search_step, bool with_offset) -> (Tensor, Tensor)", tags_0);
   m.def("npu_our_incre_flash_attention(Tensor query, Tensor key, Tensor value, *, Tensor? padding_mask=None, Tensor? atten_mask=None, Tensor? pse_shift=None, SymInt[]? actual_seq_lengths=None, Tensor? antiquant_scale=None, Tensor? antiquant_offset=None, Tensor? block_table=None, Tensor? dequant_scale1=None, Tensor? quant_scale1=None, Tensor? dequant_scale2=None, Tensor? quant_scale2=None, Tensor? quant_offset2=None, Tensor? kv_padding_size=None, int num_heads=1, float scale_value=1.0, str input_layout=\"BSH\", int num_key_value_heads=0, int block_size=0, int inner_precise=1) -> Tensor", tags_0);
+  m.def("npu_sparse_paged_fusion_attention(Tensor query, Tensor key, Tensor value, Tensor blocktable, Tensor l1_cent, Tensor block_ids, Tensor total_seq_len, Tensor block_position, Tensor page_position_length, Tensor max_page_position_length, *, Tensor? pse_shift=None, Tensor? attention_mask=None, SymInt[]? actual_seq_lengths=None, Tensor? dequant_scale1=None, Tensor? quant_scale1=None, Tensor? dequant_scale2=None, Tensor? quant_scale2=None, Tensor? quant_offset2=None, Tensor? antiquant_scale=None, Tensor? antiquant_offset=None, Tensor? kv_padding_size=None, int num_heads=1, float scale_value=1.0, str input_layout=\"BSH\", int num_key_value_heads=0, int block_size=0, int inner_precise=1) -> (Tensor, Tensor, Tensor)", tags_0);
   m.def("npu_sparse_paged_attention(Tensor query, Tensor key, Tensor value, *, Tensor? padding_mask=None, Tensor? atten_mask=None, Tensor? pse_shift=None, SymInt[]? actual_seq_lengths=None, Tensor? antiquant_scale=None, Tensor? antiquant_offset=None, Tensor? block_table=None, Tensor? block_position=None, Tensor? dequant_scale1=None, Tensor? quant_scale1=None, Tensor? dequant_scale2=None, Tensor? quant_scale2=None, Tensor? quant_offset2=None, Tensor? kv_padding_size=None, int num_heads=1, float scale_value=1.0, str input_layout=\"BSH\", int num_key_value_heads=0, int block_size=0, int inner_precise=1) -> Tensor", tags_0);
   m.def("npu_cent_select(Tensor query, Tensor l1_cent, Tensor block_ids, Tensor block_table, Tensor seq_len) -> (Tensor, Tensor)", tags_0);
   m.def("npu_interleave_rope(Tensor x, Tensor cos, Tensor sin) -> Tensor", tags_0);
@@ -5363,6 +5404,7 @@ TORCH_LIBRARY_IMPL(npu, PrivateUse1, m) {
   m.impl("npu_hans_decode.out", TORCH_FN(at_npu::native::wrapper_out_npu_hans_decode_out));
   m.impl("npu_ifmr", TORCH_FN(at_npu::native::wrapper__npu_ifmr));
   m.impl("npu_our_incre_flash_attention", TORCH_FN(at_npu::native::wrapper__npu_our_incre_flash_attention));
+  m.impl("npu_sparse_paged_fusion_attention", TORCH_FN(at_npu::native::wrapper__npu_sparse_paged_fusion_attention));
   m.impl("npu_sparse_paged_attention", TORCH_FN(at_npu::native::wrapper__npu_sparse_paged_attention));
   m.impl("npu_cent_select", TORCH_FN(at_npu::native::wrapper__npu_cent_select));
   m.impl("npu_interleave_rope", TORCH_FN(at_npu::native::wrapper__npu_interleave_rope));

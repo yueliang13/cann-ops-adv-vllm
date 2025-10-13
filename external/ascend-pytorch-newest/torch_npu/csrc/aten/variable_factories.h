@@ -1,6 +1,6 @@
 #pragma once
 
-// @generated from /usr/local/python3.10.17/lib/python3.10/site-packages/torchgen/packaged/autograd/templates/variable_factories.h
+// @generated from /root/miniconda3/envs/ascend_torch/lib/python3.10/site-packages/torchgen/packaged/autograd/templates/variable_factories.h
 
 #include <ATen/core/Tensor.h>
 #include <ATen/TracerMode.h>

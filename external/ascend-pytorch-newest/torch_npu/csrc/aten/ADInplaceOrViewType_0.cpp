@@ -4,7 +4,7 @@
 
 #include "torch_npu/csrc/aten/CustomRedispatch.h"
 
-// @generated from ../../../../../../../workspace/profile/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/ADInplaceOrViewType.cpp
+// @generated from ../../../../../../../xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/ADInplaceOrViewType.cpp
 
 
 using namespace at;

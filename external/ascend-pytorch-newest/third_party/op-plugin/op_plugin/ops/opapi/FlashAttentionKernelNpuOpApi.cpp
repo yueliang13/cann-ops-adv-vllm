@@ -1861,13 +1861,63 @@ at::Tensor npu_sparse_paged_attention_symint(
     char input_layout_char[LAYOUT_MAX_LENGTH];
     strncpy(input_layout_char, input_layout_str.c_str(), LAYOUT_MAX_LENGTH - 1);
     // dispatch hostAPI aclnnSparsePagedAttention EXEC_NPU_NO_FORMAT_CHECK_CMD
-    EXEC_NPU_CMD(aclnnIncreFlashAttentionV5, query, keyTensors, valueTensors, pse_shift, atten_mask,
+    EXEC_NPU_CMD(aclnnSparsePagedAttention, query, keyTensors, valueTensors, pse_shift, atten_mask,
                  actual_seq_lengths, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale,
                  antiquant_offset, block_table, kv_padding_size, block_position, num_heads, scale_value, input_layout_char,
                  num_key_value_heads, block_size, inner_precise, output);
     return output;
 }
 #endif
+
+#if VERSION_BETWEEN(V2R1, VERSION_NEWEST)
+std::tuple<at::Tensor, at::Tensor, at::Tensor> npu_sparse_paged_fusion_attention_symint(
+    const at::Tensor &query, const at::Tensor &key, const at::Tensor &value,
+    const at::Tensor &blocktable, const at::Tensor &l1_cent, const at::Tensor &block_ids,
+    const at::Tensor &total_seq_len, const at::Tensor &block_position, const at::Tensor &page_position_length, const at::Tensor &max_page_position_length,
+    const c10::optional<at::Tensor> &pse_shift,
+    const c10::optional<at::Tensor> &attention_mask,
+    c10::OptionalArrayRef<c10::SymInt> actual_seq_lengths,
+    const c10::optional<at::Tensor> &dequant_scale1,
+    const c10::optional<at::Tensor> &quant_scale1,
+    const c10::optional<at::Tensor> &dequant_scale2,
+    const c10::optional<at::Tensor> &quant_scale2,
+    const c10::optional<at::Tensor> &quant_offset2,
+    const c10::optional<at::Tensor> &antiquant_scale,
+    const c10::optional<at::Tensor> &antiquant_offset,
+    const c10::optional<at::Tensor> &kv_padding_size,
+    int64_t num_heads,
+    double scale_value,
+    c10::string_view input_layout,
+    int64_t num_key_value_heads,
+    int64_t block_size,
+    int64_t inner_precise)
+{
+    // construct the output tensor of the NPU
+    at::Tensor output;
+    if (quant_scale2.has_value()) {
+        output = npu_preparation::apply_tensor_without_format(query.sizes(), c10::dtype(c10::ScalarType::Char));
+    } else if (query.dtype() == at::kChar) {
+        output = npu_preparation::apply_tensor_without_format(query.sizes(), c10::dtype(c10::ScalarType::Half));
+    } else {
+        output = npu_preparation::apply_tensor_without_format(query);
+    }
+
+    at::TensorList keyTensors = key;
+    at::TensorList valueTensors = value;
+    std::string input_layout_str = std::string(input_layout);
+    char input_layout_char[LAYOUT_MAX_LENGTH];
+    strncpy(input_layout_char, input_layout_str.c_str(), LAYOUT_MAX_LENGTH - 1);
+    // dispatch hostAPI aclnnSparsePagedFusionAttention EXEC_NPU_NO_FORMAT_CHECK_CMD
+    EXEC_NPU_CMD(aclnnSparsePagedFusionAttention, query, keyTensors, valueTensors, pse_shift, attention_mask,
+                 actual_seq_lengths, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale,
+                 antiquant_offset, blocktable, kv_padding_size, l1_cent, block_ids, total_seq_len,
+                 num_heads, scale_value, input_layout_char, num_key_value_heads, block_size, inner_precise,
+                 block_position,page_position_length, max_page_position_length, output);
+    return std::make_tuple(output, block_position, max_page_position_length);
+}
+#endif
+
+
 
 #if VERSION_BETWEEN(V2R1, VERSION_NEWEST)
 std::tuple<at::Tensor, at::Tensor> npu_cent_select(

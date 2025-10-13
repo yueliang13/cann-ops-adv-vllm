@@ -1222,6 +1222,35 @@ namespace op_plugin {
         return acl_op::npu_rotary_mul_backward(grad, self, r1, r2, rotary_mode);
     }
 }
+::std::tuple<at::Tensor,at::Tensor,at::Tensor> npu_sparse_paged_fusion_attention_symint(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const at::Tensor & blocktable, const at::Tensor & l1_cent, const at::Tensor & block_ids, const at::Tensor & total_seq_len, const at::Tensor & block_position, const at::Tensor & page_position_length, const at::Tensor & max_page_position_length, const c10::optional<at::Tensor> & pse_shift, const c10::optional<at::Tensor> & attention_mask, at::OptionalSymIntArrayRef actual_seq_lengths, const c10::optional<at::Tensor> & dequant_scale1, const c10::optional<at::Tensor> & quant_scale1, const c10::optional<at::Tensor> & dequant_scale2, const c10::optional<at::Tensor> & quant_scale2, const c10::optional<at::Tensor> & quant_offset2, const c10::optional<at::Tensor> & antiquant_scale, const c10::optional<at::Tensor> & antiquant_offset, const c10::optional<at::Tensor> & kv_padding_size, int64_t num_heads, double scale_value, c10::string_view input_layout, int64_t num_key_value_heads, int64_t block_size, int64_t inner_precise){
+    bool query_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(query);
+    bool key_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(key);
+    bool value_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(value);
+    bool blocktable_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(blocktable);
+    bool l1_cent_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(l1_cent);
+    bool block_ids_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(block_ids);
+    bool total_seq_len_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(total_seq_len);
+    bool block_position_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(block_position);
+    bool page_position_length_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(page_position_length);
+    bool max_page_position_length_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(max_page_position_length);
+    bool pse_shift_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(pse_shift);
+    bool attention_mask_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(attention_mask);
+    bool dequant_scale1_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(dequant_scale1);
+    bool quant_scale1_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(quant_scale1);
+    bool dequant_scale2_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(dequant_scale2);
+    bool quant_scale2_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(quant_scale2);
+    bool quant_offset2_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(quant_offset2);
+    bool antiquant_scale_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(antiquant_scale);
+    bool antiquant_offset_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(antiquant_offset);
+    bool kv_padding_size_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(kv_padding_size);
+
+    if (!query_base_format || !key_base_format || !value_base_format || !blocktable_base_format || !l1_cent_base_format || !block_ids_base_format || !total_seq_len_base_format || !block_position_base_format || !page_position_length_base_format || !max_page_position_length_base_format || !pse_shift_base_format || !attention_mask_base_format || !dequant_scale1_base_format || !quant_scale1_base_format || !dequant_scale2_base_format || !quant_scale2_base_format || !quant_offset2_base_format || !antiquant_scale_base_format || !antiquant_offset_base_format || !kv_padding_size_base_format) {
+        TORCH_CHECK(false,
+            "Current operator npu_sparse_paged_fusion_attention_symint do not support internal format. ",
+            PTA_ERROR(ErrCode::NOT_SUPPORT));
+    }
+    return op_api::npu_sparse_paged_fusion_attention_symint(query, key, value, blocktable, l1_cent, block_ids, total_seq_len, block_position, page_position_length, max_page_position_length, pse_shift, attention_mask, actual_seq_lengths, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale, antiquant_offset, kv_padding_size, num_heads, scale_value, input_layout, num_key_value_heads, block_size, inner_precise);
+}
 ::std::tuple<at::Tensor,at::Tensor,at::Tensor> slow_conv_dilated2d_backward(const at::Tensor & grad_output, const at::Tensor & self, const at::Tensor & weight, at::IntArrayRef kernel_size, at::IntArrayRef stride, at::IntArrayRef padding, at::IntArrayRef dilation, ::std::array<bool,3> output_mask){
     bool is_jit_disable = at_npu::native::env::CheckJitDisable();
     bool grad_output_base_format = at_npu::native::FormatHelper::IsOpInputBaseFormat(grad_output);
