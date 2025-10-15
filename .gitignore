@@ -42,6 +42,7 @@ data-dump/
 *.complete
 *.log
 !CMakeLists.txt
+!version.txt
 
 /src/**/*.json
 # python cache
