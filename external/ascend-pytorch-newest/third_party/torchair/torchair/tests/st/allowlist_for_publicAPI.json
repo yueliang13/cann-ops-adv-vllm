@@ -1,0 +1,56 @@
+{
+    "torchair": [
+        "CompilerConfig",
+        "dynamo_export",
+        "get_compiler",
+        "get_npu_backend",
+        "use_internal_format_weight",
+        "register_fx_node_ge_converter",
+        "patch_for_hcom"
+      ],
+    "torchair.ge": [
+        "custom_op",
+        "Const",
+        "Cast",
+        "DataType",
+        "Format",
+        "Tensor",
+        "TensorSpec"
+      ],
+    "torchair.ge.attr": [
+        "Bool",
+        "DataType",
+        "Float",
+        "Int",
+        "ListBool",
+        "ListDataType",
+        "ListFloat",
+        "ListInt",
+        "ListListFloat",
+        "ListListInt",
+        "ListStr",
+        "Str"
+      ],
+    "torchair.inference": [
+      "cache_compile",
+      "readable_cache",
+      "set_dim_gears"
+    ],
+    "torchair.llm_datadist": [
+      "create_npu_tensors"
+    ],
+    "torchair.ops": [
+        "npu_print",
+        "npu_create_tagged_external_event",
+        "npu_tagged_event_record",
+        "npu_tagged_event_wait",
+        "npu_tagged_event_reset",
+        "npu_fused_infer_attention_score"
+    ],
+	"torchair.scope": [
+        "npu_wait_tensor",
+        "npu_stream_switch",
+		"super_kernel",
+		"limit_core_num"
+    ]
+}
