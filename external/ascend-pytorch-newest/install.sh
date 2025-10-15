@@ -1,5 +1,9 @@
+# 代码clone下来之后需要先执行这个脚本
+# bash get_gitmodules.sh
 # ref: https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0005.html
-# gcc 10.2.0 & cmake 3.18.0 以上
+# gcc 10.2.0 & cmake 3.31.0 以上
+
+# 编译脚本
 # rm -rf build/
 # rm -rf dist/
 # pip uninstall torch_npu #每次装包都要做一次卸载 不然会有问题！！！！

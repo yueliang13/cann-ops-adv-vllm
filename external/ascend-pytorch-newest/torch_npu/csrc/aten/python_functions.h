@@ -3,7 +3,7 @@
 
 #include <Python.h>
 
-// @ generated from ../../../../../../../xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/python_functions.h
+// @ generated from ../../../../../../../root/workspace/vllm-ascend/examples/develop/xzh_test/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/python_functions.h
 
 // Python bindings for automatically generated autograd functions
 

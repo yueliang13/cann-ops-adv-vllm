@@ -48,6 +48,9 @@ class PathManager:
         if os.path.exists(path):
             return
         try:
+            dir_name = os.path.dirname(path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
             os.close(os.open(path, os.O_WRONLY | os.O_CREAT, cls.DATA_FILE_AUTHORITY))
         except Exception as err:
             raise RuntimeError(msg) from err

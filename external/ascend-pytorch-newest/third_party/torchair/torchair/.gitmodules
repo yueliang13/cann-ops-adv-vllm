@@ -1,3 +1,4 @@
+# 根目录：/root/workspace/vllm-ascend/external/ascend-pytorch-newest/third_party/torchair/torchair
 [submodule "third_party/secure_c"]
 	path = third_party/secure_c
 	url = https://gitee.com/openeuler/libboundscheck.git

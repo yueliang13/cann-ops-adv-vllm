@@ -1,7 +1,7 @@
 #ifndef BUILD_LIBTORCH
 #include <torch/csrc/autograd/generated/python_functions.h>
 
-// @ generated from ../../../../../../../xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/python_functions.cpp
+// @ generated from ../../../../../../../root/workspace/vllm-ascend/examples/develop/xzh_test/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/python_functions.cpp
 
 #include <Python.h>
 #include <ATen/ATen.h>

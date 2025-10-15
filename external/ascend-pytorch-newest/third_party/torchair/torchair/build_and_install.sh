@@ -7,7 +7,7 @@ rm -rf build
 mkdir build
 cd build
 
-git submodule update --init --recursive
+# git submodule update --init --recursive
 
 if [ -n "$1" ]; then
   cmake -DTORCHAIR_INSTALL_DST=$1 ..

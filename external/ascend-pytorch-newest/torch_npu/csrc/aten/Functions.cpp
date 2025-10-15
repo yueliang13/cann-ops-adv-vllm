@@ -4,7 +4,7 @@
 
 #include "torch_npu/csrc/aten/CustomFunctions.h"
 
-// @generated from ../../../../../../../xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/Functions.cpp
+// @generated from ../../../../../../../root/workspace/vllm-ascend/examples/develop/xzh_test/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/Functions.cpp
 
 // The manual function definitions that used to be here are now in torch/csrc/autograd/FunctionsManual.cpp
 // This speeds up re-compilation and allow to share these implementations so that they can be
