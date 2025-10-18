@@ -72,10 +72,10 @@ def build_case_tensors():
     block_table = block_table.npu()
     total_seq_len = total_seq_len.npu()
 
-    # 预分配三项中间结果（由融合算子内部写回）
-    block_position = torch.zeros(B, Nq, 256, dtype=torch.int32, device='npu')
-    page_position_length = torch.zeros(B, Nq, 8, dtype=torch.int32, device='npu')
-    max_page_position_length = torch.zeros(B, 8, dtype=torch.int64, device='npu')
+    # # 预分配三项中间结果（由融合算子内部写回）
+    # block_position = torch.zeros(B, Nq, 256, dtype=torch.int32, device='npu')
+    # page_position_length = torch.zeros(B, Nq, 8, dtype=torch.int32, device='npu')
+    # max_page_position_length = torch.zeros(B, 8, dtype=torch.int64, device='npu')
 
     # kv/可选量化参数
     key = key.npu()
@@ -129,9 +129,9 @@ def build_case_tensors():
         "antiquant_scale": antiquant_scale,
         "antiquant_offset": antiquant_offset,
         "kv_padding_size": kv_padding_size,
-        "block_position": block_position,
-        "page_position_length": page_position_length,
-        "max_page_position_length": max_page_position_length,
+        # "block_position": block_position,
+        # "page_position_length": page_position_length,
+        # "max_page_position_length": max_page_position_length,
     }
     return case
 
@@ -140,30 +140,28 @@ def run_perf(iters: int, warmup: int):
     case = build_case_tensors()
     # warmup
     for _ in range(warmup):
-        _ = torch_npu.npu_sparse_paged_fusion_attention(
+        attention_out, fused_block_position_out, fused_max_page_position_length_out = torch_npu.npu_sparse_paged_fusion_attention(
             case["query"], case["key"], case["value"],
             case["block_table"], case["l1_cent"], case["block_ids"], case["total_seq_len"],
-            case["block_position"], case["page_position_length"], case["max_page_position_length"],
             actual_seq_lengths=case["actual_seq_lengths"],
             num_heads=case["num_heads"], scale_value=case["scale_value"], 
             input_layout=case["layout"], num_key_value_heads=case["num_key_value_heads"],
             block_size=case["block_size"], inner_precise=case["inner_precise"]
         )
-    torch.npu.synchronize()
+    # torch.npu.synchronize()
 
     # measure
     t0 = time.time()
     for _ in range(iters):
-        _ = torch_npu.npu_sparse_paged_fusion_attention(
+        attention_out, fused_block_position_out, fused_max_page_position_length_out = torch_npu.npu_sparse_paged_fusion_attention(
             case["query"], case["key"], case["value"],
             case["block_table"], case["l1_cent"], case["block_ids"], case["total_seq_len"],
-            case["block_position"], case["page_position_length"], case["max_page_position_length"],
             actual_seq_lengths=case["actual_seq_lengths"],
             num_heads=case["num_heads"], scale_value=case["scale_value"], 
             input_layout=case["layout"], num_key_value_heads=case["num_key_value_heads"],
             block_size=case["block_size"], inner_precise=case["inner_precise"]
         )
-    torch.npu.synchronize()
+    # torch.npu.synchronize()
     t1 = time.time()
 
     avg_ms = (t1 - t0) * 1000.0 / max(iters, 1)
@@ -177,7 +175,6 @@ def run_acc():
     attention_out, fused_block_position_out, fused_max_page_position_length_out = torch_npu.npu_sparse_paged_fusion_attention(
             case["query"], case["key"], case["value"],
             case["block_table"], case["l1_cent"], case["block_ids"], case["total_seq_len"],
-            case["block_position"], case["page_position_length"], case["max_page_position_length"],
             actual_seq_lengths=case["actual_seq_lengths"],
             num_heads=case["num_heads"], scale_value=case["scale_value"], 
             input_layout=case["layout"], num_key_value_heads=case["num_key_value_heads"],

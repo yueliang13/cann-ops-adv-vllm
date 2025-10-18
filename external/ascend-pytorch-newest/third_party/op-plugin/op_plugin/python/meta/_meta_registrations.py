@@ -36,17 +36,33 @@ def npu_our_incre_flash_attention_forward(query, key, value, *, padding_mask=Non
         return torch.empty_like(query)
 
 @impl(m, "npu_sparse_paged_fusion_attention")
-def npu_sparse_paged_fusion_attention_forward(query, key, value,blocktable,l1_cent,block_ids,total_seq_len,block_position,page_position_length,max_page_position_length, *,
+def npu_sparse_paged_fusion_attention_forward(query, key, value,blocktable,l1_cent,block_ids,total_seq_len, *,
                                       pse_shift=None, atten_mask=None, actual_seq_lengths=None,
                                       dequant_scale1=None,quant_scale1=None,dequant_scale2=None,quant_scale2=None,quant_offset2=None,
                                       antiquant_scale=None,antiquant_offset=None,kv_padding_size=None,
                                       num_heads=1,scale_value=1.0,input_layout="BSH",num_key_value_heads=0,block_size=0,inner_precise=1):
+    
+    # 计算 output 的形状和数据类型
     if quant_scale2 is not None:
-        return torch.empty_like(query, dtype=torch.int8)
+        output = torch.empty_like(query, dtype=torch.int8)
     elif query.dtype == torch.int8:
-        return torch.empty_like(query, dtype=torch.half)
+        output = torch.empty_like(query, dtype=torch.half)
     else:
-        return torch.empty_like(query)
+        output = torch.empty_like(query)
+    
+    # 计算其他输出张量的形状
+    B = query.size(0)  # batch size
+    Nq = query.size(1)  # number of queries
+    
+    # block_position: (B, Nq, 256) with int32 dtype
+    block_position = torch.empty(B, Nq, 256, dtype=torch.int32, device=query.device)
+    
+    # max_page_position_length: (B, 8) with int64 dtype
+    max_page_position_length = torch.empty(B, 8, dtype=torch.int64, device=query.device)
+    
+    return (output, block_position, max_page_position_length)
+
+
 
 @impl(m, "npu_sparse_paged_attention")
 def npu_sparse_paged_attention_forward(query, key, value, *, padding_mask=None, atten_mask=None, pse_shift=None, actual_seq_lengths=None,

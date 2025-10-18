@@ -109,9 +109,9 @@ namespace {
 at::Tensor & wrapper_SparseNPU_out_add_out(const at::Tensor & self, const at::Tensor & other, const at::Scalar & alpha, at::Tensor & out) {
   // No device check
 if (c10_npu::get_npu_data_unsafe_flag()) {
-    c10_npu::check_npu_tensor_is_safe(out);
-    c10_npu::check_npu_tensor_is_safe(other);
     c10_npu::check_npu_tensor_is_safe(self);
+    c10_npu::check_npu_tensor_is_safe(other);
+    c10_npu::check_npu_tensor_is_safe(out);
 }
 const OptionalDeviceGuard device_guard(device_of(self));
 #ifndef BUILD_LIBTORCH
@@ -152,9 +152,9 @@ namespace {
 at::Tensor & wrapper_SparseNPU_out_max_out(const at::Tensor & self, const at::Tensor & other, at::Tensor & out) {
   // No device check
 if (c10_npu::get_npu_data_unsafe_flag()) {
-    c10_npu::check_npu_tensor_is_safe(out);
-    c10_npu::check_npu_tensor_is_safe(other);
     c10_npu::check_npu_tensor_is_safe(self);
+    c10_npu::check_npu_tensor_is_safe(other);
+    c10_npu::check_npu_tensor_is_safe(out);
 }
 const OptionalDeviceGuard device_guard(device_of(self));
 #ifndef BUILD_LIBTORCH

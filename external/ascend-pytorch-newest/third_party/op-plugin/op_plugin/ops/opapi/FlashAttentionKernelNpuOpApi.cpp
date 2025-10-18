@@ -1873,7 +1873,8 @@ at::Tensor npu_sparse_paged_attention_symint(
 std::tuple<at::Tensor, at::Tensor, at::Tensor> npu_sparse_paged_fusion_attention_symint(
     const at::Tensor &query, const at::Tensor &key, const at::Tensor &value,
     const at::Tensor &blocktable, const at::Tensor &l1_cent, const at::Tensor &block_ids,
-    const at::Tensor &total_seq_len, const at::Tensor &block_position, const at::Tensor &page_position_length, const at::Tensor &max_page_position_length,
+    const at::Tensor &total_seq_len,
+    //const at::Tensor &block_position, const at::Tensor &page_position_length, const at::Tensor &max_page_position_length,
     const c10::optional<at::Tensor> &pse_shift,
     const c10::optional<at::Tensor> &attention_mask,
     c10::OptionalArrayRef<c10::SymInt> actual_seq_lengths,
@@ -1902,12 +1903,29 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> npu_sparse_paged_fusion_attention
         output = npu_preparation::apply_tensor_without_format(query);
     }
 
+    // construct the output tensors for block_position, page_position_length, max_page_position_length
+    // Based on test case: block_position(B, Nq, 256), page_position_length(B, Nq, 8), max_page_position_length(B, 8)
+    int64_t B = query.size(0);  // batch size
+    int64_t Nq = query.size(1); // number of queries
+    
+    // block_position: (B, Nq, 256) with int32 dtype
+    std::vector<int64_t> block_position_shape = {B, Nq, 256};
+    at::Tensor block_position = npu_preparation::apply_tensor_without_format(block_position_shape, query.options().dtype(at::kInt));
+    
+    // page_position_length: (B, Nq, 8) with int32 dtype  
+    std::vector<int64_t> page_position_length_shape = {B, Nq, 8};
+    at::Tensor page_position_length = npu_preparation::apply_tensor_without_format(page_position_length_shape, query.options().dtype(at::kInt));
+    
+    // max_page_position_length: (B, 8) with int64 dtype
+    std::vector<int64_t> max_page_position_length_shape = {B, 8};
+    at::Tensor max_page_position_length = npu_preparation::apply_tensor_without_format(max_page_position_length_shape, query.options().dtype(at::kLong));
+
     at::TensorList keyTensors = key;
     at::TensorList valueTensors = value;
     std::string input_layout_str = std::string(input_layout);
     char input_layout_char[LAYOUT_MAX_LENGTH];
     strncpy(input_layout_char, input_layout_str.c_str(), LAYOUT_MAX_LENGTH - 1);
-    // dispatch hostAPI aclnnSparsePagedFusionAttention EXEC_NPU_NO_FORMAT_CHECK_CMD
+    // dispatch hostAPI aclnnSparsePagedFusionAttention 
     EXEC_NPU_CMD(aclnnSparsePagedFusionAttention, query, keyTensors, valueTensors, pse_shift, attention_mask,
                  actual_seq_lengths, dequant_scale1, quant_scale1, dequant_scale2, quant_scale2, quant_offset2, antiquant_scale,
                  antiquant_offset, blocktable, kv_padding_size, l1_cent, block_ids, total_seq_len,

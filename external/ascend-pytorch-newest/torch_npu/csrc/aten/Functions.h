@@ -1,6 +1,6 @@
 #pragma once
 
-// @generated from ../../../../../../../root/workspace/vllm-ascend/examples/develop/xzh_test/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/Functions.h
+// @generated from ../../../../../../../xzh_workspace/cann-ops-adv-vllm/external/ascend-pytorch-newest/codegen/autograd/templates/Functions.h
 
 #include <ATen/ATen.h>
 #include <ATen/core/functional.h>
