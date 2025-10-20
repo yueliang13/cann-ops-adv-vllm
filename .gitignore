@@ -54,6 +54,7 @@ MANIFEST.in
 **/build_out/
 **/build/
 **/dist/
+!external/ascend-pytorch-newest/dist/
 **/__pycache__/
 **/*.egg-info/
 **/Code_save/

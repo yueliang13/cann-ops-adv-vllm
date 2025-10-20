@@ -124,7 +124,7 @@ gen
 .setuptools-cmake-build
 .pytest_cache
 aten/build/*
-dist
+# dist
 
 # Bram
 plsdontbreak

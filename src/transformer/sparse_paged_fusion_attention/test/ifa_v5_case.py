@@ -119,7 +119,7 @@ class Test_aclnnSparsePagedAttention(TestCase):
                         value_data.view(-1)[start_idx:end_idx] = head_value
                     
         # 设置实际序列长度
-        actual_seq_lengths = torch.tensor([max_actual_block_num_per_seq * block_size], dtype=torch.int64)
+        actual_seq_lengths = [int(max_actual_block_num_per_seq * block_size)]#torch.tensor([max_actual_block_num_per_seq * block_size], dtype=torch.int64)
 
         # 将数据移至NPU
         query_npu = query_data.npu()
