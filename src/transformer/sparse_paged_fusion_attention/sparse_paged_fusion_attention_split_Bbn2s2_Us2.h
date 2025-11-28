@@ -306,6 +306,10 @@ public:
 
                 // 如果newBlockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == 0x7FFFFFFF) {
+                    
+                    // 检测是否访问越界
+                    break; // 特殊测试逻辑
+
                     uint64_t fix_length = 30; // 旧逻辑中固定的拷贝长度
                     // 1. 计算实际序列末尾 (curActualSeqLen) 所在的逻辑块和块内偏移
                     uint64_t final_logical_block_idx = curActualSeqLen / kvCacheBlockSize;
@@ -547,6 +551,10 @@ public:
 
                 // 如果blockIdOffset是无效值(0x7FFFFFFF)，则填充零值并继续
                 if (newBlockIdOffset == (uint64_t)(0x7FFFFFFF)) {
+
+                    // 特殊检测逻辑 检测是否访问越界
+                    break; // 这个会跳过这个逻辑 这个测试用完记得删除
+
                     // MDL下，每次回调拷贝一组step*base，每次都是从头开始拷贝，只需要关注copyFinishRowCnt
                     uint64_t fix_length = 30; // 旧逻辑中固定的拷贝长度
 
@@ -1915,14 +1923,29 @@ template <typename IFAT>
 __aicore__ inline void SparsePagedFusionAttentionAttenSplitBbn2s2Us2<IFAT>::CentSelectPosition(LocalTensor<int32_t> indicesLocal)
 {
     auto blockTableLocal = inBlockTable.DeQue<int32_t>();
+    // 拿到mask掩码和blockIds的索引
+    LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
+    LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+
+    //sink
+    AscendC::CompareScalar(dstResultMaskLocal, blockTableLocal, blockTableLocal.GetValue(0), CMPMODE::EQ, pageLen);
+    pipe_barrier(PIPE_ALL);
+
+    //recent
+    AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, blockTableLocal.GetValue(pageLen-2), CMPMODE::EQ, pageLen);
+    pipe_barrier(PIPE_ALL);
+    AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+    AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, blockTableLocal.GetValue(pageLen-1), CMPMODE::EQ, pageLen);
+    pipe_barrier(PIPE_ALL);
+    AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+
     AscendC::Muls(blockTableLocal, blockTableLocal, int32_t(4), static_cast<uint32_t>(pageLen));
     auto blockIdsLocal = inBlockIds.DeQue<int32_t>();
     auto pageBatchLocal = tmpBuffPageBatch.Get<int32_t>();
     pipe_barrier(PIPE_ALL);
     AscendC::Gather(pageBatchLocal, blockIdsLocal, blockTableLocal.ReinterpretCast<uint32_t>(), uint32_t(0), static_cast<uint32_t>(pageLen));
 
-    auto dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
-    auto dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+
     AscendC::CompareScalar(dstResultMaskLocal, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, static_cast<uint32_t>(pageLen));
     for (uint32_t i = 1; i < static_cast<uint32_t>(k); i++) {
         AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(i), CMPMODE::EQ, static_cast<uint32_t>(pageLen));

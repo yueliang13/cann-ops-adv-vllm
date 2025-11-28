@@ -342,6 +342,26 @@ private:
 
         // offset
         AscendC::LocalTensor<int32_t> blockTableLocal = inBlockTable.DeQue<int32_t>();
+
+        // 拿到mask掩码和blockIds的索引
+        LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
+        LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
+
+        //sink
+        AscendC::CompareScalar(dstResultMaskLocal, blockTableLocal, blockTableLocal.GetValue(0), CMPMODE::EQ, pageLen);
+        pipe_barrier(PIPE_ALL);
+
+        //recent
+        AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, blockTableLocal.GetValue(pageLen-2), CMPMODE::EQ, pageLen);
+        pipe_barrier(PIPE_ALL);
+
+        AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+        
+        AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, blockTableLocal.GetValue(pageLen-1), CMPMODE::EQ, pageLen);
+        pipe_barrier(PIPE_ALL);
+        AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+
+        // 为了在gather的时候进行地址对齐
         AscendC::Muls(blockTableLocal, blockTableLocal, int32_t(4), pageLen);
         // src
         AscendC::LocalTensor<int32_t> blockIdsLocal = inBlockIds.DeQue<int32_t>();
@@ -350,19 +370,28 @@ private:
         pipe_barrier(PIPE_ALL);
         // pageBatchLocal.SetSize(pageLen);
 
+        // 拿到无立业
         // const LocalTensor<T>& dstLocal, const LocalTensor<T>& srcLocal, const LocalTensor<uint32_t>& srcOffsetLocal, const uint32_t srcBaseAddr, const uint32_t count)
         AscendC::Gather(pageBatchLocal, blockIdsLocal, blockTableLocal.ReinterpretCast<uint32_t>(), uint32_t(0), pageLen);
 
-        // 拿到mask掩码和blockIds的索引
-        LocalTensor<uint8_t> dstResultMaskLocal = tmpBuffSelectReduce.Get<uint8_t>();
-        LocalTensor<uint8_t> dstMaskLocalTmp = tmpBuffSelectTmp.Get<uint8_t>();
 
-        AscendC::CompareScalar(dstResultMaskLocal, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, pageLen);
+        AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(0), CMPMODE::EQ, pageLen);
+        AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
         for (uint32_t i = 1; i < k; i++) {
             AscendC::CompareScalar(dstMaskLocalTmp, pageBatchLocal, indicesLocal.GetValue(i), CMPMODE::EQ, pageLen);
             pipe_barrier(PIPE_ALL);
             AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
         }
+
+        //sink
+        // AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, int32_t(0), CMPMODE::EQ, pageLen);
+        // AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+        // AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, int32_t(pageLen-2), CMPMODE::EQ, pageLen);
+        // AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+        // AscendC::CompareScalar(dstMaskLocalTmp, blockTableLocal, int32_t(pageLen-1), CMPMODE::EQ, pageLen);
+        // AscendC::Or(dstResultMaskLocal, dstResultMaskLocal, dstMaskLocalTmp, pageLen);
+
+        //recent
 
         uint64_t rsvdCnt = 0;  //该参数表示收集之后的
         // 表示页的所有顺序索引

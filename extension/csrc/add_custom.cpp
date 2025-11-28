@@ -24,7 +24,7 @@ using torch::autograd::Function;
 using torch::autograd::AutogradContext;
 using variable_list = std::vector<at::Tensor>;
 
-// #define DEBUG 
+// #define DEBUG
 
 // 辅助函数：将 at::Tensor 转换为 aclTensor
 aclTensor *ConvertTensorToAcl(const at::Tensor &tensor)
@@ -554,7 +554,7 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
     std::cout << "[LOG] Key list size: " << key_list_vec.size() << std::endl;
     std::cout << "[LOG] Value list size: " << value_list_vec.size() << std::endl;
     std::cout.flush();
-    #endif  
+    #endif
     // 1. 创建输出张量
     auto out_shape = query.sizes().vec();
     at::Tensor result = at::empty(out_shape, query.options());
@@ -580,7 +580,7 @@ at::Tensor sparse_paged_attention_impl_npu(const at::Tensor &query, const std::v
         if (!tensorKeyList || !tensorValueList) {
             throw std::runtime_error("Failed to convert key/value tensor lists");
         }
-        
+
         // 转换所有输入参数（包括可选的）
         aclTensor *pseShiftTensor = ConvertTensorToAcl(pse_shift);
         aclTensor *attenTensor = ConvertTensorToAcl(attention_mask);
@@ -842,13 +842,13 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
             num_heads, scale_value, layerOut, num_key_value_heads, block_size, inner_precise,
             blockPositionTensor, pagePositionLengthTensor, maxPagePositionLengthTensor,
             attentionOutTensor, &workspaceSize, &executor);
-        
+
         // 设置executor为可复用
-        aclSetAclOpExecutorRepeatable(executor);  
+        aclSetAclOpExecutorRepeatable(executor);
         // void *addr;
         // aclSetDynamicInputTensorAddr(executor, 0, 0, tensorKeyList, addr);   // 刷新输入tensorlist中第1个aclTensor的device地址
         // aclSetDynamicInputTensorAddr(executor, 0, 1, tensorValueList, addr);  // 刷新输入tensorlist中第2个aclTensor的device地址
-        
+
         #ifdef DEBUG
         std::cout << "[LOG] GetWorkspaceSize returned: " << ret << std::endl;
         std::cout << "[LOG] Workspace size: " << workspaceSize << " bytes ("
@@ -895,7 +895,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
         ret = aclnnSparsePagedFusionAttention(workspaceAddr, workspaceSize, executor, stream);
 
 
-        if (ret != 0) { 
+        if (ret != 0) {
             #ifdef DEBUG
             std::cout << "[LOG] aclGetRecentErrMsg: " << aclGetRecentErrMsg() << std::endl;
             #endif
@@ -926,7 +926,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> sparse_paged_fusion_attention_imp
         if (maxPagePositionLengthTensor) aclDestroyTensor(maxPagePositionLengthTensor);
         if (attentionOutTensor) aclDestroyTensor(attentionOutTensor);
 
-        aclDestroyAclOpExecutor(executor);  
+        aclDestroyAclOpExecutor(executor);
 
         return std::make_tuple(attention_out, block_position, max_page_position_length);
     } catch (...) {
@@ -966,7 +966,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at
     // call aclnn interface to perform the computation
     try {
         EXEC_NPU_CMD(aclnnSelectPosition, block_ids, block_table, seq_len, indices, page_position, page_position_length, block_table_gather);
-    } catch (const std::exception &e) {        
+    } catch (const std::exception &e) {
         std::cout << "[LOG] EXEC_NPU_CMD failed with exception: " << e.what() << std::endl;
         throw;
     } catch (...) {
@@ -978,9 +978,15 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> select_position_impl_npu(const at
 
 std::tuple<at::Tensor, at::Tensor, at::Tensor>  cent_select_impl_npu(const at::Tensor &query, const at::Tensor &l1_cent, const at::Tensor &block_ids, const at::Tensor &block_table, const at::Tensor &seq_len){
 
+    printf("kernel, query shape:[%d, %d, %d]\n",query.sizes()[0], query.sizes()[1], query.sizes()[2]);
+    printf("kernel, l1_cent shape:[%d, %d, %d]\n",l1_cent.sizes()[0], l1_cent.sizes()[1], l1_cent.sizes()[2]);
+    printf("kernel, block_ids shape:[%d, %d]\n",block_ids.sizes()[0], block_ids.sizes()[1]);
+    printf("kernel, block_table shape:[%d, %d]\n",block_table.sizes()[0], block_table.sizes()[1]);
+    std::cout<<"kernel, seq_len shape:" << seq_len.sizes()<< std::endl;;
     // 1. 创建输出张量
     auto max_page_num = 256;
-    auto batch_size = query.sizes()[0];
+    auto batch_size = seq_len.sizes()[0];
+    // auto batch_size = query.sizes()[0];
     auto q_head_num = query.sizes()[1];
     auto max_page_len = block_table.sizes()[1];
     at::Tensor page_position = at::empty({batch_size, q_head_num, max_page_num}, block_ids.options());
@@ -989,7 +995,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor>  cent_select_impl_npu(const at::T
     at::Tensor importance = at::empty({batch_size, q_head_num}, query.options().dtype(torch::kFloat32));
     // call aclnn interface to perform the computation
     try {
-        EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len, 
+        EXEC_NPU_CMD(aclnnCentSelect, query, l1_cent, block_ids, block_table, seq_len,
         importance, page_position, page_position_length, max_page_position_length);
     } catch (const std::exception &e) {
         std::cout << "[LOG] EXEC_NPU_CMD failed with exception: " << e.what() << std::endl;

@@ -78,7 +78,7 @@ ge::graphStatus SparseFusionIFATiling::GetNpuInfo()
 
     aicNum_ = ascendcPlatform.GetCoreNumAic();
     aivNum_ = ascendcPlatform.GetCoreNumAiv();
-    
+
     if (ascendcPlatform.GetSocVersion() == platform_ascendc::SocVersion::ASCEND310P) {
         socVersion_ = IfaSocVersion::SOC_ASCEND_310P;
         coreNum_ = aicNum_; // use aic num in 310p
@@ -216,7 +216,7 @@ ge::graphStatus SparseFusionIFATiling::QKVPreProcess() {
         inputLayout_ = IfaLayout::BNSD;
         if (qDimNum == 3U) { // BND
             // BND[bsz,head,head_dim] -> BNSD[bsz,head,1,head_dim] 适配Vllm框架调用
-            sOfQuery = 1; 
+            sOfQuery = 1;
             headDim_ = context_->query.shape->GetStorageShape().GetDim(2); // 3, dim of D
         } else { // BNSD
             sOfQuery = context_->query.shape->GetStorageShape().GetDim(2); // 2, dim of S
@@ -236,7 +236,7 @@ ge::graphStatus SparseFusionIFATiling::QKVPreProcess() {
     } else {
         headDimAlign_ = Align(headDim_, BYTE_BLOCK); // 元素个数按照基本块大小对齐
     }
-    
+
     OPS_ERR_IF(sOfQuery != 1, OPS_LOG_E(context_->opName, "layout %s S of Query:%u is invalid, it should be 1", layout.c_str(), sOfQuery),
                return ge::GRAPH_FAILED);
     return ge::GRAPH_SUCCESS;
@@ -328,13 +328,13 @@ ge::graphStatus SparseFusionIFATiling::ProcessPageAttentionFlag() {
     sMax_ = maxBlockNumPerBatch_ * blockSize_;
     seqSize_ = sMax_;
     uint32_t kDimNum = context_->key.shape->GetStorageShape().GetDimNum();
-    
+
     // if (kDimNum == 3U) { // BSH
     //     inputLayout_ = IfaLayout::BSH_BSND;
     // } else { // BNSD
     //     inputLayout_ = IfaLayout::BNSD;
     // }
-    
+
     inputLayout_ = IfaLayout::BSH_BSND;// 适配Vllm框架调用 固定BSH_BSND
 
     const std::string inputLayoutStr = context_->layOut;
@@ -719,9 +719,9 @@ ge::graphStatus SparseFusionIFATiling::CheckKVAntiQuantParamsInPagedAttention() 
 ge::graphStatus SparseFusionIFATiling::CheckKVAntiQuantMode() {
     if ((antiquantMode_ != DEQUANT_PER_CHANNEL_MODE) &&
             (antiquantMode_ != DEQUANT_PER_TOKEN_MODE) &&
-            (antiquantMode_ != DEQUANT_PER_TENSOR_HEAD_MODE) && 
-            (antiquantMode_ != DEQUANT_PER_TOKEN_HEAD_MODE) && 
-            (antiquantMode_ != DEQUANT_PER_TOKEN_PA_MODE) && 
+            (antiquantMode_ != DEQUANT_PER_TENSOR_HEAD_MODE) &&
+            (antiquantMode_ != DEQUANT_PER_TOKEN_HEAD_MODE) &&
+            (antiquantMode_ != DEQUANT_PER_TOKEN_PA_MODE) &&
             (antiquantMode_ != DEQUANT_PER_TOKEN_HEAD_PA_MODE)) {
         OPS_LOG_E(context_->opName,
             "antiquantMode value:%u is invalid, it should be 0、1、2、3、4 or 5", antiquantMode_);
@@ -1579,7 +1579,7 @@ void SparseFusionIFATiling::FillTilingSplitKV()
 void SparseFusionIFATiling::FillTilingCentSelect()
 {
     // query 0 BN1D
-    uint32_t batchSize_ = context_->query.shape->GetStorageShape().GetDim(0);
+    // uint32_t batchSize_ = context_->query.shape->GetStorageShape().GetDim(0);
     uint32_t qHeadNum_ = context_->query.shape->GetStorageShape().GetDim(1);
     uint32_t dimNum_ = context_->query.shape->GetStorageShape().GetDim(2);
 
@@ -1589,16 +1589,19 @@ void SparseFusionIFATiling::FillTilingCentSelect()
     uint32_t clusterBlockNum_ = (clusterNum_ + clusterBlockSize_ - 1) / clusterBlockSize_;
 
     uint32_t numOfGroups_ = qHeadNum_ / kvHeadNum_;
-    
-    // block_ids 2 PN2 
+
+    // block_ids 2 PN2
     uint32_t kvPageLen_ = context_->blockIds.shape->GetStorageShape().GetDim(1);
 
     // block_table 3 maxBmaxP
     uint32_t maxBatch_ = context_->blockTable.tensor->GetStorageShape().GetDim(0);
     uint32_t maxPage_ = context_->blockTable.tensor->GetStorageShape().GetDim(1);
 
-    uint32_t k_ = 64;
-    
+    // seq_len 4 batch
+    uint32_t batchSize_ = context_->totalSeqlen.tensor->GetStorageShape().GetDim(0);
+
+    uint32_t k_ = 512;
+
     // page_position 6 BNmax
     uint32_t maxPageNum_ = context_->blockPosition.shape->GetStorageShape().GetDim(2);
 
@@ -1635,7 +1638,6 @@ void SparseFusionIFATiling::FillTilingCentSelect()
 
     AscendC::TopKTilingFunc(ascendcPlatform, inner, outter, k_, dtypesize, false, AscendC::TopKMode::TOPK_NORMAL, true, tilingData_->centSelectParams.topkTilingData);
     AscendC::GetTopKMaxMinTmpSize(ascendcPlatform, inner, outter, false, false, AscendC::TopKMode::TOPK_NORMAL, true, dtypesize, maxsize, minsize);
-    printf("TopK maxsize: %u, minsize: %u\n", maxsize, minsize);
     tilingData_->centSelectParams.set_tmpsize(maxsize);
 
 }
@@ -2096,7 +2098,7 @@ ge::graphStatus SparseFusionIFATiling::ConvertContext(gert::TilingContext &conte
     ifaContext.blockTable.tensor = context.GetOptionalInputTensor(BLOCK_TABLE_INPUT_INDEX);
     ifaContext.kvPaddingSize.tensor = context.GetOptionalInputTensor(KV_PADDING_SIZE_INPUT_INDEX);
     ifaContext.kvPaddingSize.desc = context.GetOptionalInputDesc(KV_PADDING_SIZE_INPUT_INDEX);
-    
+
     // // blockPosition 现在不用传入了 需要实时计算
     ifaContext.blockPosition.desc = context.GetOutputDesc(BLOCK_POSITION_OUTPUT_INDEX);
     ifaContext.blockPosition.shape = context.GetOutputShape(BLOCK_POSITION_OUTPUT_INDEX);
